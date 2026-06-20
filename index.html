@@ -48,7 +48,8 @@ input{font-family:inherit}
 .avatar .base{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
 .avatar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 /* home hero */
-.hero{text-align:center}
+.hero{text-align:center;padding-top:22px}
+.hero .avatar{max-width:158px;margin-top:2px}
 .hero .nm{font-weight:900;font-size:22px;margin-top:6px}
 .agebadge{display:inline-flex;align-items:center;gap:6px;background:var(--honey-s);color:var(--honey-d);
   font-weight:800;font-size:13px;padding:5px 12px;border-radius:30px;margin-top:6px}
@@ -112,6 +113,9 @@ input{font-family:inherit}
 .shelf-empty{text-align:center;color:var(--soft);font-size:13px;padding:22px 0}
 /* filters */
 .filters{display:flex;gap:8px;margin-bottom:12px}
+.yearflt{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;-ms-overflow-style:none}
+.yearflt::-webkit-scrollbar{display:none}
+.yearflt .chip{white-space:nowrap;flex:none}
 .chip{padding:8px 14px;border-radius:30px;background:#F4EFE6;font-size:13px;font-weight:700;color:var(--soft)}
 .chip.on{background:var(--ink);color:#fff}
 /* book list */
@@ -125,7 +129,9 @@ input{font-family:inherit}
 .tag.read{background:var(--honey-s);color:var(--honey-d)}
 .tag.done{background:var(--moss-s);color:#3a7a59}
 .bl .dt{font-size:11px;color:var(--soft);margin-top:5px}
-.bl .del{margin-left:auto;align-self:flex-start;color:#cabfae;font-size:18px;padding:2px 4px}
+.bl .acts{margin-left:auto;align-self:flex-start;display:flex;gap:4px}
+.bl .edit,.bl .del{color:#cabfae;font-size:17px;padding:2px 4px;line-height:1}
+.bl .edit:active,.bl .del:active{color:var(--honey-d)}
 /* stats */
 .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;box-shadow:var(--shadow)}
@@ -137,6 +143,22 @@ input{font-family:inherit}
 .bars .b.cur i{background:linear-gradient(var(--moss),#88c4a4)}
 .bars .b em{font-size:9px;color:var(--soft);font-style:normal}
 .bars .b u{font-size:9px;color:var(--ink);font-weight:800;text-decoration:none}
+/* stats: period switch + member horizontal bars */
+.pswitch{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pseg{display:flex;background:#F4EFE6;border-radius:30px;padding:3px;flex:none}
+.pseg button{padding:7px 14px;border-radius:30px;font-size:12.5px;font-weight:700;color:var(--soft)}
+.pseg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(60,45,30,.12)}
+.pnav{margin-left:auto;display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px}
+.pnav button{width:30px;height:30px;border-radius:50%;background:#F4EFE6;font-size:16px;color:var(--soft)}
+.hbar{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.hbar .av{width:34px;height:34px;border-radius:50%;background:var(--honey-s);overflow:hidden;display:grid;place-items:center;flex:none}
+.hbar .av .tinyav img{width:100%;margin-top:0}
+.hbar .nm{font-size:12.5px;font-weight:700;width:48px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .track{flex:1;height:18px;background:#F2EDE4;border-radius:30px;overflow:hidden}
+.hbar .track i{display:block;height:100%;background:linear-gradient(90deg,var(--honey),#F7B36A);border-radius:30px;min-width:3px;transition:width .5s}
+.hbar.meBar .track i{background:linear-gradient(90deg,var(--moss),#88c4a4)}
+.hbar .val{width:62px;flex:none;text-align:right;font-size:11.5px;color:var(--soft);font-weight:700}
+.hbar .val b{color:var(--honey-d);font-size:13px}
 /* dress */
 .dcat{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .dcat::-webkit-scrollbar{display:none}
@@ -149,6 +171,8 @@ input{font-family:inherit}
 .item .mini .b{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center}
 .item .mini svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .item .nm{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--soft)}
+.item .bgswatch{width:100%;height:100%;border-radius:13px}
+.item.bgtile{background:#fff}
 .item .lock{position:absolute;inset:0;background:rgba(251,250,247,.78);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--soft);text-align:center;line-height:1.4}
 .item.eq{border-color:var(--moss)}
 .item .chk{position:absolute;top:4px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--moss);color:#fff;font-size:11px;display:grid;place-items:center}
@@ -208,9 +232,10 @@ input{font-family:inherit}
 .peer-cal .ph b{font-size:12.5px;font-weight:800;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .peer-cal .ph .cnt{font-size:11px;color:var(--honey-d);font-weight:800}
 .peer-mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.peer-mini-grid i{aspect-ratio:1;border-radius:3px;background:#F0EADF;display:block}
-.peer-mini-grid i.on{background:var(--honey)}
-.peer-mini-grid i.pad{visibility:hidden}
+.peer-mini-grid i{aspect-ratio:1;border-radius:4px;background:#F4EFE6;display:grid;place-items:center;font-size:11px;font-style:normal;line-height:1}
+.peer-mini-grid i.on{background:#FFF6EC}
+.peer-mini-grid i.on::after{content:"🍎"}
+.peer-mini-grid i.pad{visibility:hidden;background:none}
 /* tiny dressed-up avatar (used in lists) */
 .tinyav{position:relative;width:100%;height:100%}
 .tinyav img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
@@ -280,6 +305,30 @@ const D = iso => { const [y,m,d]=iso.split('-').map(Number); return new Date(y,m
 const fmt = iso => iso ? iso.slice(5).replace('-','.') : '';
 const daysBetween = (a,b)=>Math.round((D(b)-D(a))/86400000);
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1700);}
+
+/* ---------- storage layer ----------
+   Uses the artifact storage API when available; otherwise falls back to
+   localStorage so login/profile + records persist on real deployments. */
+(function(){
+  const has = (typeof window!=='undefined') && window.storage
+    && typeof window.storage.get==='function'
+    && typeof window.storage.set==='function';
+  if(has) return; // native artifact storage present
+  const PRE='kkudok::', sc=sh=>(sh?'S::':'P::');
+  const K=(key,sh)=>PRE+sc(sh)+key;
+  let mem=null;
+  function ls(){
+    if(mem) return mem;
+    try{ window.localStorage.setItem(PRE+'__t','1'); window.localStorage.removeItem(PRE+'__t'); return window.localStorage; }
+    catch(e){ mem={_d:{}, getItem(k){return k in this._d?this._d[k]:null;}, setItem(k,v){this._d[k]=String(v);}, removeItem(k){delete this._d[k];}, key(i){return Object.keys(this._d)[i];}, get length(){return Object.keys(this._d).length;} }; return mem; }
+  }
+  window.storage={
+    async get(key,sh){ const v=ls().getItem(K(key,sh)); return v==null?null:{key,value:v,shared:!!sh}; },
+    async set(key,value,sh){ ls().setItem(K(key,sh),value); return {key,value,shared:!!sh}; },
+    async delete(key,sh){ ls().removeItem(K(key,sh)); return {key,deleted:true,shared:!!sh}; },
+    async list(prefix,sh){ const s=ls(),base=PRE+sc(sh),want=base+(prefix||''),keys=[]; for(let i=0;i<s.length;i++){ const k=s.key(i); if(k&&k.indexOf(want)===0) keys.push(k.slice(base.length)); } return {keys,prefix:prefix||'',shared:!!sh}; }
+  };
+})();
 
 /* head/body anchors are fractions of width(x) & height(y). avatar svg viewBox = 100 x VH */
 function vh(ck){return 100*CH[ck].h/CH[ck].w;}
@@ -501,6 +550,20 @@ const CATALOG=[
   I('레인코트','cloth',garment({id:nid(),c:'#F2C14E',buttons:'#d9a82f',hood:1,hoodc:'#e6b53d'})),
 ];
 const SLOTS=[['hat','모자'],['eye','안경'],['neck','목/리본'],['face','얼굴'],['hand','손'],['cloth','옷']];
+/* dress tab simplified to 3 categories */
+const DCATS=[['bg','배경 색상'],['cloth','의상'],['acc','악세사리']];
+const ACC_SLOTS=['hat','eye','neck','face','hand'];
+const BGCOLORS=[
+  {hex:'',name:'기본'},
+  {hex:'#FFF6E8',name:'크림'},
+  {hex:'#FCE7D8',name:'복숭아'},
+  {hex:'#E2F0E8',name:'민트'},
+  {hex:'#E3EEF7',name:'하늘'},
+  {hex:'#ECE6F5',name:'라벤더'},
+  {hex:'#FBE6EE',name:'핑크'},
+  {hex:'#F0E9DA',name:'모래'},
+  {hex:'#ECECEC',name:'그레이'},
+];
 function catBySlot(s){return CATALOG.filter(i=>i.slot===s);}
 function itemById(id){return CATALOG.find(i=>i.id===id);}
 
@@ -648,7 +711,7 @@ function renderHome(){
   if(calY==null){const n=new Date();calY=n.getFullYear();calM=n.getMonth();}
   const others=isMe()?Object.values(S.members).filter(x=>x.id!==S.meId):[];
   $('#s-home').innerHTML=`
-  <div class="card hero">
+  <div class="card hero" style="background:${m.bg||'var(--card)'}">
     ${avatarHTML(m)}
     <div class="nm">${m.name}</div>
     <div class="agebadge">🎂 ${a}살 · 독서 ${readDays(m)}일</div>
@@ -669,7 +732,7 @@ function renderHome(){
     <div class="gsub" style="text-align:center;margin-top:10px">읽은 날에 사과 도장이 콕 찍혀요${isMe()?' · 날짜를 눌러 기록을 바꿀 수 있어요':''}</div>
   </div>
   ${others.length?`
-  <div class="sec-t" style="margin-top:2px">👀 모임 친구들 출석 캘린더</div>
+  <div class="sec-t" style="margin-top:2px">🍎 모임 친구들 사과 출첵</div>
   <div class="peer-cals" id="peerCals">${others.map(miniCalHTML).join('')}</div>`:''}`;
   if(isMe())$('#readBtn').onclick=()=>{toggleRead(today);};
   $('#pm').onclick=()=>{calM--;if(calM<0){calM=11;calY--;}drawCal();};
@@ -709,10 +772,14 @@ async function toggleRead(iso){
 }
 
 /* ---------- SHELF ---------- */
-let shelfFilter='all';
+let shelfFilter='all', shelfYear='all';
+function bookYear(b){ const iso=b.end||b.start; if(!iso)return null; return D(iso).getFullYear(); }
+function shelfYears(m){ const ys=new Set(); m.books.forEach(b=>{const y=bookYear(b);if(y)ys.add(y);}); return Array.from(ys).sort((a,b)=>b-a); }
 function renderShelf(){
   refreshHeader();
   const m=view(),done=doneBooks(m);
+  const years=shelfYears(m);
+  if(shelfYear!=='all'&&!years.includes(shelfYear))shelfYear='all';
   $('#s-shelf').innerHTML=`
   <div class="card">
     <div class="sec-t">📚 ${m.name}님의 책장 · 완독 ${done.length}권</div>
@@ -725,10 +792,15 @@ function renderShelf(){
     <div class="chip ${shelfFilter==='reading'?'on':''}" data-f="reading">읽는 중</div>
     <div class="chip ${shelfFilter==='done'?'on':''}" data-f="done">완독</div>
   </div>
+  ${years.length?`<div class="yearflt" id="yflt">
+    <div class="chip ${shelfYear==='all'?'on':''}" data-y="all">전체 연도</div>
+    ${years.map(y=>`<div class="chip ${shelfYear===y?'on':''}" data-y="${y}">${y}년</div>`).join('')}
+  </div>`:''}
   <div id="blist"></div>`;
   if(isMe())$('#addBook').onclick=()=>openBookSheet();
   $('#viewMembers').onclick=openMemberPicker;
   $('#flt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
+  $('#yflt')&&$('#yflt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfYear=c.dataset.y==='all'?'all':+c.dataset.y;renderShelf();});
   drawShelf(done);drawBookList();
 }
 function openMemberPicker(){
@@ -773,7 +845,8 @@ function drawBookList(){
   const m=view();let list=m.books.slice().reverse();
   if(shelfFilter==='reading')list=list.filter(b=>!b.end);
   if(shelfFilter==='done')list=list.filter(b=>b.end);
-  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
+  if(shelfYear!=='all')list=list.filter(b=>bookYear(b)===shelfYear);
+  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
   $('#blist').innerHTML=list.map(b=>`
     <div class="bl" data-id="${b.id}">
       <div class="cv">${b.cover?`<img src="${b.cover}" onerror="this.style.display='none'">`:'📕'}</div>
@@ -784,13 +857,17 @@ function drawBookList(){
         ${b.end&&b.rating?`<div class="starline">${'★'.repeat(b.rating)}${'☆'.repeat(5-b.rating)}</div>`:''}
         ${b.review?`<div class="review">${esc2(b.review)}</div>`:''}
       </div>
-      ${isMe()?`<button class="del" data-id="${b.id}">✕</button>`:''}
+      ${isMe()?`<div class="acts"><button class="edit" data-id="${b.id}" title="제목·날짜 수정">✏️</button><button class="del" data-id="${b.id}">✕</button></div>`:''}
     </div>`).join('');
   $('#blist').querySelectorAll('.bl').forEach(row=>row.onclick=()=>{
     const bk=m.books.find(x=>x.id===row.dataset.id);if(!bk)return;
     if(bk.end)openReviewSheet(bk);
     else if(isMe())openBookSheet(bk);
     else toast('아직 읽는 중인 책이에요');
+  });
+  if(isMe())$('#blist').querySelectorAll('.edit').forEach(x=>x.onclick=(e)=>{
+    e.stopPropagation();
+    const bk=me().books.find(b=>b.id===x.dataset.id);if(bk)openBookSheet(bk);
   });
   if(isMe())$('#blist').querySelectorAll('.del').forEach(x=>x.onclick=async(e)=>{
     e.stopPropagation();
@@ -969,12 +1046,27 @@ function openManageSheet(){
 }
 
 /* ---------- STATS ---------- */
+let statMode='month', statY=null, statM=null;
+function memberYears(){ const ys=new Set(); Object.values(S.members).forEach(m=>{m.reads.forEach(r=>ys.add(D(r).getFullYear()));m.books.forEach(b=>{if(b.end)ys.add(D(b.end).getFullYear());});}); ys.add(new Date().getFullYear()); return Array.from(ys).sort((a,b)=>a-b); }
+function yearReadDays(m,y){ return m.reads.filter(r=>D(r).getFullYear()===y).length; }
+function yearDone(m,y){ return m.books.filter(b=>b.end&&D(b.end).getFullYear()===y).length; }
 function renderStats(){
   refreshHeader();
-  const m=view(),now=new Date(),y=now.getFullYear(),mo=now.getMonth();
-  const md=monthDone(m,y,mo),mr=monthReadDays(m,y,mo);
-  const yr=Array.from({length:12},(_,i)=>m.books.filter(b=>b.end&&inMonth(b.end,y,i)).length);
-  const max=Math.max(1,...yr),total=doneBooks(m).length;
+  const m=view(),now=new Date();
+  if(statY==null)statY=now.getFullYear();
+  if(statM==null)statM=now.getMonth();
+  const md=monthDone(m,statY,statM),mr=monthReadDays(m,statY,statM),total=doneBooks(m).length;
+  // per-member rows
+  const isMonth=statMode==='month';
+  const rows=Object.values(S.members).map(mm=>{
+    const days=isMonth?monthReadDays(mm,statY,statM):yearReadDays(mm,statY);
+    const done=isMonth?monthDone(mm,statY,statM):yearDone(mm,statY);
+    return {mm,days,done};
+  }).sort((a,b)=>b.days-a.days||b.done-a.done);
+  const maxDays=Math.max(1,...rows.map(r=>r.days));
+  // personal month-by-month mini chart (selected year)
+  const yr=Array.from({length:12},(_,i)=>monthReadDays(m,statY,i));
+  const maxYr=Math.max(1,...yr);
   $('#s-stats').innerHTML=`
   <div class="statgrid" style="margin-bottom:14px">
     <div class="stat"><b>${md}</b><span>이번 달 완독</span></div>
@@ -983,35 +1075,80 @@ function renderStats(){
     <div class="stat"><b>${streak(m)}</b><span>현재 연속</span></div>
   </div>
   <div class="card">
-    <div class="sec-t">📊 ${y}년 월별 완독</div>
+    <div class="pswitch">
+      <div class="pseg">
+        <button class="${isMonth?'on':''}" data-mode="month">📅 월별</button>
+        <button class="${!isMonth?'on':''}" data-mode="year">🗓️ 연도별</button>
+      </div>
+      <div class="pnav">
+        <button id="pPrev">‹</button>
+        <span>${isMonth?`${statY}년 ${statM+1}월`:`${statY}년`}</span>
+        <button id="pNext">›</button>
+      </div>
+    </div>
+    <div class="sec-t" style="margin:2px 4px 12px">👥 멤버별 ${isMonth?'읽은 날':'올해 읽은 날'} · 가로 그래프</div>
+    ${rows.map(r=>`
+      <div class="hbar ${r.mm.id===S.meId?'meBar':''}">
+        <div class="av">${avatarTiny(r.mm)}</div>
+        <div class="nm">${r.mm.name}</div>
+        <div class="track"><i style="width:${(r.days/maxDays*100).toFixed(0)}%"></i></div>
+        <div class="val"><b>${r.days}</b>일·완독 ${r.done}</div>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="sec-t">📊 ${m.name}님 ${statY}년 월별 읽은 날</div>
     <div class="bars">
-      ${yr.map((v,i)=>`<div class="b ${i===mo?'cur':''}"><u>${v||''}</u><i style="height:${v/max*100}%"></i><em>${i+1}</em></div>`).join('')}
+      ${yr.map((v,i)=>`<div class="b ${statY===now.getFullYear()&&i===now.getMonth()?'cur':''}"><u>${v||''}</u><i style="height:${(v/maxYr*100).toFixed(0)}%"></i><em>${i+1}</em></div>`).join('')}
     </div>
   </div>`;
+  $('#s-stats').querySelectorAll('.pseg button').forEach(b=>b.onclick=()=>{statMode=b.dataset.mode;renderStats();});
+  $('#pPrev').onclick=()=>{ if(isMonth){statM--;if(statM<0){statM=11;statY--;}} else statY--; renderStats(); };
+  $('#pNext').onclick=()=>{ if(isMonth){statM++;if(statM>11){statM=0;statY++;}} else statY++; renderStats(); };
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='hat';
+let dressSlot='acc';
 function renderDress(){
   refreshHeader();
   const m=me(),a=age(m);
   $('#s-dress').innerHTML=`
-  <div class="card hero" style="padding-bottom:10px">
+  <div class="card hero" style="padding-bottom:10px;background:${m.bg||'var(--card)'}">
     ${avatarHTML(m)}
     <div class="agebadge" style="margin-top:8px">${a}살 · 잠금 해제 아이템이 늘어나요</div>
   </div>
-  <div class="dcat" id="dcat">${SLOTS.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
+  <div class="dcat" id="dcat">${DCATS.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div class="items" id="items"></div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   drawItems();
 }
+function dressItems(){
+  if(dressSlot==='cloth')return catBySlot('cloth');
+  return CATALOG.filter(i=>ACC_SLOTS.includes(i.slot)); // 악세사리
+}
 function drawItems(){
-  const m=me(),a=age(m),mann=m.char,b=boxes(mann),ar=CH[mann].w/CH[mann].h;
-  const cur=m.items[dressSlot];
-  let h=`<div class="item ${!cur?'on':''}" data-id=""><div class="mini"><div class="b" style="background-image:url(${CH[mann].img})"></div></div><div class="nm">없음</div></div>`;
-  catBySlot(dressSlot).forEach(it=>{
-    const locked=a<it.age, eq=cur===it.id;
-    h+=`<div class="item ${eq?'eq':''}" data-id="${it.id}">
+  const m=me(),a=age(m),mann=m.char,b=boxes(mann);
+  if(dressSlot==='bg'){
+    $('#items').innerHTML=BGCOLORS.map(bg=>{
+      const sel=(m.bg||'')===bg.hex;
+      return `<div class="item bgtile ${sel?'eq':''}" data-bg="${bg.hex}">
+        <div class="bgswatch" style="background:${bg.hex||'#FFFFFF'}"></div>
+        <div class="nm">${bg.name}</div>
+        ${sel?'<div class="chk">✓</div>':''}
+      </div>`;
+    }).join('');
+    $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
+      const hex=el.dataset.bg; m.bg=hex||null; await save(); renderDress();
+    });
+    return;
+  }
+  let h='';
+  if(dressSlot==='cloth'){
+    const cur=m.items.cloth;
+    h+=`<div class="item ${!cur?'on':''}" data-id="" data-slot="cloth"><div class="mini"><div class="b" style="background-image:url(${CH[mann].img})"></div></div><div class="nm">없음</div></div>`;
+  }
+  dressItems().forEach(it=>{
+    const locked=a<it.age, eq=m.items[it.slot]===it.id;
+    h+=`<div class="item ${eq?'eq':''}" data-id="${it.id}" data-slot="${it.slot}">
       <div class="mini"><div class="b" style="background-image:url(${CH[mann].img})"></div>
       <svg viewBox="0 0 100 ${b.V.toFixed(1)}">${it.draw(b)}</svg></div>
       <div class="nm">${it.name}</div>
@@ -1021,10 +1158,11 @@ function drawItems(){
   });
   $('#items').innerHTML=h;
   $('#items').querySelectorAll('.item').forEach(el=>el.onclick=async()=>{
-    const id=el.dataset.id;
+    const id=el.dataset.id, slot=el.dataset.slot;
     if(id){const it=itemById(id);if(age(m)<it.age){toast(it.age+'살부터 입을 수 있어요');return;}}
-    if(m.items[dressSlot]===id)delete m.items[dressSlot];
-    else if(id)m.items[dressSlot]=id;else delete m.items[dressSlot];
+    if(!id){ if(slot)delete m.items[slot]; }
+    else if(m.items[slot]===id) delete m.items[slot];
+    else m.items[slot]=id;
     await save();renderDress();
   });
 }
@@ -1033,7 +1171,34 @@ function drawItems(){
 function openOv(){$('#ov').classList.add('on');}
 function closeOv(){$('#ov').classList.remove('on');}
 $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
-$('#meBtn').onclick=()=>{S.viewId=S.meId;go('home');};
+$('#meBtn').onclick=openProfileSheet;
+
+/* ---------- profile (이름 변경) ---------- */
+function openProfileSheet(){
+  const m=me();
+  $('#sheet').innerHTML=`
+    <h3>내 프로필</h3>
+    <div style="text-align:center;margin:-4px 0 12px">${avatarHTML(m)}</div>
+    <div class="field">
+      <label>이름</label>
+      <input id="pfName" maxlength="6" value="${esc2(m.name)}" autocomplete="off">
+      <div class="hint">모임 친구들에게 보이는 이름이에요.</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" id="pfHome">내 기록 보기</button>
+      <button class="btn" id="pfSave">이름 저장</button>
+    </div>`;
+  openOv();
+  $('#pfHome').onclick=()=>{closeOv();S.viewId=S.meId;go('home');};
+  $('#pfSave').onclick=async()=>{
+    const nm=$('#pfName').value.trim();
+    if(!nm){toast('이름을 입력해주세요');return;}
+    me().name=nm;await save();closeOv();
+    refreshHeader();
+    ({home:renderHome,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+    toast('이름을 변경했어요');
+  };
+}
 
 /* ---------- onboarding ---------- */
 let onbChar=null;
