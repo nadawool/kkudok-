@@ -253,6 +253,32 @@ input{font-family:inherit}
 .ownerbadge{font-size:10.5px;color:var(--honey-d);font-weight:800;margin-left:5px}
 .syncbtn{margin-left:auto;background:#F4EFE6;border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--soft);flex:none}
 </style>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCy7kxT5HU6lMGcJH9wMhopoDi30vOiSrE",
+    authDomain: "kkudok-4a4fd.firebaseapp.com",
+    projectId: "kkudok-4a4fd",
+    storageBucket: "kkudok-4a4fd.firebasestorage.app",
+    messagingSenderId: "678344637815",
+    appId: "1:678344637815:web:38cc20db0ff96f7e42f572",
+    measurementId: "G-GYLE3QP8NZ"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+  
+  
 </head>
 <body>
 <div class="app">
@@ -306,29 +332,64 @@ const fmt = iso => iso ? iso.slice(5).replace('-','.') : '';
 const daysBetween = (a,b)=>Math.round((D(b)-D(a))/86400000);
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1700);}
 
-/* ---------- storage layer ----------
-   Uses the artifact storage API when available; otherwise falls back to
-   localStorage so login/profile + records persist on real deployments. */
-(function(){
-  const has = (typeof window!=='undefined') && window.storage
-    && typeof window.storage.get==='function'
-    && typeof window.storage.set==='function';
-  if(has) return; // native artifact storage present
-  const PRE='kkudok::', sc=sh=>(sh?'S::':'P::');
-  const K=(key,sh)=>PRE+sc(sh)+key;
-  let mem=null;
-  function ls(){
-    if(mem) return mem;
-    try{ window.localStorage.setItem(PRE+'__t','1'); window.localStorage.removeItem(PRE+'__t'); return window.localStorage; }
-    catch(e){ mem={_d:{}, getItem(k){return k in this._d?this._d[k]:null;}, setItem(k,v){this._d[k]=String(v);}, removeItem(k){delete this._d[k];}, key(i){return Object.keys(this._d)[i];}, get length(){return Object.keys(this._d).length;} }; return mem; }
-  }
-  window.storage={
-    async get(key,sh){ const v=ls().getItem(K(key,sh)); return v==null?null:{key,value:v,shared:!!sh}; },
-    async set(key,value,sh){ ls().setItem(K(key,sh),value); return {key,value,shared:!!sh}; },
-    async delete(key,sh){ ls().removeItem(K(key,sh)); return {key,deleted:true,shared:!!sh}; },
-    async list(prefix,sh){ const s=ls(),base=PRE+sc(sh),want=base+(prefix||''),keys=[]; for(let i=0;i<s.length;i++){ const k=s.key(i); if(k&&k.indexOf(want)===0) keys.push(k.slice(base.length)); } return {keys,prefix:prefix||'',shared:!!sh}; }
-  };
-})();
+
++/* ---------- storage layer (Firestore 공용 DB) ----------
++   member:<id> (shared) -> rooms/{roomId}/participants/<id>
++   owner       (shared) -> rooms/{roomId} 문서의 leader 필드
++   myid        (personal) -> 이 기기/브라우저의 localStorage */
++(function(){
++  const params=new URLSearchParams(location.search);
++  const roomId=(params.get('room')||'main').trim()||'main';
++  window._kkRoom=roomId;
++
++  // claude.ai 아티팩트 미리보기처럼 네이티브 storage가 있으면 그대로 사용
++  const native=(typeof window!=='undefined') && window.storage
++    && typeof window.storage.get==='function'
++    && typeof window.storage.set==='function';
++  if(native){ window._fb=null; return; }
++
++  if(typeof firebase==='undefined' || !firebase.firestore){
++    console.error('Firebase가 로드되지 않았습니다. <head>의 설정을 확인하세요.');
++    return;
++  }
++  const db=firebase.firestore();
++  window._fb={db,roomId};
++  const roomRef=()=>db.collection('rooms').doc(roomId);
++  const partCol=()=>roomRef().collection('participants');
++  const partRef=id=>partCol().doc(id);
++  const myidKey='kkudok::myid::'+roomId;
++
++  window.storage={
++    async get(key){
++      if(key.indexOf('member:')===0){
++        const snap=await partRef(key.slice(7)).get();
++        return snap.exists?{key,value:JSON.stringify(snap.data())}:null;
++      }
++      if(key==='owner'){
++        const snap=await roomRef().get();
++        const leader=snap.exists?(snap.data().leader||null):null;
++        return leader?{key,value:leader}:null;
++      }
++      if(key==='myid'){ const v=localStorage.getItem(myidKey); return v?{key,value:v}:null; }
++      return null;
++    },
++    async set(key,value){
++      if(key.indexOf('member:')===0){ await partRef(key.slice(7)).set(JSON.parse(value)); return {key,value}; }
++      if(key==='owner'){ await roomRef().set({leader:value},{merge:true}); return {key,value}; }
++      if(key==='myid'){ localStorage.setItem(myidKey,value); return {key,value}; }
++      return {key,value};
++    },
++    async delete(key){
++      if(key.indexOf('member:')===0){ await partRef(key.slice(7)).delete(); }
++      else if(key==='myid'){ localStorage.removeItem(myidKey); }
++      return {key,deleted:true};
++    },
++    async list(prefix){
++      if(prefix==='member:'){ const qs=await partCol().get(); return {keys:qs.docs.map(d=>'member:'+d.id)}; }
++      return {keys:[]};
++    }
++  };
++})();
 
 /* head/body anchors are fractions of width(x) & height(y). avatar svg viewBox = 100 x VH */
 function vh(ck){return 100*CH[ck].h/CH[ck].w;}
@@ -603,12 +664,31 @@ async function save(){ // persists only the current user's own record
   try{if(S&&S.meId&&S.members[S.meId])await window.storage.set('member:'+S.meId,JSON.stringify(S.members[S.meId]),true);}catch(e){}
 }
 async function claimOwnerIfEmpty(id){
-  try{
-    let cur=null;
-    try{const r=await window.storage.get('owner',true);if(r&&r.value)cur=r.value;}catch(e){}
-    if(!cur){S.ownerId=id;try{await window.storage.set('owner',id,true);}catch(e){}}
-    else S.ownerId=cur;
-  }catch(e){}
++  if(window._fb){
++    // Firestore 트랜잭션: leader가 없을 때만 설정 → 방을 처음 만든 사람만 모임장
++    try{
++      const ref=window._fb.db.collection('rooms').doc(window._fb.roomId);
++      const leader=await window._fb.db.runTransaction(async tx=>{
++        const snap=await tx.get(ref);
++        const cur=snap.exists?(snap.data().leader||null):null;
++        if(cur)return cur;                    // 이미 모임장 있음 → member로 합류
++        tx.set(ref,{leader:id},{merge:true}); // 최초 1인 = leader
++        return id;
++      });
++      S.ownerId=leader;
++    }catch(e){
++      try{const r=await window.storage.get('owner',true);S.ownerId=(r&&r.value)||id;}catch(_){}
++    }
++    return;
++  }
++  // (비-Firestore 환경 폴백)
++  try{
++    let cur=null;
++    try{const r=await window.storage.get('owner',true);if(r&&r.value)cur=r.value;}catch(e){}
++    if(!cur){S.ownerId=id;try{await window.storage.set('owner',id,true);}catch(e){}}
++    else S.ownerId=cur;
++  }catch(e){}
+ }
 }
 async function loadClub(){
   let myId=null;
@@ -1223,10 +1303,33 @@ $('#onbStart').onclick=async()=>{
   $('#onb').classList.remove('on');boot();
 };
 
+
 /* ---------- boot ---------- */
+let _rtUnsub=null;
+
+function subscribeRealtime(){
+  if(!window._fb||_rtUnsub)return;
+  const {db,roomId}=window._fb;
+
+  // 오버레이가 열려 있을 때는 화면 갱신을 잠깐 미룸
+  const apply=()=>{ 
+    if(!$('#ov').classList.contains('on')) syncClub(); 
+  };
+
+  const u1=db.collection('rooms').doc(roomId).collection('participants')
+    .onSnapshot(()=>apply(), e=>console.warn('participants snapshot',e));
+
+  const u2=db.collection('rooms').doc(roomId)
+    .onSnapshot(()=>apply(), e=>console.warn('room snapshot',e));
+
+  _rtUnsub=()=>{u1();u2();};
+}
+
 function boot(){
   refreshHeader();renderTabs();go('home');
+  subscribeRealtime();
 }
+  
 (async function(){
   await loadClub();
   if(!S.meId||!S.members[S.meId])await migrateLegacy();
