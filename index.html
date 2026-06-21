@@ -323,63 +323,89 @@ const daysBetween = (a,b)=>Math.round((D(b)-D(a))/86400000);
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1700);}
 
 
-+/* ---------- storage layer (Firestore 공용 DB) ----------
-+   member:<id> (shared) -> rooms/{roomId}/participants/<id>
-+   owner       (shared) -> rooms/{roomId} 문서의 leader 필드
-+   myid        (personal) -> 이 기기/브라우저의 localStorage */
-+(function(){
-+  const params=new URLSearchParams(location.search);
-+  const roomId=(params.get('room')||'main').trim()||'main';
-+  window._kkRoom=roomId;
-+
-+  // claude.ai 아티팩트 미리보기처럼 네이티브 storage가 있으면 그대로 사용
-+  const native=(typeof window!=='undefined') && window.storage
-+    && typeof window.storage.get==='function'
-+    && typeof window.storage.set==='function';
-+  if(native){ window._fb=null; return; }
-+
-+  if(typeof firebase==='undefined' || !firebase.firestore){
-+    console.error('Firebase가 로드되지 않았습니다. <head>의 설정을 확인하세요.');
-+    return;
-+  }
-+  const db=firebase.firestore();
-+  window._fb={db,roomId};
-+  const roomRef=()=>db.collection('rooms').doc(roomId);
-+  const partCol=()=>roomRef().collection('participants');
-+  const partRef=id=>partCol().doc(id);
-+  const myidKey='kkudok::myid::'+roomId;
-+
-+  window.storage={
-+    async get(key){
-+      if(key.indexOf('member:')===0){
-+        const snap=await partRef(key.slice(7)).get();
-+        return snap.exists?{key,value:JSON.stringify(snap.data())}:null;
-+      }
-+      if(key==='owner'){
-+        const snap=await roomRef().get();
-+        const leader=snap.exists?(snap.data().leader||null):null;
-+        return leader?{key,value:leader}:null;
-+      }
-+      if(key==='myid'){ const v=localStorage.getItem(myidKey); return v?{key,value:v}:null; }
-+      return null;
-+    },
-+    async set(key,value){
-+      if(key.indexOf('member:')===0){ await partRef(key.slice(7)).set(JSON.parse(value)); return {key,value}; }
-+      if(key==='owner'){ await roomRef().set({leader:value},{merge:true}); return {key,value}; }
-+      if(key==='myid'){ localStorage.setItem(myidKey,value); return {key,value}; }
-+      return {key,value};
-+    },
-+    async delete(key){
-+      if(key.indexOf('member:')===0){ await partRef(key.slice(7)).delete(); }
-+      else if(key==='myid'){ localStorage.removeItem(myidKey); }
-+      return {key,deleted:true};
-+    },
-+    async list(prefix){
-+      if(prefix==='member:'){ const qs=await partCol().get(); return {keys:qs.docs.map(d=>'member:'+d.id)}; }
-+      return {keys:[]};
-+    }
-+  };
-+})();
+/* ---------- storage layer (Firestore 공용 DB) ----------
+   member:<id> (shared) -> rooms/{roomId}/participants/<id>
+   owner       (shared) -> rooms/{roomId} 문서의 leader 필드
+   myid        (personal) -> 이 기기/브라우저의 localStorage */
+(function(){
+  const params=new URLSearchParams(location.search);
+  const roomId=(params.get('room')||'main').trim()||'main';
+  window._kkRoom=roomId;
+
+  // claude.ai 아티팩트 미리보기처럼 네이티브 storage가 있으면 그대로 사용
+  const native=(typeof window!=='undefined') && window.storage
+    && typeof window.storage.get==='function'
+    && typeof window.storage.set==='function';
+  if(native){ window._fb=null; return; }
+
+  if(typeof firebase==='undefined' || !firebase.firestore){
+    console.error('Firebase가 로드되지 않았습니다. <head>의 설정을 확인하세요.');
+    return;
+  }
+  const db=firebase.firestore();
+  window._fb={db,roomId};
+  const roomRef=()=>db.collection('rooms').doc(roomId);
+  const partCol=()=>roomRef().collection('participants');
+  const partRef=id=>partCol().doc(id);
+  const myidKey='kkudok::myid::'+roomId;
+
+  window.storage={
+    async get(key){
+      if(key.indexOf('member:')===0){
+        const snap=await partRef(key.slice(7)).get();
+        return snap.exists?{key,value:JSON.stringify(snap.data())}:null;
+      }
+      if(key==='owner'){
+        const snap=await roomRef().get();
+        const leader=snap.exists?(snap.data().leader||null):null;
+        return leader?{key,value:leader}:null;
+      }
+      if(key==='myid'){
+        const v=localStorage.getItem(myidKey);
+        return v?{key,value:v}:null;
+      }
+      return null;
+    },
+
+    async set(key,value){
+      if(key.indexOf('member:')===0){
+        await partRef(key.slice(7)).set(JSON.parse(value));
+        return {key,value};
+      }
+
+      if(key==='owner'){
+        await roomRef().set({leader:value},{merge:true});
+        return {key,value};
+      }
+
+      if(key==='myid'){
+        localStorage.setItem(myidKey,value);
+        return {key,value};
+      }
+
+      return {key,value};
+    },
+
+    async delete(key){
+      if(key.indexOf('member:')===0){
+        await partRef(key.slice(7)).delete();
+      }else if(key==='myid'){
+        localStorage.removeItem(myidKey);
+      }
+      return {key,deleted:true};
+    },
+
+    async list(prefix){
+      if(prefix==='member:'){
+        const qs=await partCol().get();
+        return {
+          keys:qs.docs.map(d=>'member:'+d.id)
+        };
+      }
+      return {keys:[]};
+    }
+  };
+})();
 
 /* head/body anchors are fractions of width(x) & height(y). avatar svg viewBox = 100 x VH */
 function vh(ck){return 100*CH[ck].h/CH[ck].w;}
@@ -654,30 +680,30 @@ async function save(){ // persists only the current user's own record
   try{if(S&&S.meId&&S.members[S.meId])await window.storage.set('member:'+S.meId,JSON.stringify(S.members[S.meId]),true);}catch(e){}
 }
 async function claimOwnerIfEmpty(id){
-+  if(window._fb){
-+    // Firestore 트랜잭션: leader가 없을 때만 설정 → 방을 처음 만든 사람만 모임장
-+    try{
-+      const ref=window._fb.db.collection('rooms').doc(window._fb.roomId);
-+      const leader=await window._fb.db.runTransaction(async tx=>{
-+        const snap=await tx.get(ref);
-+        const cur=snap.exists?(snap.data().leader||null):null;
-+        if(cur)return cur;                    // 이미 모임장 있음 → member로 합류
-+        tx.set(ref,{leader:id},{merge:true}); // 최초 1인 = leader
-+        return id;
-+      });
-+      S.ownerId=leader;
-+    }catch(e){
-+      try{const r=await window.storage.get('owner',true);S.ownerId=(r&&r.value)||id;}catch(_){}
-+    }
-+    return;
-+  }
-+  // (비-Firestore 환경 폴백)
-+  try{
-+    let cur=null;
-+    try{const r=await window.storage.get('owner',true);if(r&&r.value)cur=r.value;}catch(e){}
-+    if(!cur){S.ownerId=id;try{await window.storage.set('owner',id,true);}catch(e){}}
-+    else S.ownerId=cur;
-+  }catch(e){}
+if(window._fb){
+  // Firestore 트랜잭션: leader가 없을 때만 설정 → 방을 처음 만든 사람만 모임장
+  try{
+    const ref=window._fb.db.collection('rooms').doc(window._fb.roomId);
+    const leader=await window._fb.db.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const cur=snap.exists?(snap.data().leader||null):null;
+      if(cur)return cur;                    // 이미 모임장 있음 → member로 합류
+      tx.set(ref,{leader:id},{merge:true}); // 최초 1인 = leader
+      return id;
+    });
+    S.ownerId=leader;
+  }catch(e){
+    try{const r=await window.storage.get('owner',true);S.ownerId=(r&&r.value)||id;}catch(_){}
+  }
+  return;
+}
+// (비-Firestore 환경 폴백)
+try{
+  let cur=null;
+  try{const r=await window.storage.get('owner',true);if(r&&r.value)cur=r.value;}catch(e){}
+  if(!cur){S.ownerId=id;try{await window.storage.set('owner',id,true);}catch(e){}}
+  else S.ownerId=cur;
+}catch(e){}
 }
 async function loadClub(){
   let myId=null;
