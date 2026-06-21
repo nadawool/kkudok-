@@ -678,7 +678,6 @@ async function claimOwnerIfEmpty(id){
 +    if(!cur){S.ownerId=id;try{await window.storage.set('owner',id,true);}catch(e){}}
 +    else S.ownerId=cur;
 +  }catch(e){}
- }
 }
 async function loadClub(){
   let myId=null;
