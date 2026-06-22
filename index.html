@@ -58,7 +58,7 @@ input{font-family:inherit}
 .gsub{font-size:12px;color:var(--soft);margin:0 8px}
 /* ---- 가로형 프로필 카드 ---- */
 .pcard{display:flex;align-items:center;gap:15px;padding:18px 16px}
-.pc-av{flex:none;width:112px;height:112px;border-radius:50%;background:#FBF8F2;border:1px solid var(--line);overflow:hidden;position:relative}
+.pc-av{flex:none;width:112px;height:112px;border-radius:50%;border:1px solid var(--line);overflow:hidden;position:relative}
 .pc-av .avatar{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:120px;max-width:none;margin:0}
 .pc-body{flex:1;min-width:0}
 .pc-name{font-weight:900;font-size:22px;line-height:1.1;margin-bottom:9px}
@@ -859,8 +859,8 @@ function renderCheckin(){
     <button class="cibtn ${readToday?'done':''}" id="ciSave">${readToday?'🍎 오늘 출석 완료':'🍎 저장하고 출석체크'}</button>
     <div class="cistat ${readToday?'ok':''}">${readToday?'오늘 출석했어요 · 페이지를 갱신할 수 있어요':'📌 오늘 아직 출석 전이에요'}</div>
   </div>`:''}
-  <div class="card pcard" style="background:${m.bg||'var(--card)'};margin-top:14px">
-    <div class="pc-av">${avatarHTML(m)}</div>
+  <div class="card pcard" style="margin-top:14px">
+    <div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div>
     <div class="pc-body">
       <div class="pc-name">${m.name}</div>
       <div class="pc-meta">
