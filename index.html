@@ -216,7 +216,7 @@ input{font-family:inherit}
 .onb .logo img{width:78px}
 .onb h1{font-size:24px;font-weight:900;text-align:center;margin:6px 0 2px}
 .onb p.sub{text-align:center;color:var(--soft);font-size:13.5px;margin:0 0 22px}
-.charpick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 6px}
+.charpick{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:8px 0 6px}
 .cp{border:2px solid var(--line);border-radius:18px;background:#fff;padding:6px 4px 4px;text-align:center;cursor:pointer}
 .cp.on{border-color:var(--honey);background:#FFF8F0}
 .cp .av{aspect-ratio:1;background-size:contain;background-repeat:no-repeat;background-position:center}
@@ -331,11 +331,6 @@ input{font-family:inherit}
     </div>
     <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:6px 4px 2px">캐릭터 고르기</label>
     <div class="charpick" id="charpick"></div>
-    <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:12px 4px 2px">성별</label>
-    <div class="gpick" id="genpick">
-      <div class="gp" data-g="f">여자</div>
-      <div class="gp" data-g="m">남자</div>
-    </div>
     <button class="btn" id="onbStart" style="margin-top:18px" disabled>시작하기</button>
   </div>
 </div>
@@ -592,77 +587,10 @@ function garment(opts){return ctx=>{const B=ctx.B,c=opts.c,cx=B.x+B.w/2,top=B.y,
 /* ---------- catalog ---------- */
 let _id=0; const nid=()=>'i'+(++_id);
 function I(name,slot,draw,age){return {id:nid(),name,slot,draw,age:age||0};}
-const CATALOG=[
-  // hats (slot 'hat')
-  I('빨강 비니','hat',hat_beanie('#E24B4A','#c33d3c')),
-  I('노랑 비니','hat',hat_beanie('#F2C14E','#e0ad36')),
-  I('하늘 비니','hat',hat_beanie('#6FB3D6','#5a9cc0')),
-  I('야구 모자','hat',hat_cap('#3E7CB1')),
-  I('빨강 캡','hat',hat_cap('#E24B4A')),
-  I('밀짚 모자','hat',hat_straw()),
-  I('새싹','hat',hat_leaf()),
-  I('꽃 화관','hat',hat_flower(),1),
-  I('별 머리띠','hat',hat_band(true)),
-  I('리본 머리띠','hat',hat_band(false)),
-  I('토끼 머리띠','hat',hat_bunny(),1),
-  I('헤드폰','hat',hat_headphones()),
-  I('파티 모자','hat',hat_party('#E98FB0')),
-  I('도깨비 뿔','hat',hat_horns(),2),
-  I('천사 고리','hat',hat_halo(),2),
-  I('마법사 모자','hat',hat_wizard('#6B4FA0'),2),
-  I('산타 모자','hat',hat_santa(),1),
-  I('실크 모자','hat',hat_top(),3),
-  I('왕관','hat',hat_crown(),3),
-  // eyewear (slot 'eye')
-  I('동그란 안경','eye',eye_glasses('round',STK)),
-  I('네모 안경','eye',eye_glasses('square',STK)),
-  I('선글라스','eye',eye_glasses('round','#2b2b2b','#3a3a3a')),
-  I('하트 선글','eye',eye_glasses('heart','#E24B4A','#F4A8B8'),1),
-  I('별 선글','eye',eye_glasses('star','#E0A11A','#F6C544'),2),
-  I('스키 고글','eye',eye_goggles(),1),
-  I('모노클','eye',eye_monocle(),2),
-  // neck (slot 'neck')
-  I('빨강 리본','neck',neck_bow('#E24B4A')),
-  I('핑크 리본','neck',neck_bow('#E98FB0')),
-  I('나비 넥타이','neck',neck_bowtie('#3E7CB1')),
-  I('목도리','neck',neck_scarf('#C0504D')),
-  I('진주 목걸이','neck',neck_pearl(),1),
-  I('금메달','neck',neck_medal(),2),
-  // face (slot 'face')
-  I('볼터치','face',face_blush()),
-  I('주근깨','face',face_freckle()),
-  I('점','face',face_mole()),
-  I('콧수염','face',face_mustache(),1),
-  // hand (slot 'hand')
-  I('풍선','hand',hand_balloon('#E24B4A')),
-  I('책','hand',hand_book('#5FA17E')),
-  I('커피','hand',hand_coffee(),1),
-  // clothes (slot 'cloth')
-  I('흰 티','cloth',garment({id:nid(),c:'#FFFFFF'})),
-  I('검정 티','cloth',garment({id:nid(),c:'#3A3A3A'})),
-  I('빨강 티','cloth',garment({id:nid(),c:'#E24B4A'})),
-  I('파랑 티','cloth',garment({id:nid(),c:'#3E7CB1'})),
-  I('노랑 티','cloth',garment({id:nid(),c:'#F2C14E'})),
-  I('민트 티','cloth',garment({id:nid(),c:'#7FC8A9'})),
-  I('줄무늬 티','cloth',garment({id:nid(),c:'#FFFFFF',stripes:'#3E7CB1'})),
-  I('보라 줄무늬','cloth',garment({id:nid(),c:'#FBEFFB',stripes:'#9B6BB0'})),
-  I('초록 후드','cloth',garment({id:nid(),c:'#5FA17E',hood:1,zip:'#3c6b53'})),
-  I('회색 후드','cloth',garment({id:nid(),c:'#9AA0A6',hood:1,zip:'#5f656b'})),
-  I('분홍 원피스','cloth',garment({id:nid(),c:'#F4A6C0',flare:1,collar:1}),1),
-  I('노랑 원피스','cloth',garment({id:nid(),c:'#F6C95A',flare:1,collar:1}),1),
-  I('멜빵바지','cloth',garment({id:nid(),c:'#3E6FA0',straps:'#2f568a'})),
-  I('체크 셔츠','cloth',garment({id:nid(),c:'#C0504D',check:'#8f3a38'})),
-  I('스웨터','cloth',garment({id:nid(),c:'#D98C5F',knit:1})),
-  I('카디건','cloth',garment({id:nid(),c:'#E9D9B8',buttons:'#b89b6a'})),
-  I('정장','cloth',garment({id:nid(),c:'#2C3038',collar:1,tie:'#E24B4A'}),2),
-  I('한복','cloth',garment({id:nid(),c:'#E98FB0',collar:1,tie:'#7FB98B'}),2),
-  I('우주복','cloth',garment({id:nid(),c:'#DCE3EA',helmet:1,buttons:'#9AB0C0'}),3),
-  I('망토','cloth',garment({id:nid(),c:'#7A3B8F',cape:1}),3),
-  I('레인코트','cloth',garment({id:nid(),c:'#F2C14E',buttons:'#d9a82f',hood:1,hoodc:'#e6b53d'})),
-];
+const CATALOG=[]; // 아이템 전부 비움 — 추후 PNG 아이템으로 재구성 예정
 const SLOTS=[['hat','모자'],['eye','안경'],['neck','목/리본'],['face','얼굴'],['hand','손'],['cloth','옷']];
 /* dress tab simplified to 3 categories */
-const DCATS=[['bg','배경 색상'],['cloth','의상'],['acc','악세사리']];
+const DCATS=[['bg','배경 색상']]; // 의상·악세사리는 추후 PNG 아이템으로 재구성
 const ACC_SLOTS=['hat','eye','neck','face','hand'];
 const BGCOLORS=[
   {hex:'',name:'기본'},
@@ -749,7 +677,7 @@ async function loadClub(){
     const idx=await window.storage.list('member:',true);
     const keys=(idx&&idx.keys)||[];
     const results=await Promise.all(keys.map(k=>window.storage.get(k,true).catch(()=>null)));
-    results.forEach(r=>{if(r&&r.value){try{const mm=JSON.parse(r.value);members[mm.id]=mm;}catch(e){}}});
+    results.forEach(r=>{if(r&&r.value){try{const mm=JSON.parse(r.value);if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0];members[mm.id]=mm;}catch(e){}}});
   }catch(e){}
   S={members,meId:myId,viewId:myId,ownerId};
 }
@@ -1239,17 +1167,18 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='acc';
+let dressSlot='bg';
 function renderDress(){
   refreshHeader();
   const m=me(),a=age(m);
   $('#s-dress').innerHTML=`
   <div class="card hero" style="padding-bottom:10px;background:${m.bg||'var(--card)'}">
     ${avatarHTML(m)}
-    <div class="agebadge" style="margin-top:8px">${a}살 · 잠금 해제 아이템이 늘어나요</div>
+    <div class="agebadge" style="margin-top:8px">${a}살 · 배경을 골라 꾸며보세요</div>
   </div>
   <div class="dcat" id="dcat">${DCATS.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
-  <div class="items" id="items"></div>`;
+  <div class="items" id="items"></div>
+  <div style="text-align:center;color:var(--soft);font-size:12.5px;margin:18px 4px 6px;line-height:1.6">👕 의상·악세사리 아이템은<br>곧 추가될 예정이에요!</div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   drawItems();
 }
@@ -1334,7 +1263,6 @@ function openProfileSheet(){
 
 /* ---------- onboarding ---------- */
 let onbChar=null;
-let onbGender=null;
 function renderCharpick(){
   $('#charpick').innerHTML=CHKEYS.map(k=>`
     <div class="cp ${k===onbChar?'on':''}" data-k="${k}">
@@ -1342,20 +1270,13 @@ function renderCharpick(){
       <span>${CH[k].label}</span></div>`).join('');
   $('#charpick').querySelectorAll('.cp').forEach(c=>c.onclick=()=>{onbChar=c.dataset.k;renderCharpick();checkOnb();});
 }
-function renderGenpick(){
-  const el=$('#genpick');if(!el)return;
-  el.querySelectorAll('.gp').forEach(g=>{
-    g.classList.toggle('on',g.dataset.g===onbGender);
-    g.onclick=()=>{onbGender=g.dataset.g;renderGenpick();checkOnb();};
-  });
-}
-function checkOnb(){$('#onbStart').disabled=!($('#onbName').value.trim()&&onbChar&&onbGender);}
+function checkOnb(){$('#onbStart').disabled=!($('#onbName').value.trim()&&onbChar);}
 $('#onbName').oninput=checkOnb;
 $('#onbStart').onclick=async()=>{
   const name=$('#onbName').value.trim();
   const id=window._authUid||('m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
   if(!S)S={members:{},meId:null,viewId:null,ownerId:null};
-  S.members[id]={id,name,char:onbChar,gender:onbGender,createdAt:todayISO(),reads:[],books:[],items:{}};
+  S.members[id]={id,name,char:onbChar,gender:(onbChar==='woman'?'f':'m'),createdAt:todayISO(),reads:[],books:[],items:{}};
   S.meId=id;S.viewId=id;
   await saveMyId();
   await save();
@@ -1391,8 +1312,8 @@ function boot(){
 }
   
 function showOnboarding(){
-  onbChar=null;onbGender=null;
-  renderCharpick();renderGenpick();checkOnb();
+  onbChar=null;
+  renderCharpick();checkOnb();
   $('#onb').classList.add('on');
 }
 
