@@ -56,6 +56,17 @@ input{font-family:inherit}
 .gauge{height:9px;background:#F0EADF;border-radius:30px;margin:12px 8px 4px;overflow:hidden}
 .gauge i{display:block;height:100%;background:linear-gradient(90deg,var(--honey),#F7B36A);border-radius:30px;transition:width .5s}
 .gsub{font-size:12px;color:var(--soft);margin:0 8px}
+/* ---- 가로형 프로필 카드 ---- */
+.pcard{display:flex;align-items:center;gap:15px;padding:18px 16px}
+.pc-av{flex:none;width:112px;height:112px;border-radius:50%;background:#FBF8F2;border:1px solid var(--line);overflow:hidden;position:relative}
+.pc-av .avatar{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:120px;max-width:none;margin:0}
+.pc-body{flex:1;min-width:0}
+.pc-name{font-weight:900;font-size:22px;line-height:1.1;margin-bottom:9px}
+.pc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:13px}
+.pc-age{font-weight:800;font-size:14.5px;color:var(--ink);display:inline-flex;align-items:center;gap:5px}
+.nickbadge{display:inline-flex;align-items:center;background:var(--honey-s);color:var(--honey-d);font-weight:800;font-size:12.5px;padding:5px 12px;border-radius:30px}
+.pcard .gauge{margin:0 0 7px}
+.pcard .gsub{margin:0}
 /* ---- 출첵 탭: 읽고 있는 책 슬라이드 ---- */
 .ci-head{display:flex;align-items:baseline;justify-content:space-between;margin:2px 4px 10px}
 .ci-head b{font-size:17px;font-weight:900}
@@ -757,6 +768,10 @@ async function removeMember(id){
 function readDays(m){return new Set(m.reads).size;}
 function age(m){return Math.floor(readDays(m)/30);}
 function ageProg(m){return readDays(m)%30;}
+function nickname(age){
+  // TODO: 나이별 별명 추후 확정. 지금은 placeholder 한 개.
+  return '응애독서가';
+}
 function streak(m){const set=new Set(m.reads);let n=0,d=new Date();
   // allow streak to count if read today or yesterday
   if(!set.has(todayISO())){d.setDate(d.getDate()-1);if(!set.has(d.toISOString().slice(0,10)))return 0;}
@@ -807,6 +822,7 @@ function renderCheckin(){
   const m=me(),a=age(m),prog=ageProg(m),st=streak(m);
   const today=todayISO(),readToday=new Set(m.reads).has(today);
   if(calY==null){const n=new Date();calY=n.getFullYear();calM=n.getMonth();}
+  const others=Object.values(S.members).filter(x=>x.id!==S.meId);
   const reading=m.books.filter(b=>!b.end);
   if(!reading.find(b=>b.id===checkinBookId))checkinBookId=reading.length?reading[0].id:null;
   const sel=reading.find(b=>b.id===checkinBookId)||null;
@@ -843,12 +859,17 @@ function renderCheckin(){
     <button class="cibtn ${readToday?'done':''}" id="ciSave">${readToday?'🍎 오늘 출석 완료':'🍎 저장하고 출석체크'}</button>
     <div class="cistat ${readToday?'ok':''}">${readToday?'오늘 출석했어요 · 페이지를 갱신할 수 있어요':'📌 오늘 아직 출석 전이에요'}</div>
   </div>`:''}
-  <div class="card hero" style="background:${m.bg||'var(--card)'};margin-top:14px">
-    ${avatarHTML(m)}
-    <div class="nm">${m.name}</div>
-    <div class="agebadge">🎂 ${a}살 · 독서 ${readDays(m)}일</div>
-    <div class="gauge"><i style="width:${(prog/30*100).toFixed(0)}%"></i></div>
-    <div class="gsub">다음 생일까지 ${30-prog}일 더 읽으면 돼요</div>
+  <div class="card pcard" style="background:${m.bg||'var(--card)'};margin-top:14px">
+    <div class="pc-av">${avatarHTML(m)}</div>
+    <div class="pc-body">
+      <div class="pc-name">${m.name}</div>
+      <div class="pc-meta">
+        <span class="pc-age">🎂 ${a}살 · 독서 ${readDays(m)}일</span>
+        <span class="nickbadge">${nickname(a)}</span>
+      </div>
+      <div class="gauge"><i style="width:${(prog/30*100).toFixed(0)}%"></i></div>
+      <div class="gsub">다음 생일까지 ${30-prog}일 더 읽으면 돼요</div>
+    </div>
   </div>
   <div class="card">
     <div class="streak">
@@ -861,7 +882,10 @@ function renderCheckin(){
     <div class="dow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
     <div class="grid" id="grid"></div>
     <div class="gsub" style="text-align:center;margin-top:10px">읽은 날에 사과 도장이 콕 찍혀요 · 날짜를 눌러 기록을 바꿀 수 있어요</div>
-  </div>`;
+  </div>
+  ${others.length?`
+  <div class="sec-t" style="margin-top:2px">🍎 모임 친구들 사과 출첵</div>
+  <div class="peer-cals" id="peerCals">${others.map(miniCalHTML).join('')}</div>`:''}`;
 
   $('#rbooks')&&$('#rbooks').querySelectorAll('.rbook[data-id]').forEach(el=>el.onclick=()=>{checkinBookId=el.dataset.id;renderCheckin();});
   $('#ciAdd')&&($('#ciAdd').onclick=()=>openBookSheet(null));
@@ -907,7 +931,7 @@ function drawCal(){
   $('#grid').innerHTML=h;
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
   $('#peerCals')&&($('#peerCals').innerHTML=Object.values(S.members).filter(x=>x.id!==S.meId).map(miniCalHTML).join(''));
-  $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-cal').forEach(el=>el.onclick=()=>{S.viewId=el.dataset.id;go('home');});
+  $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-cal').forEach(el=>el.onclick=()=>{S.viewId=el.dataset.id;go('shelf');});
 }
 async function toggleRead(iso){
   const m=me(),i=m.reads.indexOf(iso);
