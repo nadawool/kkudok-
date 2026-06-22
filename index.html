@@ -765,7 +765,7 @@ async function removeMember(id){
 }
 
 /* derived */
-function readDays(m){return new Set(m.reads).size;}
+function readDays(m){const t=todayISO();return new Set(m.reads.filter(x=>x<=t)).size;}
 function age(m){return Math.floor(readDays(m)/30);}
 function ageProg(m){return readDays(m)%30;}
 function nickname(age){
@@ -909,11 +909,11 @@ function renderCheckin(){
 }
 function renderHome(){ $('#s-home').innerHTML=_ph('🏠','홈','홈 화면을 새로 준비하고 있어요.'); }
 function miniCalHTML(m){
-  const set=new Set(m.reads),first=new Date(calY,calM,1).getDay(),dim=new Date(calY,calM+1,0).getDate();
+  const set=new Set(m.reads),today=todayISO(),first=new Date(calY,calM,1).getDay(),dim=new Date(calY,calM+1,0).getDate();
   let dots='',cnt=0;
   for(let i=0;i<first;i++)dots+='<i class="pad"></i>';
   for(let d=1;d<=dim;d++){
-    const iso=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,r=set.has(iso);
+    const iso=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,r=set.has(iso)&&iso<=today;
     if(r)cnt++;dots+=`<i class="${r?'on':''}"></i>`;
   }
   return `<div class="peer-cal" data-id="${m.id}">
@@ -926,7 +926,7 @@ function drawCal(){
   $('.cal-h span').textContent=`${calY}년 ${calM+1}월`;
   let h='';for(let i=0;i<first;i++)h+='<div class="cell pad"></div>';
   for(let d=1;d<=dim;d++){const iso=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const r=set.has(iso),t=iso===today,tap=isMe()&&D(iso)<=D(today);
+    const r=set.has(iso)&&iso<=today,t=iso===today,tap=isMe()&&D(iso)<=D(today);
     h+=`<div class="cell ${r?'read':''} ${t?'today':''} ${tap?'tap':''}" data-d="${iso}"><span>${d}</span></div>`;}
   $('#grid').innerHTML=h;
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
@@ -1122,9 +1122,7 @@ async function saveBook(){
   const pages=parseInt($('#bPages').value,10)||0;
   if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end,cover:_cover,pages});}
   else m.books.push({id:'b'+Date.now(),title,author,start,end,cover:_cover,pages,cur:0});
-  // mark read on start & end dates
-  if(start&&!m.reads.includes(start))m.reads.push(start);
-  if(end&&!m.reads.includes(end))m.reads.push(end);
+  // (변경) 책 시작일/완독일은 더 이상 자동 출첵하지 않음 — 사과는 '저장하고 출석체크'로만 찍힘
   await save();closeOv();toast(end?'완독 책이 책장에 꽂혔어요 📚':'기록했어요');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
