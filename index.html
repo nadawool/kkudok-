@@ -1143,6 +1143,11 @@ function renderBtype(){
   const pf=$('#pagesField');if(pf)pf.style.display=(_bookType==='ebook')?'none':'';
 }
 function esc2(s){return (s||'').replace(/"/g,'&quot;');}
+// 앞표지 URL 정리: http→https, edge=curl(접힌 모서리 효과) 제거
+function _coverUrl(v){
+  let u=(v&&v.imageLinks&&(v.imageLinks.thumbnail||v.imageLinks.smallThumbnail))||'';
+  return u.replace('http://','https://').replace(/&edge=curl/,'');
+}
 // 제목 우선 정렬용 점수: 제목이 검색어로 시작 > 제목 포함 > 저자 포함 > 본문에만(0=제외)
 function _scoreBook(v,q){
   const t=(v.title||'').toLowerCase(), a=((v.authors||[]).join(' ')).toLowerCase(), qq=q.toLowerCase();
@@ -1179,7 +1184,7 @@ async function searchBooks(q){
                .map(x=>x.it).slice(0,8);
     if(!items.length){box.innerHTML=`<div class="sr-state">제목에 '${esc(q)}'가 들어간 책을 못 찾았어요. 직접 입력해 기록해도 돼요.</div>`;return;}
     box.innerHTML=items.map((it,i)=>{
-      const v=it.volumeInfo||{},img=(v.imageLinks&&(v.imageLinks.thumbnail||v.imageLinks.smallThumbnail)||'').replace('http://','https://');
+      const v=it.volumeInfo||{},img=_coverUrl(v);
       const au=(v.authors||[]).join(', ');
       return `<div class="sr" data-i="${i}">
         ${img?`<img src="${img}">`:'<div class="ph"></div>'}
@@ -1190,7 +1195,7 @@ async function searchBooks(q){
       $('#bTitle').value=v.title||'';
       $('#bAuthor').value=(v.authors||[]).join(', ');
       if(v.pageCount&&$('#bPages'))$('#bPages').value=v.pageCount;
-      _cover=((v.imageLinks&&(v.imageLinks.thumbnail||v.imageLinks.smallThumbnail))||'').replace('http://','https://');
+      _cover=_coverUrl(v);
       box.style.display='none';
     });
   }catch(e){
