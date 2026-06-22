@@ -31,6 +31,11 @@ input{font-family:inherit}
   border-radius:30px;padding:4px 10px 4px 4px;box-shadow:var(--shadow)}
 .hd .me .av{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;display:grid;place-items:center}
 .hd .me .av img{width:30px;height:30px;object-fit:contain;margin-top:4px}
+.hd .me .av .tinyav{width:30px;height:30px;margin-top:3px}
+.hd .me .av .tinyav img{width:100%;height:100%;margin-top:0}
+.peer-cal{position:relative}
+.peer-del{position:absolute;top:6px;right:6px;width:19px;height:19px;border:none;border-radius:50%;background:#F0EADF;color:var(--soft);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;z-index:2}
+.peer-del:active{background:#E5DCCB}
 .hd .me b{font-size:13px}
 /* viewing banner */
 .viewbar{display:none;align-items:center;gap:8px;margin:0 14px 6px;padding:9px 12px;border-radius:14px;
@@ -71,7 +76,7 @@ input{font-family:inherit}
 .ci-head{display:flex;align-items:baseline;justify-content:space-between;margin:2px 4px 10px}
 .ci-head b{font-size:17px;font-weight:900}
 .ci-head small{font-size:11.5px;color:var(--soft)}
-.rbooks{display:flex;gap:11px;overflow-x:auto;padding:2px 4px 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.rbooks{display:flex;gap:11px;overflow-x:auto;padding:12px 4px 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .rbooks::-webkit-scrollbar{display:none}
 .rbook{flex:0 0 128px;background:#fff;border:2px solid var(--line);border-radius:18px;padding:10px;cursor:pointer;position:relative;transition:border-color .15s,box-shadow .15s}
 .rbook.on{border-color:var(--honey);box-shadow:0 6px 18px rgba(242,153,74,.22)}
@@ -807,7 +812,8 @@ function go(t){
 }
 function refreshHeader(){
   const m=me();$('#meNm').textContent=m.name;
-  $('#meAv').innerHTML=`<img src="${CH[m.char].img}">`;
+  $('#meAv').innerHTML=avatarTiny(m);
+  $('#meAv').style.background=m.bg||'var(--honey-s)';
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
   else vb.classList.remove('on');
@@ -917,9 +923,18 @@ function miniCalHTML(m){
     if(r)cnt++;dots+=`<i class="${r?'on':''}"></i>`;
   }
   return `<div class="peer-cal" data-id="${m.id}">
+    ${(S.meId===S.ownerId&&m.id!==S.ownerId)?`<button class="peer-del" data-del="${m.id}" title="멤버 삭제">×</button>`:''}
     <div class="ph"><div class="av">${avatarTiny(m)}</div><b>${m.name}</b><span class="cnt">${cnt}일</span></div>
     <div class="peer-mini-grid">${dots}</div>
   </div>`;
+}
+async function removePeer(id){
+  const mm=S.members[id];
+  if(!confirm((mm?mm.name+'님을':'이 멤버를')+' 모임에서 삭제할까요?\n(그 멤버의 기록도 함께 사라져요)'))return;
+  try{await window.storage.delete('member:'+id,true);}catch(e){}
+  delete S.members[id];
+  renderCheckin();
+  toast('멤버를 삭제했어요');
 }
 function drawCal(){
   const m=view(),set=new Set(m.reads),first=new Date(calY,calM,1).getDay(),dim=new Date(calY,calM+1,0).getDate(),today=todayISO();
@@ -932,6 +947,7 @@ function drawCal(){
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
   $('#peerCals')&&($('#peerCals').innerHTML=Object.values(S.members).filter(x=>x.id!==S.meId).map(miniCalHTML).join(''));
   $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-cal').forEach(el=>el.onclick=()=>{S.viewId=el.dataset.id;go('shelf');});
+  $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-del').forEach(b=>b.onclick=(e)=>{e.stopPropagation();removePeer(b.dataset.del);});
 }
 async function toggleRead(iso){
   const m=me(),i=m.reads.indexOf(iso);
@@ -1361,7 +1377,7 @@ function openProfileSheet(){
   const m=me();
   $('#sheet').innerHTML=`
     <h3>내 프로필</h3>
-    <div style="text-align:center;margin:-4px 0 12px">${avatarHTML(m)}</div>
+    <div style="display:flex;justify-content:center;margin:-2px 0 14px"><div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div></div>
     <div class="field">
       <label>이름</label>
       <input id="pfName" maxlength="6" value="${esc2(m.name)}" autocomplete="off">
