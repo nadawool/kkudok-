@@ -1235,6 +1235,14 @@ $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
 $('#meBtn').onclick=openProfileSheet;
 
 /* ---------- profile (이름 변경) ---------- */
+function logout(){
+  if(!confirm('로그아웃 할까요?'))return;
+  closeOv();
+  (async()=>{
+    try{ if(window.firebase && firebase.auth) await firebase.auth().signOut(); }catch(e){console.warn('signout',e);}
+    showLogin(); // onAuthStateChanged도 처리하지만 폴백으로 직접 표시
+  })();
+}
 function openProfileSheet(){
   const m=me();
   $('#sheet').innerHTML=`
@@ -1248,9 +1256,11 @@ function openProfileSheet(){
     <div class="btnrow">
       <button class="btn ghost" id="pfHome">내 기록 보기</button>
       <button class="btn" id="pfSave">이름 저장</button>
-    </div>`;
+    </div>
+    <button class="btn ghost" id="pfLogout" style="margin-top:10px;color:#E24B4A">로그아웃</button>`;
   openOv();
   $('#pfHome').onclick=()=>{closeOv();S.viewId=S.meId;go('home');};
+  $('#pfLogout').onclick=logout;
   $('#pfSave').onclick=async()=>{
     const nm=$('#pfName').value.trim();
     if(!nm){toast('이름을 입력해주세요');return;}
