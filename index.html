@@ -220,6 +220,19 @@ input{font-family:inherit}
 .cp{border:2px solid var(--line);border-radius:18px;background:#fff;padding:6px 4px 4px;text-align:center;cursor:pointer}
 .cp.on{border-color:var(--honey);background:#FFF8F0}
 .cp .av{aspect-ratio:1;background-size:contain;background-repeat:no-repeat;background-position:center}
+.gpick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 6px}
+.gp{border:2px solid var(--line);border-radius:16px;background:#fff;padding:13px;text-align:center;cursor:pointer;font-weight:800;font-size:14px;color:var(--soft)}
+.gp.on{border-color:var(--honey);background:#FFF8F0;color:var(--ink)}
+.login{position:fixed;inset:0;background:var(--bg);z-index:70;display:none;flex-direction:column;overflow-y:auto}
+.login.on{display:flex}
+.login .inner{max-width:460px;margin:auto;width:100%;padding:34px 26px;text-align:center}
+.login .logo img{width:92px;margin-bottom:8px}
+.login h1{font-size:26px;font-weight:900;margin:6px 0 4px}
+.login p{color:var(--soft);font-size:14px;margin:0 0 30px;line-height:1.6}
+.gbtn{width:100%;max-width:330px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:14px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.gbtn:active{background:#F7F4EE}
+.gbtn svg{width:20px;height:20px;flex:none}
+.login .note{font-size:11.5px;color:var(--soft);margin-top:18px;line-height:1.6;max-width:330px;margin-left:auto;margin-right:auto}
 .cp span{font-size:11px;font-weight:700;color:var(--soft)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:104px;background:var(--ink);color:#fff;
   padding:11px 18px;border-radius:30px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50}
@@ -257,6 +270,7 @@ input{font-family:inherit}
 <!-- ===== Firebase (Firestore 공용 DB) ===== -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey: "AIzaSyCy7kxT5HU6lMGcJH9wMhopoDi30vOiSrE",
@@ -280,6 +294,8 @@ input{font-family:inherit}
   <div class="viewbar" id="viewbar"><span id="viewtxt"></span><button id="backMe">내 기록으로</button></div>
   <div class="scroll">
     <section class="screen" id="s-home"></section>
+    <section class="screen" id="s-checkin"></section>
+    <section class="screen" id="s-feed"></section>
     <section class="screen" id="s-shelf"></section>
     <section class="screen" id="s-club"></section>
     <section class="screen" id="s-stats"></section>
@@ -289,6 +305,19 @@ input{font-family:inherit}
 </div>
 
 <div class="ov" id="ov"><div class="sheet" id="sheet"></div></div>
+
+<div class="login" id="login">
+  <div class="inner">
+    <div class="logo"><img id="loginLogo" alt="꾸독"></div>
+    <h1>꾸독</h1>
+    <p>함께 꾸준히, 독서 모임<br>구글 계정으로 간편하게 시작해요</p>
+    <button class="gbtn" id="googleBtn">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.3 0-11.5-5.1-11.5-11.5S17.7 12.5 24 12.5c2.9 0 5.5 1.1 7.5 2.9l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5c10.7 0 19.5-7.7 19.5-19.5 0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12.5 24 12.5c2.9 0 5.5 1.1 7.5 2.9l5.7-5.7C33.6 6.5 29 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z"/><path fill="#4CAF50" d="M24 43.5c5.2 0 9.9-2 13.5-5.2l-6.2-5.3c-2 1.4-4.6 2.5-7.3 2.5-5.3 0-9.7-3.1-11.3-7.9l-6.5 5C9.5 39 16.2 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.2 5.3c-.4.4 6.8-4.9 6.8-14.8 0-1.3-.1-2.3-.4-3.5z"/></svg>
+      Google로 시작하기
+    </button>
+    <div class="note" id="loginNote">처음이면 다음 단계에서 이름·캐릭터를 정해요</div>
+  </div>
+</div>
 
 <div class="onb" id="onb">
   <div class="inner">
@@ -302,6 +331,11 @@ input{font-family:inherit}
     </div>
     <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:6px 4px 2px">캐릭터 고르기</label>
     <div class="charpick" id="charpick"></div>
+    <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:12px 4px 2px">성별</label>
+    <div class="gpick" id="genpick">
+      <div class="gp" data-g="f">여자</div>
+      <div class="gp" data-g="m">남자</div>
+    </div>
     <button class="btn" id="onbStart" style="margin-top:18px" disabled>시작하기</button>
   </div>
 </div>
@@ -738,11 +772,11 @@ async function migrateLegacy(){ // brings forward data saved by the old single-u
 async function syncClub(){ // re-fetch club data from shared storage (other members' updates)
   const wasTab=tab;
   await loadClub();
-  if(!S.meId||!S.members[S.meId]){onbChar=null;renderCharpick();$('#onb').classList.add('on');return;}
+  if(!S.meId||!S.members[S.meId]){showOnboarding();return;}
   refreshHeader();renderTabs();
   tab=wasTab;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('#s-'+tab).classList.add('on');renderTabs();
-  ({home:renderHome,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+  ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
 async function removeMember(id){
   if(id===S.ownerId){toast('모임장은 내보낼 수 없어요');return;}
@@ -772,11 +806,14 @@ function monthReadDays(m,y,mo){return m.reads.filter(r=>{const d=D(r);return d.g
 let tab='home';
 const TABMETA=[
   ['home','홈','M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10'],
+  ['checkin','출첵','M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
+  ['feed','피드','M4 6h16M4 12h16M4 18h10'],
   ['shelf','책장','M4 5h4v14H4zM10 5h4v14h-4zM16 6l3.5 1-3 13L16 6'],
-  ['club','모임','M9 11a3 3 0 100-6 3 3 0 000 6zm7 0a3 3 0 100-6 3 3 0 000 6zM3 20c0-3 3-5 6-5s6 2 6 5M15 20c0-2 1-3.5 3-4'],
-  ['stats','통계','M5 21V9M12 21V4M19 21v-7'],
   ['dress','꾸미기','M12 3l3 3 4-1 1 4-3 3 3 3-1 4-4-1-3 3-3-3-4 1-1-4 3-3-3-3 1-4 4 1z']
 ];
+function _ph(emo,t,desc){return `<div style="text-align:center;padding:78px 24px;color:var(--soft)"><div style="font-size:52px;margin-bottom:14px">${emo}</div><div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">${t}</div><div style="font-size:13.5px;line-height:1.65">${desc}<br>곧 만나요!</div></div>`;}
+function renderCheckin(){$('#s-checkin').innerHTML=_ph('🍎','출첵','출석 체크 화면을 새로 준비하고 있어요.');}
+function renderFeed(){$('#s-feed').innerHTML=_ph('📰','피드','모임 친구들의 소식 피드를 준비하고 있어요.');}
 function renderTabs(){
   $('#tabs').innerHTML=TABMETA.map(([k,l,d])=>
     `<button class="tab ${k===tab?'on':''}" data-tab="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>${l}</button>`).join('');
@@ -786,7 +823,7 @@ function go(t){
   if(t==='dress'&&!isMe()){toast('내 캐릭터만 꾸밀 수 있어요');return;}
   tab=t;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('#s-'+t).classList.add('on');renderTabs();
-  ({home:renderHome,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[t])();
+  ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[t])();
   $('.scroll').scrollTop=0;
 }
 function refreshHeader(){
@@ -1290,13 +1327,14 @@ function openProfileSheet(){
     if(!nm){toast('이름을 입력해주세요');return;}
     me().name=nm;await save();closeOv();
     refreshHeader();
-    ({home:renderHome,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+    ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
     toast('이름을 변경했어요');
   };
 }
 
 /* ---------- onboarding ---------- */
 let onbChar=null;
+let onbGender=null;
 function renderCharpick(){
   $('#charpick').innerHTML=CHKEYS.map(k=>`
     <div class="cp ${k===onbChar?'on':''}" data-k="${k}">
@@ -1304,13 +1342,20 @@ function renderCharpick(){
       <span>${CH[k].label}</span></div>`).join('');
   $('#charpick').querySelectorAll('.cp').forEach(c=>c.onclick=()=>{onbChar=c.dataset.k;renderCharpick();checkOnb();});
 }
-function checkOnb(){$('#onbStart').disabled=!($('#onbName').value.trim()&&onbChar);}
+function renderGenpick(){
+  const el=$('#genpick');if(!el)return;
+  el.querySelectorAll('.gp').forEach(g=>{
+    g.classList.toggle('on',g.dataset.g===onbGender);
+    g.onclick=()=>{onbGender=g.dataset.g;renderGenpick();checkOnb();};
+  });
+}
+function checkOnb(){$('#onbStart').disabled=!($('#onbName').value.trim()&&onbChar&&onbGender);}
 $('#onbName').oninput=checkOnb;
 $('#onbStart').onclick=async()=>{
   const name=$('#onbName').value.trim();
-  const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const id=window._authUid||('m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
   if(!S)S={members:{},meId:null,viewId:null,ownerId:null};
-  S.members[id]={id,name,char:onbChar,createdAt:todayISO(),reads:[],books:[],items:{}};
+  S.members[id]={id,name,char:onbChar,gender:onbGender,createdAt:todayISO(),reads:[],books:[],items:{}};
   S.meId=id;S.viewId=id;
   await saveMyId();
   await save();
@@ -1345,14 +1390,61 @@ function boot(){
   subscribeRealtime();
 }
   
-(async function(){
+function showOnboarding(){
+  onbChar=null;onbGender=null;
+  renderCharpick();renderGenpick();checkOnb();
+  $('#onb').classList.add('on');
+}
+
+/* ---------- auth (Google) ---------- */
+window._authUid=null;
+function showLogin(){
+  try{document.getElementById('loginLogo').src=ASSETS.logo;}catch(e){}
+  $('#login').classList.add('on');
+}
+async function startAppForUser(uid){
+  window._authUid=uid;
+  // 구글 계정(uid)을 회원 식별자로 사용 → 기기 바꿔도 같은 계정이면 동일 회원
+  try{localStorage.setItem('kkudok::myid::'+(window._kkRoom||'main'),uid);}catch(e){}
+
   await loadClub();
-  if(!S.meId||!S.members[S.meId])await migrateLegacy();
-  if(!S.meId||!S.members[S.meId]){
-    onbChar=null;renderCharpick();$('#onb').classList.add('on');
-    return;
+  $('#login').classList.remove('on');
+
+  if(S.meId===uid && S.members[uid]){ boot(); }   // 기존 회원 → 홈
+  else { showOnboarding(); }                       // 신규 → 온보딩
+}
+
+(function(){
+  const hasAuth=!!(window._fb && window.firebase && firebase.auth);
+  if(hasAuth){
+    showLogin();
+    const btn=document.getElementById('googleBtn');
+    if(btn) btn.onclick=async()=>{
+      const note=document.getElementById('loginNote');
+      try{
+        const p=new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(p);
+      }catch(e){
+        console.warn('google sign-in',e);
+        const code=e&&e.code;
+        if(code==='auth/operation-not-allowed'){ if(note)note.innerHTML='⚠️ Firebase 콘솔에서 Google 로그인을 먼저 켜주세요.'; }
+        else if(code==='auth/unauthorized-domain'){ if(note)note.innerHTML='⚠️ Firebase 승인된 도메인에 이 주소를 추가해주세요.'; }
+        else if(code&&code!=='auth/popup-closed-by-user'&&code!=='auth/cancelled-popup-request'){ if(note)note.innerHTML='로그인에 실패했어요. 잠시 후 다시 시도해주세요.'; }
+      }
+    };
+    firebase.auth().onAuthStateChanged(async user=>{
+      if(user){ try{await startAppForUser(user.uid);}catch(e){console.error(e);} }
+      else { showLogin(); }
+    });
+  } else {
+    // 비-Firebase(아티팩트 미리보기 등): 기존 흐름 유지
+    (async function(){
+      await loadClub();
+      if(!S.meId||!S.members[S.meId])await migrateLegacy();
+      if(!S.meId||!S.members[S.meId]){ showOnboarding();return; }
+      boot();
+    })();
   }
-  boot();
 })();
 </script>
 </body>
