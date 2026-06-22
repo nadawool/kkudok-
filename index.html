@@ -102,7 +102,7 @@ input{font-family:inherit}
 .pstep button{width:54px;height:54px;border-radius:50%;border:none;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.08);font-size:24px;color:var(--honey-d);cursor:pointer;flex:none;display:grid;place-items:center;user-select:none}
 .pstep button:active{background:#F7F1E8}
 .pstep .pin{display:flex;align-items:baseline;gap:2px;min-width:96px;justify-content:center}
-.pstep .pin input{width:80px;border:none;background:transparent;text-align:right;font-size:26px;font-weight:900;color:var(--ink);outline:none;font-family:inherit}
+.pstep .pin input{width:82px;border:none;background:transparent;text-align:right;font-size:26px;font-weight:900;color:var(--ink);outline:none;font-family:inherit}
 .pstep .pin span{font-size:17px;font-weight:800;color:var(--soft)}
 .cibtn{width:100%;border:none;border-radius:16px;background:linear-gradient(90deg,var(--honey),var(--honey-d));color:#fff;font-size:16px;font-weight:800;padding:16px;cursor:pointer;box-shadow:0 6px 18px rgba(242,153,74,.32)}
 .cibtn:active{filter:brightness(.96)}
@@ -813,7 +813,7 @@ function go(t){
 function refreshHeader(){
   const m=me();$('#meNm').textContent=m.name;
   $('#meAv').innerHTML=avatarTiny(m);
-  $('#meAv').style.background=m.bg||'var(--honey-s)';
+  $('#meAv').style.background=m.bg||'var(--card)';
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
   else vb.classList.remove('on');
@@ -1365,6 +1365,16 @@ $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
 $('#meBtn').onclick=openProfileSheet;
 
 /* ---------- profile (이름 변경) ---------- */
+async function claimOwner(){
+  if(S.ownerId&&S.members[S.ownerId]){toast('이미 모임장이 있어요');return;}
+  if(!confirm('이 모임의 모임장이 될까요?'))return;
+  const id=S.meId;
+  try{await window.storage.set('owner',id,true);}catch(e){console.warn('claim owner',e);}
+  S.ownerId=id;
+  closeOv();refreshHeader();
+  ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+  toast('모임장이 되었어요 👑');
+}
 function logout(){
   if(!confirm('로그아웃 할까요?'))return;
   closeOv();
@@ -1387,10 +1397,12 @@ function openProfileSheet(){
       <button class="btn ghost" id="pfHome">내 기록 보기</button>
       <button class="btn" id="pfSave">이름 저장</button>
     </div>
+    ${!(S.ownerId&&S.members[S.ownerId])?`<button class="btn" id="pfClaim" style="margin-top:10px;background:var(--honey-d)">👑 모임장 권한 가져오기</button>`:''}
     <button class="btn ghost" id="pfLogout" style="margin-top:10px;color:#E24B4A">로그아웃</button>`;
   openOv();
   $('#pfHome').onclick=()=>{closeOv();S.viewId=S.meId;go('home');};
   $('#pfLogout').onclick=logout;
+  $('#pfClaim')&&($('#pfClaim').onclick=claimOwner);
   $('#pfSave').onclick=async()=>{
     const nm=$('#pfName').value.trim();
     if(!nm){toast('이름을 입력해주세요');return;}
