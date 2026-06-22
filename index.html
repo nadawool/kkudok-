@@ -181,6 +181,7 @@ input{font-family:inherit}
 .tag{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px}
 .tag.read{background:var(--honey-s);color:var(--honey-d)}
 .tag.done{background:var(--moss-s);color:#3a7a59}
+.tag.ttag{background:#EEE9F4;color:#7A5EA8;margin-left:5px}
 .bl .dt{font-size:11px;color:var(--soft);margin-top:5px}
 .bl .acts{margin-left:auto;align-self:flex-start;display:flex;gap:4px}
 .bl .edit,.bl .del{color:#cabfae;font-size:17px;padding:2px 4px;line-height:1}
@@ -835,12 +836,13 @@ function renderCheckin(){
   const pages=sel?(sel.pages||0):0;
 
   const slider=reading.map(b=>{
-    const pg=b.pages||0,cur=b.cur||0,pct=pg?Math.min(100,Math.round(cur/pg*100)):0;
+    const pct=bookPct(b);
+    const prog=isEbook(b)?`${Math.round(b.cur||0)}%`:`${b.cur||0} / ${b.pages||'–'}p <span class="pc">${b.pages?pct+'%':''}</span>`;
     return `<div class="rbook ${b.id===checkinBookId?'on':''}" data-id="${b.id}">
       <div class="chk">✓</div>
       <div class="rc" style="${b.cover?`background-image:url(${b.cover})`:''}"></div>
       <div class="rt">${esc(b.title)}</div>
-      <div class="rp">${cur} / ${pg||'–'}p <span class="pc">${pg?pct+'%':''}</span></div>
+      <div class="rp">${prog}</div>
       <div class="rg"><i style="width:${pct}%"></i></div>
     </div>`;
   }).join('')+`<div class="rbook add" id="ciAdd"><div class="plus">+</div><span>책장에서<br>등록</span></div>`;
@@ -854,16 +856,16 @@ function renderCheckin(){
   <div class="card" style="margin-top:14px">
     <div class="ci-sel">
       <div class="cv" style="${sel.cover?`background-image:url(${sel.cover})`:''}"></div>
-      <div class="meta"><b>${esc(sel.title)}</b><small>${sel.cur||0} / ${sel.pages||'–'}p 까지 읽음</small></div>
+      <div class="meta"><b>${esc(sel.title)}</b><small>${isEbook(sel)?`${Math.round(sel.cur||0)}% 까지 읽음`:`${sel.cur||0} / ${sel.pages||'–'}p 까지 읽음`}</small></div>
     </div>
-    <div class="ci-lbl">오늘 읽어서 도달한 페이지</div>
+    <div class="ci-lbl">${isEbook(sel)?'오늘 읽어서 도달한 진도':'오늘 읽어서 도달한 페이지'}</div>
     <div class="pstep">
       <button id="pMinus">−</button>
-      <div class="pin"><input id="pInput" type="number" inputmode="numeric" value="${sel.cur||0}"><span>p</span></div>
+      <div class="pin"><input id="pInput" type="number" inputmode="numeric" value="${sel.cur||0}"><span>${isEbook(sel)?'%':'p'}</span></div>
       <button id="pPlus">+</button>
     </div>
     <button class="cibtn ${readToday?'done':''}" id="ciSave">${readToday?'🍎 오늘 출석 완료':'🍎 저장하고 출석체크'}</button>
-    <div class="cistat ${readToday?'ok':''}">${readToday?'오늘 출석했어요 · 페이지를 갱신할 수 있어요':'📌 오늘 아직 출석 전이에요'}</div>
+    <div class="cistat ${readToday?'ok':''}">${readToday?'오늘 출석했어요 · 진도를 갱신할 수 있어요':'📌 오늘 아직 출석 전이에요'}</div>
   </div>`:''}
   <div class="card pcard" style="margin-top:14px">
     <div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div>
@@ -897,17 +899,28 @@ function renderCheckin(){
   $('#ciAdd')&&($('#ciAdd').onclick=()=>openBookSheet(null));
   $('#ciAdd2')&&($('#ciAdd2').onclick=()=>openBookSheet(null));
   const pin=$('#pInput');
-  const clamp=v=>{v=parseInt(v,10);if(isNaN(v))v=0;if(v<0)v=0;if(pages&&v>pages)v=pages;return v;};
+  const ebook=isEbook(sel);
+  const maxv=ebook?100:(pages||0);
+  const step=ebook?5:1;
+  const clamp=v=>{v=parseInt(v,10);if(isNaN(v))v=0;if(v<0)v=0;if(maxv&&v>maxv)v=maxv;return v;};
   if(pin){
-    $('#pMinus').onclick=()=>{pin.value=clamp((+pin.value||0)-1);};
-    $('#pPlus').onclick=()=>{pin.value=clamp((+pin.value||0)+1);};
+    $('#pMinus').onclick=()=>{pin.value=clamp((+pin.value||0)-step);};
+    $('#pPlus').onclick=()=>{pin.value=clamp((+pin.value||0)+step);};
     pin.onblur=()=>{pin.value=clamp(pin.value);};
   }
   $('#ciSave')&&($('#ciSave').onclick=async()=>{
     const b=me().books.find(x=>x.id===checkinBookId);
-    if(b&&pin)b.cur=clamp(pin.value);
+    let justDone=false;
+    if(b&&pin){
+      b.cur=clamp(pin.value);
+      const complete=ebook?(b.cur>=100):(b.pages&&b.cur>=b.pages);
+      if(complete&&!b.end){b.end=todayISO();justDone=true;}
+    }
     const t=todayISO();if(!me().reads.includes(t))me().reads.push(t);
-    await save();renderCheckin();toast('출석 완료! 🍎');
+    await save();
+    if(justDone)checkinBookId=null; // 완독 → 읽는 책 목록에서 빠짐
+    renderCheckin();
+    toast(justDone?'완독했어요! 책장에 꽂혔어요 📚':'출석 완료! 🍎');
   });
   $('#pm').onclick=()=>{calM--;if(calM<0){calM=11;calY--;}drawCal();};
   $('#nm').onclick=()=>{calM++;if(calM>11){calM=0;calY++;}drawCal();};
@@ -956,7 +969,7 @@ async function toggleRead(iso){
 }
 
 /* ---------- SHELF ---------- */
-let shelfFilter='all', shelfYear='all';
+let shelfFilter='all', shelfYear='all', shelfType='all';
 function bookYear(b){ const iso=b.end||b.start; if(!iso)return null; return D(iso).getFullYear(); }
 function shelfYears(m){ const ys=new Set(); m.books.forEach(b=>{const y=bookYear(b);if(y)ys.add(y);}); return Array.from(ys).sort((a,b)=>b-a); }
 function renderShelf(){
@@ -976,6 +989,11 @@ function renderShelf(){
     <div class="chip ${shelfFilter==='reading'?'on':''}" data-f="reading">읽는 중</div>
     <div class="chip ${shelfFilter==='done'?'on':''}" data-f="done">완독</div>
   </div>
+  <div class="filters" id="tflt">
+    <div class="chip ${shelfType==='all'?'on':''}" data-t="all">전체</div>
+    <div class="chip ${shelfType==='paper'?'on':''}" data-t="paper">📖 종이책</div>
+    <div class="chip ${shelfType==='ebook'?'on':''}" data-t="ebook">📱 전자책</div>
+  </div>
   ${years.length?`<div class="yearflt" id="yflt">
     <div class="chip ${shelfYear==='all'?'on':''}" data-y="all">전체 연도</div>
     ${years.map(y=>`<div class="chip ${shelfYear===y?'on':''}" data-y="${y}">${y}년</div>`).join('')}
@@ -984,6 +1002,7 @@ function renderShelf(){
   if(isMe())$('#addBook').onclick=()=>openBookSheet();
   $('#viewMembers').onclick=openMemberPicker;
   $('#flt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
+  $('#tflt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfType=c.dataset.t;renderShelf();});
   $('#yflt')&&$('#yflt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfYear=c.dataset.y==='all'?'all':+c.dataset.y;renderShelf();});
   drawShelf(done);drawBookList();
 }
@@ -1025,18 +1044,29 @@ function drawShelf(done){
 }
 function spineColor(t){const cs=['#E24B4A','#5FA17E','#3E7CB1','#F2994A','#9B6BB0','#D98C5F','#5B8C7B','#C0504D'];let s=0;for(const c of t)s+=c.charCodeAt(0);return cs[s%cs.length];}
 function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).slice(0,14);}
+/* ---- 책 종류(종이책/전자책) 헬퍼 ---- */
+function isEbook(b){return !!(b&&b.type==='ebook');}
+function bookPct(b){
+  if(!b)return 0;
+  if(isEbook(b))return Math.min(100,Math.max(0,Math.round(b.cur||0)));
+  const pg=b.pages||0;return pg?Math.min(100,Math.round((b.cur||0)/pg*100)):0;
+}
+function typeBadge(b){return isEbook(b)?'📱 전자책':'📖 종이책';}
 function drawBookList(){
   const m=view();let list=m.books.slice().reverse();
   if(shelfFilter==='reading')list=list.filter(b=>!b.end);
   if(shelfFilter==='done')list=list.filter(b=>b.end);
+  if(shelfType==='paper')list=list.filter(b=>!isEbook(b));
+  if(shelfType==='ebook')list=list.filter(b=>isEbook(b));
   if(shelfYear!=='all')list=list.filter(b=>bookYear(b)===shelfYear);
-  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
+  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfType==='ebook'?'전자책 기록이 없어요':shelfType==='paper'?'종이책 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
   $('#blist').innerHTML=list.map(b=>`
     <div class="bl" data-id="${b.id}">
       <div class="cv">${b.cover?`<img src="${b.cover}" onerror="this.style.display='none'">`:'📕'}</div>
       <div class="info">
         <b>${b.title}</b><div class="au">${b.author||'저자 미상'}</div>
         <span class="tag ${b.end?'done':'read'}">${b.end?'완독':'읽는 중'}</span>
+        <span class="tag ttag">${typeBadge(b)}</span>
         <div class="dt">${b.start?'시작 '+fmt(b.start):''}${b.end?' · 완독 '+fmt(b.end):''}</div>
         ${b.end&&b.rating?`<div class="starline">${'★'.repeat(b.rating)}${'☆'.repeat(5-b.rating)}</div>`:''}
         ${b.review?`<div class="review">${esc2(b.review)}</div>`:''}
@@ -1060,9 +1090,10 @@ function drawBookList(){
 }
 
 /* ---------- book sheet + search ---------- */
-let _editId=null,_cover='',_searchT=null;
+let _editId=null,_cover='',_searchT=null,_bookType='paper';
 function openBookSheet(book){
   _editId=book?book.id:null;_cover=book?book.cover||'':'';
+  _bookType=(book&&book.type)?book.type:'paper';
   $('#sheet').innerHTML=`
     <h3>${book?'책 수정':'책 기록하기'}</h3>
     <div class="field">
@@ -1079,7 +1110,12 @@ function openBookSheet(book){
       <div class="field"><label>시작일</label><input id="bStart" type="date" value="${book?book.start||'':todayISO()}"></div>
       <div class="field"><label>완독일 <span style="font-weight:400">(비우면 읽는 중)</span></label><input id="bEnd" type="date" value="${book?book.end||'':''}"></div>
     </div>
-    <div class="field">
+    <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:6px 4px 2px">책 종류</label>
+    <div class="gpick" id="btype">
+      <div class="gp" data-t="paper">📖 종이책</div>
+      <div class="gp" data-t="ebook">📱 전자책</div>
+    </div>
+    <div class="field" id="pagesField">
       <label>전체 페이지 <span style="font-weight:400">(검색하면 자동 입력 · 직접 수정 가능)</span></label>
       <input id="bPages" type="number" inputmode="numeric" placeholder="예: 312" value="${book&&book.pages?book.pages:''}">
     </div>
@@ -1090,11 +1126,21 @@ function openBookSheet(book){
   openOv();
   $('#bCancel').onclick=closeOv;
   $('#bSave').onclick=saveBook;
+  renderBtype();
   const ti=$('#bTitle');
   ti.oninput=()=>{clearTimeout(_searchT);const q=ti.value.trim();
     if(q.length<2){$('#sres').style.display='none';return;}
     _searchT=setTimeout(()=>searchBooks(q),320);};
   if(!book)setTimeout(()=>ti.focus(),250);
+}
+function renderBtype(){
+  const el=$('#btype');if(!el)return;
+  el.querySelectorAll('.gp').forEach(g=>{
+    g.classList.toggle('on',g.dataset.t===_bookType);
+    g.onclick=()=>{_bookType=g.dataset.t;renderBtype();};
+  });
+  // 전자책이면 '전체 페이지' 칸 숨김 (전자책은 %로 진행)
+  const pf=$('#pagesField');if(pf)pf.style.display=(_bookType==='ebook')?'none':'';
 }
 function esc2(s){return (s||'').replace(/"/g,'&quot;');}
 async function searchBooks(q){
@@ -1135,9 +1181,10 @@ async function saveBook(){
   const m=me(),title=$('#bTitle').value.trim();
   if(!title){toast('책 제목을 입력해주세요');return;}
   const author=$('#bAuthor').value.trim(),start=$('#bStart').value,end=$('#bEnd').value;
-  const pages=parseInt($('#bPages').value,10)||0;
-  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end,cover:_cover,pages});}
-  else m.books.push({id:'b'+Date.now(),title,author,start,end,cover:_cover,pages,cur:0});
+  const type=_bookType||'paper';
+  const pages=(type==='ebook')?0:(parseInt($('#bPages').value,10)||0);
+  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end,cover:_cover,pages,type});}
+  else m.books.push({id:'b'+Date.now(),title,author,start,end,cover:_cover,pages,type,cur:0});
   // (변경) 책 시작일/완독일은 더 이상 자동 출첵하지 않음 — 사과는 '저장하고 출석체크'로만 찍힘
   await save();closeOv();toast(end?'완독 책이 책장에 꽂혔어요 📚':'기록했어요');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
