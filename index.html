@@ -1143,21 +1143,41 @@ function renderBtype(){
   const pf=$('#pagesField');if(pf)pf.style.display=(_bookType==='ebook')?'none':'';
 }
 function esc2(s){return (s||'').replace(/"/g,'&quot;');}
+// 제목 우선 정렬용 점수: 제목이 검색어로 시작 > 제목 포함 > 저자 포함 > 본문에만(0=제외)
+function _scoreBook(v,q){
+  const t=(v.title||'').toLowerCase(), a=((v.authors||[]).join(' ')).toLowerCase(), qq=q.toLowerCase();
+  const tn=t.replace(/\s/g,''), qn=qq.replace(/\s/g,'');
+  if(tn.startsWith(qn))return 100;
+  if(t.includes(qq)||tn.includes(qn))return 70;
+  if(a.includes(qq))return 30;
+  return 0;
+}
 async function searchBooks(q){
   const box=$('#sres');box.style.display='block';
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
   const BOOKS_KEY='AIzaSyC-AC06dno9BRvOCtnKaW7a9TXnFeZhfJI';
+  const base=`https://www.googleapis.com/books/v1/volumes?maxResults=20&printType=books&country=KR&key=${BOOKS_KEY}`;
   try{
-    const url=`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&printType=books&langRestrict=ko&country=KR&key=${BOOKS_KEY}`;
-    const res=await fetch(url);
-    if(!res.ok)throw new Error('http');
-    const data=await res.json();
-    let items=(data.items||[]);
+    let items=[];
+    // 1차: 제목 한정(intitle) — 본문에만 단어가 든 엉뚱한 책 배제
+    const r1=await fetch(`${base}&langRestrict=ko&q=${encodeURIComponent('intitle:'+q)}`);
+    if(r1.ok)items=((await r1.json()).items||[]);
+    // 2차: 제목 검색 결과 없으면 일반 검색(한국어)
     if(!items.length){
-      const r2=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&country=KR&key=${BOOKS_KEY}`);
-      if(r2.ok){items=((await r2.json()).items||[]);}
+      const r2=await fetch(`${base}&langRestrict=ko&q=${encodeURIComponent(q)}`);
+      if(r2.ok)items=((await r2.json()).items||[]);
+    }
+    // 3차: 그래도 없으면 언어 제한 풀고 검색
+    if(!items.length){
+      const r3=await fetch(`${base}&q=${encodeURIComponent(q)}`);
+      if(r3.ok)items=((await r3.json()).items||[]);
     }
     if(!items.length){box.innerHTML=`<div class="sr-state">검색 결과가 없어요. 제목·저자를 직접 입력해 기록해도 돼요.</div>`;return;}
+    // 제목 일치도 순 정렬 + 본문에만 걸린 무관 결과 제거
+    items=items.map(it=>({it,s:_scoreBook(it.volumeInfo||{},q)}))
+               .filter(x=>x.s>0).sort((a,b)=>b.s-a.s)
+               .map(x=>x.it).slice(0,8);
+    if(!items.length){box.innerHTML=`<div class="sr-state">제목에 '${esc(q)}'가 들어간 책을 못 찾았어요. 직접 입력해 기록해도 돼요.</div>`;return;}
     box.innerHTML=items.map((it,i)=>{
       const v=it.volumeInfo||{},img=(v.imageLinks&&(v.imageLinks.thumbnail||v.imageLinks.smallThumbnail)||'').replace('http://','https://');
       const au=(v.authors||[]).join(', ');
