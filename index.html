@@ -353,6 +353,70 @@ input{font-family:inherit}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:104px;background:var(--ink);color:#fff;
   padding:11px 18px;border-radius:30px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50}
 .toast.on{opacity:1;bottom:114px}
+/* ---------- HOME ---------- */
+.home-sec{margin-bottom:18px}
+.hs-head{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 9px}
+.hs-head b{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.hs-count{font-size:13px;font-weight:800;color:var(--soft)}
+.hs-all{font-size:12.5px;font-weight:800;color:var(--soft);cursor:pointer;display:inline-flex;align-items:center;gap:2px;padding:3px 4px;border-radius:8px}
+.hs-all:active{background:#F4EFE6}
+.hs-all svg{width:13px;height:13px}
+.home-empty{text-align:center;color:var(--soft);font-size:12.5px;line-height:1.7;padding:20px 8px}
+/* 오늘 출석한 멤버 */
+.att-card{padding:14px 8px 12px}
+.att-row{display:flex;gap:6px;overflow-x:auto;padding:2px 8px;scrollbar-width:none;-ms-overflow-style:none}
+.att-row::-webkit-scrollbar{display:none}
+.att-m{flex:0 0 auto;width:60px;text-align:center}
+.att-av{width:54px;height:54px;border-radius:50%;margin:0 auto 5px;border:1px solid var(--line);overflow:hidden;position:relative}
+.att-av .tinyav img{margin-top:0}
+.att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:grid;place-items:center;font-size:13px;line-height:1}
+.att-nm{font-size:12px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att-age{font-size:10.5px;color:var(--soft);font-weight:700;margin-top:1px}
+.att-m.gone .att-av{opacity:.45;filter:grayscale(.3)}
+.att-m.gone .att-nm{color:var(--soft)}
+/* 지금 읽고 있는 책 */
+.hb-row{display:flex;gap:11px;overflow-x:auto;padding:4px 4px 8px;scrollbar-width:none;-ms-overflow-style:none}
+.hb-row::-webkit-scrollbar{display:none}
+.hb-card{flex:0 0 152px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:11px;box-shadow:var(--shadow)}
+.hb-cover{width:100%;aspect-ratio:3/4.2;border-radius:2px 5px 5px 2px;background:#F0EADF center/cover no-repeat;position:relative;margin-bottom:10px;display:grid;place-items:center;box-shadow:0 3px 8px rgba(70,45,18,.2),0 1px 2px rgba(0,0,0,.12)}
+.hb-cover::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.03) 5%,rgba(255,255,255,.22) 13%,rgba(255,255,255,0) 32%,rgba(0,0,0,0) 88%,rgba(0,0,0,.1) 100%)}
+.hb-noc{font-size:26px}
+.hb-who{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.hb-who .hb-av{width:22px;height:22px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
+.hb-who .hb-av .tinyav img{margin-top:0}
+.hb-who span{font-size:12px;font-weight:800;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-title{font-size:13px;font-weight:800;line-height:1.3;height:34px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-align:left}
+.hb-prog{font-size:11.5px;font-weight:800;color:var(--honey-d);margin:5px 0 6px;text-align:left}
+.hb-prog .pc{color:var(--soft);font-weight:700;margin-left:3px}
+.hb-bar{height:6px;background:#F0EADF;border-radius:30px;overflow:hidden}
+.hb-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--honey),#F7B36A);border-radius:30px}
+/* 랭킹 (연속 독서 / 완독) */
+.rk-row{display:flex;align-items:center;gap:10px;padding:8px 2px}
+.rk-rank{width:20px;flex:none;text-align:center;font-size:14px;font-weight:900;color:var(--soft)}
+.rk-row.top .rk-rank{color:var(--honey-d)}
+.rk-av{width:40px;height:40px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative;border:1px solid var(--line)}
+.rk-av .tinyav img{margin-top:0}
+.rk-mid{flex:1;min-width:0}
+.rk-nm{font-size:13.5px;font-weight:800;line-height:1.2;display:flex;align-items:baseline;gap:5px}
+.rk-nm .rk-age{font-size:11px;font-weight:700;color:var(--soft)}
+.rk-track{height:13px;background:#F2EDE4;border-radius:30px;overflow:hidden;margin-top:5px}
+.rk-track i{display:block;height:100%;border-radius:30px;min-width:6px;background:linear-gradient(90deg,var(--honey),#F7B36A);transition:width .5s}
+.rk-row.me .rk-track i{background:linear-gradient(90deg,var(--moss),#88c4a4)}
+.rk-row.done .rk-track i{background:linear-gradient(90deg,var(--moss),#88c4a4)}
+.rk-val{flex:none;text-align:right;font-size:14px;font-weight:900;color:var(--honey-d);min-width:38px}
+.rk-row.done .rk-val{color:#3a7a59}
+.rk-div{height:1px;background:var(--line);margin:1px 4px}
+/* 최근 피드 */
+.rf-card{padding:6px 4px}
+.rf-item{display:flex;gap:11px;padding:11px 8px;cursor:pointer;border-radius:14px}
+.rf-item:active{background:#F8F4ED}
+.rf-item+.rf-item{border-top:1px solid var(--line)}
+.rf-av{width:38px;height:38px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
+.rf-av .tinyav img{margin-top:0}
+.rf-body{flex:1;min-width:0}
+.rf-nm{font-size:13.5px;font-weight:800;margin-bottom:3px}
+.rf-txt{font-size:13px;line-height:1.5;color:#4a4640;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rf-meta{display:flex;gap:13px;margin-top:7px;font-size:12px;font-weight:700;color:var(--soft)}
 /* peer mini calendars (home) */
 .peer-cals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .peer-cal{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:var(--shadow);cursor:pointer}
@@ -1155,10 +1219,12 @@ function renderCheckin(){
     let justDone=false;
     if(b&&pin){
       b.cur=clamp(pin.value);
+      b.lastTs=Date.now(); // 홈탭 '읽고 있는 책' 최신순 정렬용
       const complete=ebook?(b.cur>=100):(b.pages&&b.cur>=b.pages);
       if(complete&&!b.end){b.end=todayISO();justDone=true;}
     }
     const t=todayISO();if(!me().reads.includes(t))me().reads.push(t);
+    me().lastReadTs=Date.now(); // 홈탭 '오늘 출석한 멤버' 순서용
     await save();
     if(justDone)checkinBookId=null; // 완독 → 읽는 책 목록에서 빠짐
     renderCheckin();
@@ -1168,7 +1234,135 @@ function renderCheckin(){
   $('#nm').onclick=()=>{calM++;if(calM>11){calM=0;calY++;}drawCal();};
   drawCal();
 }
-function renderHome(){ $('#s-home').innerHTML=_ph('🏠','홈','홈 화면을 새로 준비하고 있어요.'); }
+function renderHome(){
+  refreshHeader();
+  S.viewId=S.meId;
+  const today=todayISO(), year=new Date().getFullYear();
+  const members=Object.values(S.members);
+  const total=members.length;
+  const here=m=>new Set(m.reads).has(today);
+
+  // 1) 오늘 출석한 멤버 — 출석한 사람을 앞으로(최근 출첵 순), 나머지는 뒤로
+  const att=members.filter(here).sort((a,b)=>(b.lastReadTs||0)-(a.lastReadTs||0)||cmpJoin(a,b));
+  const rest=members.filter(m=>!here(m)).sort(cmpJoin);
+  const ordered=att.concat(rest);
+  const attHTML=`<div class="home-sec">
+    <div class="hs-head"><b>오늘 출석한 멤버</b><span class="hs-count">${att.length} / ${total}명</span></div>
+    <div class="card att-card"><div class="att-row">
+      ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}">
+        <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}${here(m)?'<span class="att-apple">🍎</span>':''}</div>
+        <div class="att-nm">${escT(m.name)}</div>
+        <div class="att-age">${age(m)}살</div>
+      </div>`).join('')}
+    </div></div>
+  </div>`;
+
+  // 2) 지금 멤버들이 읽고 있는 책 — 최근 출첵한 책이 앞으로
+  const reads=[];
+  members.forEach(m=>m.books.filter(b=>!b.end).forEach(b=>reads.push({m,b})));
+  reads.sort((x,y)=>(y.b.lastTs||y.m.lastReadTs||0)-(x.b.lastTs||x.m.lastReadTs||0));
+  const readsHTML=`<div class="home-sec">
+    <div class="hs-head"><b>지금 멤버들이 읽는 책</b>
+      ${reads.length?`<span class="hs-all" id="hbAll">전체보기 ${chevR()}</span>`:''}</div>
+    ${reads.length
+      ? `<div class="hb-row" id="hbRow">${reads.map(homeBookCard).join('')}</div>`
+      : `<div class="card"><div class="home-empty">아직 읽고 있는 책이 없어요 📖<br>출첵 탭에서 책을 등록해보세요</div></div>`}
+  </div>`;
+
+  // 3) 연속 독서 랭킹
+  const stRows=withRanks(members.map(m=>({m,v:streak(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const stMax=Math.max(1,...stRows.map(r=>r.v));
+  const streakHTML=`<div class="home-sec">
+    <div class="hs-head"><b>🔥 연속 독서 랭킹</b></div>
+    <div class="card">
+      ${stRows.length?stRows.map(r=>rankRow(r,stMax,'일',r.m.id===S.meId?'me':'')).join('')
+        :`<div class="home-empty">아직 연속 독서 중인 멤버가 없어요<br>오늘 출첵으로 첫 불씨를 켜보세요 🔥</div>`}
+    </div>
+  </div>`;
+
+  // 4) 올해 완독 랭킹
+  const dnRows=withRanks(members.map(m=>({m,v:yearDone(m,year)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const dnMax=Math.max(1,...dnRows.map(r=>r.v));
+  const doneHTML=`<div class="home-sec">
+    <div class="hs-head"><b>🏆 올해 완독 랭킹</b><span class="hs-count">${year}년</span></div>
+    <div class="card">
+      ${dnRows.length?dnRows.map(r=>rankRow(r,dnMax,'권','done')).join('')
+        :`<div class="home-empty">올해 완독한 책이 아직 없어요<br>첫 완독의 주인공이 되어보세요 📚</div>`}
+    </div>
+  </div>`;
+
+  // 5) 최근 피드
+  const posts=(S.posts||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,2);
+  const feedHTML=`<div class="home-sec">
+    <div class="hs-head"><b>최근 피드</b>
+      ${(S.posts||[]).length?`<span class="hs-all" id="rfAll">전체보기 ${chevR()}</span>`:''}</div>
+    ${posts.length
+      ? `<div class="card rf-card" id="rfList">${posts.map(p=>{
+          const au=S.members[p.authorId];
+          return `<div class="rf-item" data-id="${p.id}">
+            <div class="rf-av">${au?avatarTiny(au):''}</div>
+            <div class="rf-body">
+              <div class="rf-nm">${escT(au?au.name:'알 수 없음')}</div>
+              <div class="rf-txt">${escT(p.text)}</div>
+              <div class="rf-meta"><span>❤️ ${(p.likes||[]).length}</span><span>💬 ${(p.comments||[]).length}</span></div>
+            </div>
+          </div>`;}).join('')}</div>`
+      : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
+  </div>`;
+
+  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+doneHTML+feedHTML;
+
+  $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
+  $('#rfAll')&&($('#rfAll').onclick=()=>go('feed'));
+  $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
+}
+function cmpJoin(a,b){return ((a.createdAt||'')<(b.createdAt||'')?-1:(a.createdAt||'')>(b.createdAt||'')?1:(a.name||'').localeCompare(b.name||'','ko'));}
+function chevR(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;}
+function withRanks(rows){let rank=0,prev=null;return rows.map((r,i)=>{if(prev===null||r.v!==prev){rank=i+1;prev=r.v;}return Object.assign({rank},r);});}
+function homeBookCard({m,b}){
+  const pct=bookPct(b);
+  const prog=isEbook(b)?`${Math.round(b.cur||0)}%`:`${b.cur||0} / ${b.pages||'–'}p<span class="pc">${b.pages?pct+'%':''}</span>`;
+  return `<div class="hb-card">
+    <div class="hb-cover" style="${b.cover?`background-image:url(${cleanCov(b.cover)})`:''}">${b.cover?'':'<div class="hb-noc">📖</div>'}</div>
+    <div class="hb-who"><div class="hb-av">${avatarTiny(m)}</div><span>${escT(m.name)}</span></div>
+    <div class="hb-title">${escT(b.title)}</div>
+    <div class="hb-prog">${prog}</div>
+    <div class="hb-bar"><i style="width:${pct}%"></i></div>
+  </div>`;
+}
+function rankRow(r,max,unit,cls){
+  const m=r.m;
+  return `<div class="rk-row ${r.rank<=1?'top':''} ${cls||''}">
+    <div class="rk-rank">${r.rank}</div>
+    <div class="rk-av">${avatarTiny(m)}</div>
+    <div class="rk-mid">
+      <div class="rk-nm">${escT(m.name)}<span class="rk-age">${age(m)}살</span></div>
+      <div class="rk-track"><i style="width:${(r.v/max*100).toFixed(0)}%"></i></div>
+    </div>
+    <div class="rk-val">${r.v}${unit}</div>
+  </div>`;
+}
+function openReadingAll(reads){
+  $('#sheet').innerHTML=`<h3>지금 읽고 있는 책</h3>
+    ${reads.length?`<div>${reads.map(({m,b})=>{
+      const pct=bookPct(b);
+      const prog=isEbook(b)?`${Math.round(b.cur||0)}%`:`${b.cur||0} / ${b.pages||'–'}p · ${pct}%`;
+      return `<div class="bl" style="cursor:default">
+        <div class="cv">${b.cover?`<img src="${cleanCov(b.cover)}" onerror="this.style.display='none'">`:'📕'}</div>
+        <div class="info">
+          <b>${escT(b.title)}</b>
+          <div class="au">${escT(b.author||'저자 미상')}</div>
+          <span class="tag read">${escT(m.name)}</span>
+          <span class="tag ttag">${typeBadge(b)}</span>
+          <div class="dt">${prog}</div>
+          <div class="rk-track" style="margin-top:6px"><i style="width:${pct}%"></i></div>
+        </div>
+      </div>`;}).join('')}</div>`
+      :`<div class="home-empty">읽고 있는 책이 없어요</div>`}
+    <button class="btn ghost" id="raClose" style="margin-top:8px">닫기</button>`;
+  openOv();
+  $('#raClose').onclick=closeOv;
+}
 function miniCalHTML(m){
   const set=new Set(m.reads),today=todayISO(),first=new Date(calY,calM,1).getDay(),dim=new Date(calY,calM+1,0).getDate();
   let dots='',cnt=0;
@@ -1207,6 +1401,7 @@ function drawCal(){
 async function toggleRead(iso){
   const m=me(),i=m.reads.indexOf(iso);
   if(i>=0)m.reads.splice(i,1);else m.reads.push(iso);
+  if(iso===todayISO()&&m.reads.includes(iso))m.lastReadTs=Date.now();
   await save();renderCheckin();
 }
 
