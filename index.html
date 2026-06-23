@@ -50,6 +50,12 @@ input{font-family:inherit}
 .sec-t{font-size:13px;font-weight:700;color:var(--soft);margin:2px 4px 10px;display:flex;align-items:center;gap:6px}
 /* avatar */
 .avatar{position:relative;width:100%;max-width:230px;margin:0 auto;aspect-ratio:var(--ar,1)}
+/* PNG layer stack */
+.avstack{position:absolute;inset:0}
+.avstack img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none}
+.avstack.hz{transform:scale(2.0);transform-origin:50% 40%}   /* 얼굴 클로즈업(원형 리스트) */
+.avstack.bz{transform:scale(1.55);transform-origin:50% 33%}  /* 머리~상체(피드 등) */
+.tinyav .avstack img,.bustav .avstack img{object-position:center top}
 .avatar .base{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
 .avatar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 /* home hero */
@@ -243,7 +249,8 @@ input{font-family:inherit}
 .items{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .item{position:relative;border:2px solid var(--line);border-radius:16px;background:#fff;padding:6px;cursor:pointer;aspect-ratio:1;overflow:hidden}
 .item.on{border-color:var(--honey);background:#FFF8F0}
-.item .mini{width:100%;height:100%;position:relative}
+.item .mini{width:100%;height:100%;position:relative;overflow:hidden;border-radius:11px}
+.dsec{grid-column:1/-1;font-size:12.5px;font-weight:800;color:var(--soft);margin:6px 2px 0;padding-left:2px}
 .item .mini .b{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center}
 .item .mini svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .item .nm{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--soft)}
@@ -341,7 +348,7 @@ input{font-family:inherit}
 .charpick{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:8px 0 6px}
 .cp{border:2px solid var(--line);border-radius:18px;background:#fff;padding:6px 4px 4px;text-align:center;cursor:pointer}
 .cp.on{border-color:var(--honey);background:#FFF8F0}
-.cp .av{aspect-ratio:1;background-size:contain;background-repeat:no-repeat;background-position:center}
+.cp .av{aspect-ratio:1;position:relative;overflow:hidden;border-radius:14px}
 .gpick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0 6px}
 .gp{border:2px solid var(--line);border-radius:16px;background:#fff;padding:13px;text-align:center;cursor:pointer;font-weight:800;font-size:14px;color:var(--soft)}
 .gp.on{border-color:var(--honey);background:#FFF8F0;color:var(--ink)}
@@ -812,6 +819,53 @@ const BGCOLORS=[
 function catBySlot(s){return CATALOG.filter(i=>i.slot===s);}
 function itemById(id){return CATALOG.find(i=>i.id===id);}
 
+/* ---------- PNG layer character system ---------- */
+const CHARP='char/';                 // 레포 char/ 폴더 (Vercel 루트 기준)
+const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
+const AV_AR=0.7;                     // 700x1000
+const LAYER_ORDER=['eyes','mouth','hair']; // base 위 z-순서
+const ITEMS={
+  eyes:[
+    {id:'eyes_basic',name:'기본',img:CHARP+'eyes/base_eyes_01.png'},
+    {id:'eyes_wow',  name:'반짝',img:CHARP+'eyes/face_eyes01.png'},
+    {id:'eyes_calm', name:'스윗',img:CHARP+'eyes/face_eyes02.png'},
+  ],
+  mouth:[
+    {id:'mouth_basic',name:'기본',img:CHARP+'mouth/base_mouth_01.png'},
+    {id:'mouth_oh',   name:'오물',img:CHARP+'mouth/face_mouth01.png'},
+    {id:'mouth_grin', name:'활짝',img:CHARP+'mouth/face_mouth02.png'},
+  ],
+  hair:[
+    {id:'hair_m',name:'기본(남)', img:CHARP+'hair/hair_010.png'},
+    {id:'hair_w',name:'기본(여)', img:CHARP+'hair/hair_000.png'},
+    {id:'hair_1',name:'단발',     img:CHARP+'hair/hair_001.png'},
+    {id:'hair_2',name:'장발',     img:CHARP+'hair/hair_002.png'},
+    {id:'hair_3',name:'웨이브단발',img:CHARP+'hair/hair_003.png'},
+    {id:'hair_4',name:'웨이브장발',img:CHARP+'hair/hair_004.png'},
+    {id:'hair_5',name:'포니테일',  img:CHARP+'hair/hair_005.png'},
+  ],
+};
+const DEFAULT_ITEMS={
+  man:  {eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_m'},
+  woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
+};
+function pItem(slot,id){return (ITEMS[slot]||[]).find(x=>x.id===id);}
+function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
+function genderKey(m){return (m&&(m.gender==='f'||m.char==='woman'))?'woman':'man';}
+function genderLabel(m){return genderKey(m)==='woman'?'여자':'남자';}
+function ensureItems(m){ // 마이그레이션/기본값 보장 (눈·입·헤어는 항상 장착)
+  if(!m.items)m.items={};
+  const d=DEFAULT_ITEMS[genderKey(m)];
+  ['eyes','mouth','hair'].forEach(s=>{ if(!m.items[s]||!pItem(s,m.items[s])) m.items[s]=d[s]; });
+  return m;
+}
+function avatarStack(m,zoom){ // base + 눈/입/헤어 PNG 레이어
+  ensureItems(m);
+  let h=`<img src="${BASE_IMG}" alt="">`;
+  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(im)h+=`<img src="${im}" alt="">`;});
+  return `<div class="avstack${zoom?' '+zoom:''}">${h}</div>`;
+}
+
 /* ---------- avatar render ---------- */
 function avatarSVG(ck,items){ // items: {slot:id}
   const b=boxes(ck),order=['cloth','hand','neck','face','eye','hat'];
@@ -819,24 +873,17 @@ function avatarSVG(ck,items){ // items: {slot:id}
   order.forEach(slot=>{const id=items&&items[slot];if(!id)return;const it=itemById(id);if(it&&it.slot===slot)inner+=it.draw(b);});
   return `<svg viewBox="0 0 100 ${b.V.toFixed(1)}">${inner}</svg>`;
 }
-function avatarHTML(m,size){ // returns element string
-  const ck=m.char, ar=CH[ck].w/CH[ck].h;
-  return `<div class="avatar" style="--ar:${ar}">
-    <div class="base" style="background-image:url(${CH[ck].img})"></div>
-    ${avatarSVG(ck,m.items)}
-  </div>`;
+function avatarHTML(m,size){ // full-body avatar (dress preview, profile card)
+  return `<div class="avatar" style="--ar:${AV_AR}">${avatarStack(m)}</div>`;
 }
-function avatarTiny(m){ // small circular avatar incl. equipped accessories + 꾸미기 background
+function avatarTiny(m){ // small circular avatar — head-zoom
   const bg=m.bg?`background:${m.bg};`:'';
-  return `<div class="tinyav" style="${bg}"><img src="${CH[m.char].img}">${avatarSVG(m.char,m.items)}</div>`;
+  return `<div class="tinyav" style="${bg}">${avatarStack(m,'hz')}</div>`;
 }
-function avatarBust(m){ // 머리~상체(몸통)까지만 보이도록 크롭, 다리는 컷 + 꾸미기 배경
+function avatarBust(m){ // 머리~상체 크롭
   if(!m)return '';
-  const ck=m.char, c=CH[ck], ar=c.w/c.h;
-  const b=c.body||[0,0.55,1,0.25];
-  const cf=Math.min(0.95,Math.max(0.62,(b[1]+b[3])+0.10)); // 몸통 끝까지 보여주는 세로 비율
   const bg=m.bg?`background:${m.bg};`:'';
-  return `<div class="bustav" style="${bg}"><div class="bustin" style="--bar:${ar.toFixed(4)};--cf:${cf.toFixed(4)}"><img src="${c.img}">${avatarSVG(ck,m.items)}</div></div>`;
+  return `<div class="bustav" style="${bg}">${avatarStack(m,'bz')}</div>`;
 }
 
 /* ---------- state ----------
@@ -892,7 +939,7 @@ async function loadClub(){
     const idx=await window.storage.list('member:',true);
     const keys=(idx&&idx.keys)||[];
     const results=await Promise.all(keys.map(k=>window.storage.get(k,true).catch(()=>null)));
-    results.forEach(r=>{if(r&&r.value){try{const mm=JSON.parse(r.value);if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0];members[mm.id]=mm;}catch(e){}}});
+    results.forEach(r=>{if(r&&r.value){try{const mm=JSON.parse(r.value);if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0];ensureItems(mm);members[mm.id]=mm;}catch(e){}}});
   }catch(e){}
   const posts=[];
   try{
@@ -1503,7 +1550,7 @@ function openMemberPicker(){
       <div class="row-m" data-id="${m.id}">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.meId?' <span style="font-size:11px;color:var(--honey-d)">(나)</span>':''}</div>
-          <div class="sub">${CH[m.char].label} · 완독 ${doneBooks(m).length}권</div></div>
+          <div class="sub">${genderLabel(m)} · 완독 ${doneBooks(m).length}권</div></div>
       </div>`).join('')}</div>
     <button class="btn ghost" id="pickCancel" style="margin-top:8px">닫기</button>`;
   openOv();
@@ -1853,7 +1900,7 @@ function renderClub(){
         <div class="rk">${medal[i]||i+1}</div>
         <div class="av">${avatarTiny(r.m)}</div>
         <div><div class="nm">${r.m.name}${r.m.id===S.meId?' <span style="font-size:11px;color:var(--honey-d)">(나)</span>':''}${r.m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
-          <div class="sub">${r.m.char==null?'':CH[r.m.char].label} · ${age(r.m)}살</div></div>
+          <div class="sub">${genderLabel(r.m)} · ${age(r.m)}살</div></div>
         <div class="cnt"><b>${r.done}</b><small>이번 달 완독</small></div>
       </div>`).join('')}
     ${isOwner()?`<button class="btn ghost" id="manageMembers" style="margin-top:6px">⚙️ 멤버 관리</button>`:''}
@@ -1874,7 +1921,7 @@ function openManageSheet(){
       <div class="row-m" data-id="${m.id}" style="cursor:default">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
-          <div class="sub">${CH[m.char].label} · 가입 ${fmt(m.createdAt)}</div></div>
+          <div class="sub">${genderLabel(m)} · 가입 ${fmt(m.createdAt)}</div></div>
         ${m.id!==S.ownerId?`<button class="kickbtn" data-id="${m.id}">내보내기</button>`:''}
       </div>`).join('')}</div>
     <button class="btn ghost" id="mgClose" style="margin-top:8px">닫기</button>`;
@@ -1950,27 +1997,35 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='bg';
+let dressSlot='face';
+const DCATS2=[['face','얼굴'],['hair','헤어'],['bg','배경']];
 function renderDress(){
   refreshHeader();
-  const m=me(),a=age(m);
+  const m=me(); ensureItems(m);
   $('#s-dress').innerHTML=`
   <div class="card hero" style="padding-bottom:10px;background:${m.bg||'var(--card)'}">
     ${avatarHTML(m)}
-    <div class="agebadge" style="margin-top:8px">${a}살 · 배경을 골라 꾸며보세요</div>
+    <div class="agebadge" style="margin-top:8px">${m.name} 캐릭터 꾸미기</div>
   </div>
-  <div class="dcat" id="dcat">${DCATS.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
-  <div class="items" id="items"></div>
-  <div style="text-align:center;color:var(--soft);font-size:12.5px;margin:18px 4px 6px;line-height:1.6">👕 의상·악세사리 아이템은<br>곧 추가될 예정이에요!</div>`;
+  <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
+  <div class="items" id="items"></div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   drawItems();
 }
-function dressItems(){
-  if(dressSlot==='cloth')return catBySlot('cloth');
-  return CATALOG.filter(i=>ACC_SLOTS.includes(i.slot)); // 악세사리
+// 슬롯(눈/입/헤어) 아이템 그리드 HTML — 미니는 그 아이템을 실제 얼굴에 합성해 보여줌
+function slotGrid(m,slot){
+  return ITEMS[slot].map(it=>{
+    const eq=m.items[slot]===it.id;
+    const preview=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
+    return `<div class="item ${eq?'eq':''}" data-slot="${slot}" data-id="${it.id}">
+      <div class="mini">${avatarStack(preview,'hz')}</div>
+      <div class="nm">${it.name}</div>
+      ${eq?'<div class="chk">✓</div>':''}
+    </div>`;
+  }).join('');
 }
 function drawItems(){
-  const m=me(),a=age(m),mann=m.char,b=boxes(mann);
+  const m=me();
   if(dressSlot==='bg'){
     $('#items').innerHTML=BGCOLORS.map(bg=>{
       const sel=(m.bg||'')===bg.hex;
@@ -1981,33 +2036,19 @@ function drawItems(){
       </div>`;
     }).join('');
     $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
-      const hex=el.dataset.bg; m.bg=hex||null; await save(); renderDress();
+      m.bg=el.dataset.bg||null; await save(); renderDress();
     });
     return;
   }
-  let h='';
-  if(dressSlot==='cloth'){
-    const cur=m.items.cloth;
-    h+=`<div class="item ${!cur?'on':''}" data-id="" data-slot="cloth"><div class="mini"><div class="b" style="background-image:url(${CH[mann].img})"></div></div><div class="nm">없음</div></div>`;
+  if(dressSlot==='hair'){
+    $('#items').innerHTML=slotGrid(m,'hair');
+  } else { // 얼굴 = 눈 + 입
+    $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes')}<div class="dsec">입</div>${slotGrid(m,'mouth')}`;
   }
-  dressItems().forEach(it=>{
-    const locked=a<it.age, eq=m.items[it.slot]===it.id;
-    h+=`<div class="item ${eq?'eq':''}" data-id="${it.id}" data-slot="${it.slot}">
-      <div class="mini"><div class="b" style="background-image:url(${CH[mann].img})"></div>
-      <svg viewBox="0 0 100 ${b.V.toFixed(1)}">${it.draw(b)}</svg></div>
-      <div class="nm">${it.name}</div>
-      ${eq?'<div class="chk">✓</div>':''}
-      ${locked?`<div class="lock">🔒<br>${it.age}살부터</div>`:''}
-    </div>`;
-  });
-  $('#items').innerHTML=h;
-  $('#items').querySelectorAll('.item').forEach(el=>el.onclick=async()=>{
-    const id=el.dataset.id, slot=el.dataset.slot;
-    if(id){const it=itemById(id);if(age(m)<it.age){toast(it.age+'살부터 입을 수 있어요');return;}}
-    if(!id){ if(slot)delete m.items[slot]; }
-    else if(m.items[slot]===id) delete m.items[slot];
-    else m.items[slot]=id;
-    await save();renderDress();
+  $('#items').querySelectorAll('.item[data-slot]').forEach(el=>el.onclick=async()=>{
+    const slot=el.dataset.slot,id=el.dataset.id;
+    if(m.items[slot]===id)return;     // 이미 착용 — 해제 불가, 교체만
+    m.items[slot]=id; await save(); renderDress();
   });
 }
 
@@ -2082,10 +2123,10 @@ function openProfileSheet(){
 /* ---------- onboarding ---------- */
 let onbChar=null;
 function renderCharpick(){
-  $('#charpick').innerHTML=CHKEYS.map(k=>`
+  $('#charpick').innerHTML=['man','woman'].map(k=>`
     <div class="cp ${k===onbChar?'on':''}" data-k="${k}">
-      <div class="av" style="background-image:url(${CH[k].img})"></div>
-      <span>${CH[k].label}</span></div>`).join('');
+      <div class="av">${avatarStack({gender:(k==='woman'?'f':'m'),items:Object.assign({},DEFAULT_ITEMS[k])},'bz')}</div>
+      <span>${k==='woman'?'여자':'남자'}</span></div>`).join('');
   $('#charpick').querySelectorAll('.cp').forEach(c=>c.onclick=()=>{onbChar=c.dataset.k;renderCharpick();checkOnb();});
 }
 function checkOnb(){$('#onbStart').disabled=!($('#onbName').value.trim()&&onbChar);}
@@ -2094,7 +2135,7 @@ $('#onbStart').onclick=async()=>{
   const name=$('#onbName').value.trim();
   const id=window._authUid||('m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6));
   if(!S)S={members:{},meId:null,viewId:null,ownerId:null};
-  S.members[id]={id,name,char:onbChar,gender:(onbChar==='woman'?'f':'m'),createdAt:todayISO(),reads:[],books:[],items:{}};
+  S.members[id]={id,name,char:onbChar,gender:(onbChar==='woman'?'f':'m'),createdAt:todayISO(),reads:[],books:[],items:Object.assign({},DEFAULT_ITEMS[onbChar])};
   S.meId=id;S.viewId=id;
   await saveMyId();
   await save();
