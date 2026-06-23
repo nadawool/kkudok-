@@ -282,6 +282,10 @@ input{font-family:inherit}
 .sr-state{padding:11px;font-size:12.5px;color:var(--soft);text-align:center}
 .btn{width:100%;background:var(--honey);color:#fff;font-weight:800;font-size:15px;padding:14px;border-radius:15px;margin-top:4px}
 .btn.ghost{background:#F4EFE6;color:var(--ink)}
+.btn.danger{background:none;color:#d6493f;border:1.5px solid #f0c7c2;margin-top:8px;padding:11px}
+.btn.danger.armed{background:#d6493f;color:#fff;border-color:#d6493f}
+.shelf-more{display:block;margin:12px auto 2px;background:none;border:none;color:var(--honey-d);font-size:12.5px;font-weight:800;cursor:pointer;padding:6px 12px;border-radius:20px}
+.shelf-more:active{background:#F4EFE6}
 .btn:disabled{opacity:.5}
 .btnrow{display:flex;gap:10px}
 /* onboarding */
@@ -991,7 +995,7 @@ async function toggleRead(iso){
 }
 
 /* ---------- SHELF ---------- */
-let shelfFilter='all', shelfYear='all', shelfType='all', shelfSort='recent', shelfView='list';
+let shelfFilter='all', shelfYear='all', shelfType='all', shelfSort='recent', shelfView='list', shelfExpanded=false;
 function bookYear(b){ const iso=b.end||b.start; if(!iso)return null; return D(iso).getFullYear(); }
 function shelfYears(m){ const ys=new Set(); m.books.forEach(b=>{const y=bookYear(b);if(y)ys.add(y);}); return Array.from(ys).sort((a,b)=>b-a); }
 function renderShelf(){
@@ -1059,9 +1063,12 @@ function drawShelf(done){
   if(!done.length){wrap.innerHTML=`<div class="shelf-empty">완독한 책이 책장에 콕콕 꽂혀요 📖<br>첫 책을 기록해보세요</div>
   <div class="board"></div>`;return;}
   const W=wrap.clientWidth||320, per=Math.max(4,Math.floor((W-12)/(34+4)));
+  const ordered=done.slice().reverse();          // 최신 완독을 책장 앞쪽으로
+  const cap=per*3, over=ordered.length-cap;
+  const show=shelfExpanded?ordered:ordered.slice(0,cap);
   let h='';
-  for(let i=0;i<done.length;i+=per){
-    const row=done.slice(i,i+per);
+  for(let i=0;i<show.length;i+=per){
+    const row=show.slice(i,i+per);
     h+='<div class="shelf-row"><div class="books">';
     row.forEach((b,j)=>{
       const idx=i+j+1, col=spineColor(b.title);
@@ -1073,7 +1080,9 @@ function drawShelf(done){
     });
     h+='</div><div class="board"></div></div>';
   }
+  if(over>0)h+=`<button class="shelf-more" id="shelfMore">${shelfExpanded?'접기 ▲':`전체보기 (${over}권 더) ▾`}</button>`;
   wrap.innerHTML=h;
+  const sm=$('#shelfMore');if(sm)sm.onclick=()=>{shelfExpanded=!shelfExpanded;drawShelf(done);};
 }
 function spineColor(t){const cs=['#E24B4A','#5FA17E','#3E7CB1','#F2994A','#9B6BB0','#D98C5F','#5B8C7B','#C0504D'];let s=0;for(const c of t)s+=c.charCodeAt(0);return cs[s%cs.length];}
 function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).slice(0,14);}
@@ -1086,9 +1095,13 @@ function bookPct(b){
 }
 function typeBadge(b){return isEbook(b)?'📱 전자책':'📖 종이책';}
 function sortBooks(list){
-  if(shelfSort==='title')return list.slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','ko'));
-  if(shelfSort==='old')return list.slice();           // 기록한 순서(오래된→최근)
-  return list.slice().reverse();                       // 최신순(기본)
+  const ord=new Map(view().books.map((b,i)=>[b.id,i]));   // 등록 순서(작을수록 오래됨)
+  const sgn=shelfSort==='old'?1:-1;                         // 최신순=내림차순, 오래된순=오름차순
+  const within=(a,b)=> shelfSort==='title'
+    ? (a.title||'').localeCompare(b.title||'','ko')
+    : ((ord.get(a.id)||0)-(ord.get(b.id)||0))*sgn;
+  // 1순위: 읽는 중(end 없음)이 완독보다 항상 위 → 2순위: 선택한 정렬
+  return list.slice().sort((a,b)=>((a.end?1:0)-(b.end?1:0))||within(a,b));
 }
 function drawBookList(){
   const m=view();let list=m.books.slice();
@@ -1115,9 +1128,8 @@ function drawBookList(){
     </div>`).join('');
   $('#blist').querySelectorAll('.bl').forEach(row=>row.onclick=()=>{
     const bk=m.books.find(x=>x.id===row.dataset.id);if(!bk)return;
-    if(bk.end)openReviewSheet(bk);
-    else if(isMe())openBookSheet(bk);
-    else toast('아직 읽는 중인 책이에요');
+    if(isMe())openBookSheet(bk);
+    else openReviewSheet(bk);
   });
   if(isMe())$('#blist').querySelectorAll('.edit').forEach(x=>x.onclick=(e)=>{
     e.stopPropagation();
@@ -1139,19 +1151,20 @@ function drawGallery(list,m){
     </div>`).join('')}</div>`;
   $('#blist').querySelectorAll('.gcard').forEach(c=>c.onclick=()=>{
     const bk=m.books.find(x=>x.id===c.dataset.id);if(!bk)return;
-    if(bk.end)openReviewSheet(bk);
-    else if(isMe())openBookSheet(bk);
-    else toast('아직 읽는 중인 책이에요');
+    if(isMe())openBookSheet(bk);
+    else openReviewSheet(bk);
   });
 }
 
 /* ---------- book sheet + search ---------- */
-let _editId=null,_cover='',_searchT=null,_bookType='paper';
+let _editId=null,_cover='',_searchT=null,_bookType='paper',_rating=0,_status='reading';
 function openBookSheet(book){
   _editId=book?book.id:null;_cover=book?book.cover||'':'';
   _bookType=(book&&book.type)?book.type:'paper';
+  _rating=book?book.rating||0:0;
+  _status=(book&&book.end)?'done':'reading';
   $('#sheet').innerHTML=`
-    <h3>${book?'책 수정':'책 기록하기'}</h3>
+    <h3>${book?'책 정보':'책 기록하기'}</h3>
     <div class="field">
       <label>책 제목</label>
       <input id="bTitle" placeholder="제목 2글자만 입력해도 검색돼요" value="${book?esc2(book.title):''}" autocomplete="off">
@@ -1161,6 +1174,11 @@ function openBookSheet(book){
     <div class="field">
       <label>저자 <span style="font-weight:400">(선택)</span></label>
       <input id="bAuthor" placeholder="비워두어도 괜찮아요" value="${book?esc2(book.author||''):''}" autocomplete="off">
+    </div>
+    <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:6px 4px 2px">상태</label>
+    <div class="gpick" id="bstatus">
+      <div class="gp" data-s="reading">📖 읽는 중</div>
+      <div class="gp" data-s="done">✅ 완독</div>
     </div>
     <div class="dates">
       <div class="field"><label>시작일</label><input id="bStart" type="date" value="${book?book.start||'':todayISO()}"></div>
@@ -1175,19 +1193,58 @@ function openBookSheet(book){
       <label>전체 페이지 <span style="font-weight:400">(검색하면 자동 입력 · 직접 수정 가능)</span></label>
       <input id="bPages" type="number" inputmode="numeric" placeholder="예: 312" value="${book&&book.pages?book.pages:''}">
     </div>
+    <div class="field" style="text-align:center">
+      <label style="text-align:center">별점 <span style="font-weight:400">(선택)</span></label>
+      <div class="stars" id="starRow" style="justify-content:center">${[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}">★</span>`).join('')}</div>
+    </div>
+    <div class="field">
+      <label>한줄 후기 <span style="font-weight:400">(선택)</span></label>
+      <textarea id="reviewTxt" rows="2" maxlength="120" placeholder="어떤 책이었나요? 한 줄로 남겨보세요"
+        style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${book?esc2(book.review||''):''}</textarea>
+    </div>
     <div class="btnrow">
       <button class="btn ghost" id="bCancel">취소</button>
       <button class="btn" id="bSave">${book?'저장':'기록하기'}</button>
-    </div>`;
+    </div>
+    ${book?`<button class="btn danger" id="bDelete">🗑 이 책 삭제</button>`:''}`;
   openOv();
   $('#bCancel').onclick=closeOv;
   $('#bSave').onclick=saveBook;
-  renderBtype();
+  renderBtype();renderBstatus();renderStars();
+  if(book)bindDelete();
   const ti=$('#bTitle');
   ti.oninput=()=>{clearTimeout(_searchT);const q=ti.value.trim();
     if(q.length<2){$('#sres').style.display='none';return;}
     _searchT=setTimeout(()=>searchBooks(q),320);};
   if(!book)setTimeout(()=>ti.focus(),250);
+}
+function renderBstatus(){
+  const el=$('#bstatus');if(!el)return;
+  el.querySelectorAll('.gp').forEach(g=>{
+    g.classList.toggle('on',g.dataset.s===_status);
+    g.onclick=()=>{
+      _status=g.dataset.s;
+      const endF=$('#bEnd');
+      if(_status==='done'){ if(endF&&!endF.value)endF.value=todayISO(); }
+      else if(endF){ endF.value=''; }
+      renderBstatus();
+    };
+  });
+}
+function renderStars(){
+  const row=$('#starRow');if(!row)return;
+  row.querySelectorAll('.star').forEach(s=>{
+    s.classList.toggle('on',+s.dataset.n<=_rating);
+    s.onclick=()=>{ _rating=(_rating===+s.dataset.n)?0:+s.dataset.n; renderStars(); };
+  });
+}
+function bindDelete(){
+  const b=$('#bDelete');if(!b)return;let armed=false;
+  b.onclick=async()=>{
+    if(!armed){armed=true;b.textContent='한 번 더 누르면 삭제돼요';b.classList.add('armed');return;}
+    const m=me();m.books=m.books.filter(x=>x.id!==_editId);await save();closeOv();toast('책을 삭제했어요 🗑');
+    ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+  };
 }
 function renderBtype(){
   const el=$('#btype');if(!el)return;
@@ -1265,8 +1322,10 @@ async function saveBook(){
   const author=$('#bAuthor').value.trim(),start=$('#bStart').value,end=$('#bEnd').value;
   const type=_bookType||'paper';
   const pages=(type==='ebook')?0:(parseInt($('#bPages').value,10)||0);
-  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end,cover:_cover,pages,type});}
-  else m.books.push({id:'b'+Date.now(),title,author,start,end,cover:_cover,pages,type,cur:0});
+  const rating=_rating||0;
+  const review=($('#reviewTxt')?$('#reviewTxt').value.trim():'');
+  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end,cover:_cover,pages,type,rating,review});}
+  else m.books.push({id:'b'+Date.now(),title,author,start,end,cover:_cover,pages,type,cur:0,rating,review});
   // (변경) 책 시작일/완독일은 더 이상 자동 출첵하지 않음 — 사과는 '저장하고 출석체크'로만 찍힘
   await save();closeOv();toast(end?'완독 책이 책장에 꽂혔어요 📚':'기록했어요');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
