@@ -286,6 +286,42 @@ input{font-family:inherit}
 .btn.danger.armed{background:#d6493f;color:#fff;border-color:#d6493f}
 .shelf-more{display:block;margin:12px auto 2px;background:none;border:none;color:var(--honey-d);font-size:12.5px;font-weight:800;cursor:pointer;padding:6px 12px;border-radius:20px}
 .shelf-more:active{background:#F4EFE6}
+/* ---------- FEED ---------- */
+.fd-compose{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:30px;padding:8px 8px 8px 10px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fd-av{width:40px;height:40px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
+.fd-cinput{flex:1;color:var(--soft);font-size:13.5px;padding:4px 2px;cursor:text}
+.fd-plus{width:40px;height:40px;border-radius:50%;background:var(--honey);color:#fff;border:none;font-size:24px;line-height:1;flex:none;cursor:pointer;box-shadow:0 3px 8px rgba(242,153,74,.4)}
+.fd-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.fd-sorts{display:flex;gap:7px}
+.fd-bm{border:none;background:#F4EFE6;color:var(--soft);font-size:13px;font-weight:800;padding:6px 13px;border-radius:30px;cursor:pointer;white-space:nowrap;flex:none}
+.fd-bm.on{background:var(--honey-s);color:var(--honey-d)}
+.fd-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fd-top{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.fc-av{width:38px;height:38px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
+.fd-meta{line-height:1.25}
+.fd-meta b{font-size:14.5px;font-weight:800}
+.fd-meta small{display:block;font-size:11.5px;color:var(--soft)}
+.fd-del{margin-left:auto;border:none;background:none;color:var(--soft);font-size:15px;cursor:pointer;padding:4px}
+.fd-booktag{display:inline-block;background:var(--moss-s);color:#2f6b4d;font-size:13px;font-weight:700;padding:5px 11px;border-radius:30px;margin-bottom:10px}
+.fd-booktag span{font-weight:500;color:#4f8a6c}
+.fd-quote{background:#FCF7EF;border-left:4px solid var(--honey);border-radius:10px;padding:13px 15px;font-size:14.5px;line-height:1.7;color:#3a3733;white-space:pre-wrap;word-break:break-word}
+.fd-acts{display:flex;align-items:center;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.fd-acts button{border:none;background:none;font-size:13.5px;font-weight:700;color:var(--soft);cursor:pointer;padding:5px 7px;border-radius:10px}
+.fd-acts button:active{background:#F7F2EA}
+.fd-like.on{color:#e2495a}
+.fd-save{margin-left:auto}
+.fd-save.on{color:var(--honey-d)}
+.fd-comments{margin-top:12px;border-top:1px dashed var(--line);padding-top:13px}
+.fd-c{display:flex;gap:9px;margin-bottom:12px}
+.fd-cav{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
+.fd-cbody{flex:1;font-size:13.5px;line-height:1.55;color:#3a3733;word-break:break-word}
+.fd-cname{font-weight:800;margin-right:5px}
+.fd-ctime{font-size:11px;color:var(--soft);margin-top:3px}
+.fd-cdel{border:none;background:none;color:var(--soft);font-size:12px;cursor:pointer;padding:2px 4px;flex:none}
+.fd-noc{font-size:12.5px;color:var(--soft);text-align:center;padding:2px 0 13px}
+.fd-cwrite{display:flex;gap:7px;align-items:center}
+.fd-cinp{flex:1;border:1.5px solid var(--line);border-radius:30px;padding:9px 14px;font-size:13.5px;background:#FCFBF8;font-family:inherit;min-width:0}
+.fd-csend{border:none;background:var(--honey);color:#fff;font-weight:800;font-size:13px;padding:9px 15px;border-radius:30px;cursor:pointer;flex:none}
 .btn:disabled{opacity:.5}
 .btnrow{display:flex;gap:10px}
 /* onboarding */
@@ -464,6 +500,10 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
         const snap=await partRef(key.slice(7)).get();
         return snap.exists?{key,value:JSON.stringify(snap.data())}:null;
       }
+      if(key.indexOf('post:')===0){
+        const snap=await roomRef().collection('posts').doc(key.slice(5)).get();
+        return snap.exists?{key,value:JSON.stringify(snap.data())}:null;
+      }
       if(key==='owner'){
         const snap=await roomRef().get();
         const leader=snap.exists?(snap.data().leader||null):null;
@@ -479,6 +519,10 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
     async set(key,value){
       if(key.indexOf('member:')===0){
         await partRef(key.slice(7)).set(JSON.parse(value));
+        return {key,value};
+      }
+      if(key.indexOf('post:')===0){
+        await roomRef().collection('posts').doc(key.slice(5)).set(JSON.parse(value));
         return {key,value};
       }
 
@@ -498,6 +542,8 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
     async delete(key){
       if(key.indexOf('member:')===0){
         await partRef(key.slice(7)).delete();
+      }else if(key.indexOf('post:')===0){
+        await roomRef().collection('posts').doc(key.slice(5)).delete();
       }else if(key==='myid'){
         localStorage.removeItem(myidKey);
       }
@@ -510,6 +556,10 @@ function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clea
         return {
           keys:qs.docs.map(d=>'member:'+d.id)
         };
+      }
+      if(prefix==='post:'){
+        const qs=await roomRef().collection('posts').get();
+        return {keys:qs.docs.map(d=>'post:'+d.id)};
       }
       return {keys:[]};
     }
@@ -759,7 +809,14 @@ async function loadClub(){
     const results=await Promise.all(keys.map(k=>window.storage.get(k,true).catch(()=>null)));
     results.forEach(r=>{if(r&&r.value){try{const mm=JSON.parse(r.value);if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0];members[mm.id]=mm;}catch(e){}}});
   }catch(e){}
-  S={members,meId:myId,viewId:myId,ownerId};
+  const posts=[];
+  try{
+    const pidx=await window.storage.list('post:',true);
+    const pkeys=(pidx&&pidx.keys)||[];
+    const pres=await Promise.all(pkeys.map(k=>window.storage.get(k,true).catch(()=>null)));
+    pres.forEach(r=>{if(r&&r.value){try{posts.push(JSON.parse(r.value));}catch(e){}}});
+  }catch(e){}
+  S={members,meId:myId,viewId:myId,ownerId,posts};
 }
 async function migrateLegacy(){ // brings forward data saved by the old single-user (non-shared) version
   try{
@@ -824,7 +881,166 @@ const TABMETA=[
   ['dress','꾸미기','M12 3l3 3 4-1 1 4-3 3 3 3-1 4-4-1-3 3-3-3-4 1-1-4 3-3-3-3 1-4 4 1z']
 ];
 function _ph(emo,t,desc){return `<div style="text-align:center;padding:78px 24px;color:var(--soft)"><div style="font-size:52px;margin-bottom:14px">${emo}</div><div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px">${t}</div><div style="font-size:13.5px;line-height:1.65">${desc}<br>곧 만나요!</div></div>`;}
-function renderFeed(){$('#s-feed').innerHTML=_ph('📰','피드','모임 친구들의 소식 피드를 준비하고 있어요.');}
+/* 본문/이름/댓글용 풀 이스케이프(자르지 않음) */
+function escT(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function timeAgo(ts){
+  if(!ts)return '';
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return '방금';
+  const mi=Math.floor(s/60); if(mi<60)return mi+'분 전';
+  const h=Math.floor(mi/60); if(h<24)return h+'시간 전';
+  const d=Math.floor(h/24); if(d<7)return d+'일 전';
+  try{return fmt(new Date(ts).toISOString());}catch(e){return '';}
+}
+/* ---------- FEED (문장 공유) ---------- */
+let feedSort='recent', feedSavedOnly=false;
+const feedExpanded=new Set();
+let _composeCover='',_composeBookT='',_composeBookA='';
+function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
+function renderFeed(){
+  refreshHeader();
+  const meM=me();
+  let list=(S.posts||[]).slice();
+  if(feedSavedOnly)list=list.filter(p=>(p.saves||[]).includes(S.meId));
+  list.sort(feedSort==='popular'
+    ? (a,b)=>feedScore(b)-feedScore(a)||(b.createdAt||0)-(a.createdAt||0)
+    : (a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const empty=`<div class="shelf-empty">${feedSavedOnly
+    ?'아직 저장한 문장이 없어요 🔖<br>마음에 드는 문장에 책갈피를 눌러보세요'
+    :'아직 공유된 문장이 없어요 ✨<br>첫 문장을 공유해보세요'}</div>`;
+  $('#s-feed').innerHTML=`
+  <div class="fd-compose">
+    <div class="fd-av">${avatarTiny(meM)}</div>
+    <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
+    <button class="fd-plus" id="fdPlus">+</button>
+  </div>
+  <div class="fd-bar">
+    <div class="fd-sorts">
+      <div class="chip ${!feedSavedOnly&&feedSort==='recent'?'on':''}" data-sort="recent">최신순</div>
+      <div class="chip ${!feedSavedOnly&&feedSort==='popular'?'on':''}" data-sort="popular">인기순</div>
+    </div>
+    <button class="fd-bm ${feedSavedOnly?'on':''}" id="fdBm" title="저장한 글">${feedSavedOnly?'🔖 저장한 글':'🔖'}</button>
+  </div>
+  <div id="fdList">${list.length?list.map(feedCard).join(''):empty}</div>`;
+  bindFeed();
+}
+function feedCard(p){
+  const au=S.members[p.authorId];
+  const name=au?au.name:'알 수 없음';
+  const avatar=au?avatarTiny(au):'';
+  const liked=(p.likes||[]).includes(S.meId), saved=(p.saves||[]).includes(S.meId);
+  const cmts=p.comments||[], open=feedExpanded.has(p.id);
+  const canDel=p.authorId===S.meId||isOwner();
+  return `<div class="fd-card" data-id="${p.id}">
+    <div class="fd-top">
+      <div class="fc-av">${avatar}</div>
+      <div class="fd-meta"><b>${escT(name)}</b><small>${timeAgo(p.createdAt)}</small></div>
+      ${canDel?`<button class="fd-del" data-id="${p.id}" title="삭제">✕</button>`:''}
+    </div>
+    ${p.bookTitle?`<div class="fd-booktag">📖 ${escT(p.bookTitle)}${p.bookAuthor?` <span>· ${escT(p.bookAuthor)}</span>`:''}</div>`:''}
+    <div class="fd-quote">${escT(p.text)}</div>
+    <div class="fd-acts">
+      <button class="fd-like ${liked?'on':''}" data-id="${p.id}">${liked?'❤️':'🤍'} ${(p.likes||[]).length}</button>
+      <button class="fd-cmt" data-id="${p.id}">💬 ${cmts.length}</button>
+      <button class="fd-save ${saved?'on':''}" data-id="${p.id}">${saved?'🔖 저장됨':'🔖 저장'}</button>
+    </div>
+    ${open?`<div class="fd-comments">
+      ${cmts.map(c=>feedComment(c,p)).join('')||'<div class="fd-noc">첫 댓글을 남겨보세요</div>'}
+      <div class="fd-cwrite">
+        <input class="fd-cinp" data-id="${p.id}" placeholder="댓글 달기…" maxlength="200" autocomplete="off">
+        <button class="fd-csend" data-id="${p.id}">등록</button>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+function feedComment(c,p){
+  const cm=S.members[c.authorId];
+  const name=cm?cm.name:'알 수 없음', av=cm?avatarTiny(cm):'';
+  const canDel=c.authorId===S.meId||isOwner();
+  return `<div class="fd-c">
+    <div class="fd-cav">${av}</div>
+    <div class="fd-cbody"><span class="fd-cname">${escT(name)}</span>${escT(c.text)}<div class="fd-ctime">${timeAgo(c.createdAt)}</div></div>
+    ${canDel?`<button class="fd-cdel" data-pid="${p.id}" data-cid="${c.id}">✕</button>`:''}
+  </div>`;
+}
+function bindFeed(){
+  $('#fdPlus')&&($('#fdPlus').onclick=openComposeSheet);
+  $('#fdCompose')&&($('#fdCompose').onclick=openComposeSheet);
+  $('#fdBm')&&($('#fdBm').onclick=()=>{feedSavedOnly=!feedSavedOnly;renderFeed();});
+  $('#s-feed').querySelectorAll('[data-sort]').forEach(c=>c.onclick=()=>{feedSort=c.dataset.sort;feedSavedOnly=false;renderFeed();});
+  const L=$('#fdList');
+  L.querySelectorAll('.fd-like').forEach(b=>b.onclick=()=>toggleLike(b.dataset.id));
+  L.querySelectorAll('.fd-save').forEach(b=>b.onclick=()=>toggleSave(b.dataset.id));
+  L.querySelectorAll('.fd-cmt').forEach(b=>b.onclick=()=>{const id=b.dataset.id;feedExpanded.has(id)?feedExpanded.delete(id):feedExpanded.add(id);renderFeed();});
+  L.querySelectorAll('.fd-del').forEach(b=>b.onclick=()=>removePost(b.dataset.id));
+  L.querySelectorAll('.fd-csend').forEach(b=>b.onclick=()=>{const inp=L.querySelector('.fd-cinp[data-id="'+b.dataset.id+'"]');submitComment(b.dataset.id,inp?inp.value:'');});
+  L.querySelectorAll('.fd-cinp').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitComment(inp.dataset.id,inp.value);}});
+  L.querySelectorAll('.fd-cdel').forEach(b=>b.onclick=()=>removeComment(b.dataset.pid,b.dataset.cid));
+}
+// 최신 상태를 다시 읽어 반영(동시 수정 충돌 최소화)
+async function _mutatePost(id,fn){
+  let p=null;
+  try{const r=await window.storage.get('post:'+id,true);if(r&&r.value)p=JSON.parse(r.value);}catch(e){}
+  if(!p)p=(S.posts||[]).find(x=>x.id===id);
+  if(!p)return;
+  fn(p);
+  S.posts=(S.posts||[]).map(x=>x.id===id?p:x);
+  try{await window.storage.set('post:'+id,JSON.stringify(p),true);}catch(e){}
+  renderFeed();
+}
+function toggleLike(id){return _mutatePost(id,p=>{p.likes=p.likes||[];const i=p.likes.indexOf(S.meId);i<0?p.likes.push(S.meId):p.likes.splice(i,1);});}
+function toggleSave(id){return _mutatePost(id,p=>{p.saves=p.saves||[];const i=p.saves.indexOf(S.meId);i<0?p.saves.push(S.meId):p.saves.splice(i,1);});}
+function submitComment(id,txt){txt=(txt||'').trim();if(!txt)return;feedExpanded.add(id);return _mutatePost(id,p=>{p.comments=p.comments||[];p.comments.push({id:'c'+Date.now(),authorId:S.meId,text:txt,createdAt:Date.now()});});}
+function removeComment(pid,cid){return _mutatePost(pid,p=>{p.comments=(p.comments||[]).filter(c=>c.id!==cid);});}
+async function removePost(id){
+  const p=(S.posts||[]).find(x=>x.id===id);
+  if(p&&p.authorId!==S.meId&&!isOwner()){toast('내 글만 삭제할 수 있어요');return;}
+  if(typeof confirm==='function'&&!confirm('이 글을 삭제할까요?'))return;
+  S.posts=(S.posts||[]).filter(x=>x.id!==id);
+  try{await window.storage.delete('post:'+id,true);}catch(e){}
+  toast('글을 삭제했어요');renderFeed();
+}
+function openComposeSheet(){
+  _composeCover='';_composeBookT='';_composeBookA='';
+  $('#sheet').innerHTML=`
+    <h3>문장 공유하기</h3>
+    <div class="field">
+      <label>오늘의 문장 · 감상</label>
+      <textarea id="fpText" rows="4" maxlength="600" placeholder="마음에 남은 문장이나 짧은 감상을 적어보세요"
+        style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit"></textarea>
+    </div>
+    <div class="field">
+      <label>책 <span style="font-weight:400">(선택)</span></label>
+      <input id="fpBook" placeholder="제목 2글자만 입력해도 검색돼요" autocomplete="off">
+      <div class="hint">출처가 없으면 비워두거나 제목만 직접 적어도 돼요</div>
+    </div>
+    <div class="searchres" id="fpsres" style="display:none"></div>
+    <div class="btnrow">
+      <button class="btn ghost" id="fpCancel">취소</button>
+      <button class="btn" id="fpSave">공유하기</button>
+    </div>`;
+  openOv();
+  $('#fpCancel').onclick=closeOv;
+  $('#fpSave').onclick=submitPost;
+  const bi=$('#fpBook');
+  bi.oninput=()=>{clearTimeout(_searchT);const q=bi.value.trim();
+    _composeBookT=q;_composeBookA='';_composeCover='';   // 직접 입력도 출처로 인정
+    if(q.length<2){$('#fpsres').style.display='none';return;}
+    _searchT=setTimeout(()=>searchBooks(q,{boxSel:'#fpsres',onPick:v=>{
+      _composeBookT=v.title||'';_composeBookA=(v.authors||[]).join(', ');_composeCover=_coverUrl(v);
+      bi.value=_composeBookT;
+    }}),320);};
+  setTimeout(()=>$('#fpText').focus(),250);
+}
+async function submitPost(){
+  const text=$('#fpText').value.trim();
+  if(!text){toast('문장이나 감상을 입력해주세요');return;}
+  const bookT=($('#fpBook')?$('#fpBook').value.trim():'')||_composeBookT;
+  const post={id:'p'+Date.now(),authorId:S.meId,text,bookTitle:bookT,bookAuthor:_composeBookA,bookCover:_composeCover,createdAt:Date.now(),likes:[],saves:[],comments:[]};
+  S.posts=S.posts||[];S.posts.push(post);
+  try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
+  closeOv();toast('문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
+}
 function renderTabs(){
   $('#tabs').innerHTML=TABMETA.map(([k,l,d])=>
     `<button class="tab ${k===tab?'on':''}" data-tab="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>${l}</button>`).join('');
@@ -1271,8 +1487,16 @@ function _scoreBook(v,q){
   if(a.includes(qq))return 30;
   return 0;
 }
-async function searchBooks(q){
-  const box=$('#sres');box.style.display='block';
+async function searchBooks(q,opts){
+  opts=opts||{};
+  const boxSel=opts.boxSel||'#sres';
+  const onPick=opts.onPick||(v=>{   // 기본: 책 기록 시트의 입력칸 채우기
+    $('#bTitle').value=v.title||'';
+    $('#bAuthor').value=(v.authors||[]).join(', ');
+    if(v.pageCount&&$('#bPages'))$('#bPages').value=v.pageCount;
+    _cover=_coverUrl(v);
+  });
+  const box=$(boxSel);box.style.display='block';
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
   const BOOKS_KEY='AIzaSyC-AC06dno9BRvOCtnKaW7a9TXnFeZhfJI';
   const base=`https://www.googleapis.com/books/v1/volumes?maxResults=20&printType=books&country=KR&key=${BOOKS_KEY}`;
@@ -1306,10 +1530,7 @@ async function searchBooks(q){
     }).join('');
     box.querySelectorAll('.sr').forEach(r=>r.onclick=()=>{
       const v=items[+r.dataset.i].volumeInfo||{};
-      $('#bTitle').value=v.title||'';
-      $('#bAuthor').value=(v.authors||[]).join(', ');
-      if(v.pageCount&&$('#bPages'))$('#bPages').value=v.pageCount;
-      _cover=_coverUrl(v);
+      onPick(v);
       box.style.display='none';
     });
   }catch(e){
@@ -1643,7 +1864,10 @@ function subscribeRealtime(){
   const u2=db.collection('rooms').doc(roomId)
     .onSnapshot(()=>apply(), e=>console.warn('room snapshot',e));
 
-  _rtUnsub=()=>{u1();u2();};
+  const u3=db.collection('rooms').doc(roomId).collection('posts')
+    .onSnapshot(()=>apply(), e=>console.warn('posts snapshot',e));
+
+  _rtUnsub=()=>{u1();u2();u3();};
 }
 
 function boot(){
