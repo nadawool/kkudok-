@@ -24,15 +24,15 @@ input{font-family:inherit}
   display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.06)}
 /* header */
 .hd{display:flex;align-items:center;gap:10px;padding:14px 18px 10px}
-.hd img{width:34px;height:34px;object-fit:contain}
-.hd .t{font-weight:900;font-size:20px;letter-spacing:-.5px}
+.hd img{width:34px;height:34px;object-fit:contain;cursor:pointer}
+.hd .t{font-weight:900;font-size:20px;letter-spacing:-.5px;cursor:pointer}
 .hd .t small{display:block;font-size:11px;font-weight:500;color:var(--soft);letter-spacing:0}
 .hd .me{margin-left:auto;display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);
   border-radius:30px;padding:4px 10px 4px 4px;box-shadow:var(--shadow)}
 .hd .me .av{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;display:grid;place-items:center}
-.hd .me .av img{width:30px;height:30px;object-fit:contain;margin-top:4px}
-.hd .me .av .tinyav{width:30px;height:30px;margin-top:3px}
-.hd .me .av .tinyav img{width:100%;height:100%;margin-top:0}
+.hd .me .av img{width:100%;height:100%;object-fit:contain;margin-top:0}
+.hd .me .av .tinyav{width:100%;height:100%;margin-top:0}
+.hd .me .av .tinyav img{width:100%;height:100%;margin-top:0;object-fit:contain}
 .peer-cal{position:relative}
 .peer-del{position:absolute;top:6px;right:6px;width:19px;height:19px;border:none;border-radius:50%;background:#F0EADF;color:var(--soft);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;z-index:2}
 .peer-del:active{background:#E5DCCB}
@@ -87,7 +87,7 @@ input{font-family:inherit}
 .rbook .rp .pc{color:var(--soft);font-weight:700;margin-left:3px}
 .rg{height:6px;background:#F0EADF;border-radius:30px;overflow:hidden}
 .rg i{display:block;height:100%;background:linear-gradient(90deg,var(--honey),#F7B36A);border-radius:30px;transition:width .4s}
-.rbook .chk{position:absolute;top:-7px;right:-7px;width:24px;height:24px;border-radius:50%;background:var(--honey);color:#fff;display:none;place-items:center;font-size:13px;box-shadow:0 2px 6px rgba(242,153,74,.45)}
+.rbook .chk{position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:50%;background:var(--honey);color:#fff;display:none;place-items:center;font-size:13px;box-shadow:0 2px 6px rgba(242,153,74,.45);z-index:5}
 .rbook.on .chk{display:grid}
 .rbook.add{display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed;color:var(--soft);background:#FCFAF6;min-height:200px}
 .rbook.add .plus{font-size:30px;line-height:1;margin-bottom:6px;color:var(--honey)}
@@ -311,6 +311,7 @@ input{font-family:inherit}
 .fd-like.on{color:#e2495a}
 .fd-save{margin-left:auto}
 .fd-save.on{color:var(--honey-d)}
+.fd-bm .ribbon,.fd-save .ribbon{vertical-align:-3px}
 .fd-comments{margin-top:12px;border-top:1px dashed var(--line);padding-top:13px}
 .fd-c{display:flex;gap:9px;margin-bottom:12px}
 .fd-cav{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
@@ -367,9 +368,10 @@ input{font-family:inherit}
 .att-row{display:flex;gap:6px;overflow-x:auto;padding:2px 8px;scrollbar-width:none;-ms-overflow-style:none}
 .att-row::-webkit-scrollbar{display:none}
 .att-m{flex:0 0 auto;width:60px;text-align:center}
-.att-av{width:54px;height:54px;border-radius:50%;margin:0 auto 5px;border:1px solid var(--line);overflow:hidden;position:relative}
+.att-avwrap{position:relative;width:54px;margin:0 auto 5px}
+.att-av{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);overflow:hidden;position:relative}
 .att-av .tinyav img{margin-top:0}
-.att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:grid;place-items:center;font-size:13px;line-height:1}
+.att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:grid;place-items:center;font-size:13px;line-height:1;z-index:3}
 .att-nm{font-size:12px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-age{font-size:10.5px;color:var(--soft);font-weight:700;margin-top:1px}
 .att-m.gone .att-av{opacity:.45;filter:grayscale(.3)}
@@ -434,6 +436,11 @@ input{font-family:inherit}
 .tinyav img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .tinyav svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .lead .av .tinyav img,.row-m .av .tinyav img,.peer-cal .av .tinyav img{width:100%;margin-top:0}
+/* bust avatar: head + 상체 crop, used in feed */
+.bustav{position:relative;width:100%;height:100%;overflow:hidden;border-radius:inherit}
+.bustin{position:absolute;left:50%;top:0;width:148%;aspect-ratio:var(--bar);transform:translateX(-50%)}
+.bustin img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:top center}
+.bustin svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 /* star rating */
 .stars{display:flex;gap:5px}
 .star{font-size:30px;color:#E6DFD2;cursor:pointer;line-height:1;transition:.12s}
@@ -814,8 +821,14 @@ function avatarHTML(m,size){ // returns element string
     ${avatarSVG(ck,m.items)}
   </div>`;
 }
-function avatarTiny(m){ // small circular avatar incl. equipped accessories, for member lists
-  return `<div class="tinyav"><img src="${CH[m.char].img}">${avatarSVG(m.char,m.items)}</div>`;
+function avatarTiny(m){ // small circular avatar incl. equipped accessories + 꾸미기 background
+  const bg=m.bg?`background:${m.bg};`:'';
+  return `<div class="tinyav" style="${bg}"><img src="${CH[m.char].img}">${avatarSVG(m.char,m.items)}</div>`;
+}
+function avatarBust(m){ // upper-body crop incl. character + 꾸미기 background (피드용)
+  if(!m)return '';
+  const ck=m.char, ar=CH[ck].w/CH[ck].h, bg=m.bg?`background:${m.bg};`:'';
+  return `<div class="bustav" style="${bg}"><div class="bustin" style="--bar:${ar}"><img src="${CH[ck].img}">${avatarSVG(ck,m.items)}</div></div>`;
 }
 
 /* ---------- state ----------
@@ -961,6 +974,7 @@ let feedSort='recent', feedSavedOnly=false;
 const feedExpanded=new Set();
 let _composeCover='',_composeBookT='',_composeBookA='';
 function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
+function ribbonIcon(filled){return `<svg class="ribbon" viewBox="0 0 24 24" width="15" height="15" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>`;}
 function renderFeed(){
   refreshHeader();
   const meM=me();
@@ -974,7 +988,7 @@ function renderFeed(){
     :'아직 공유된 문장이 없어요 ✨<br>첫 문장을 공유해보세요'}</div>`;
   $('#s-feed').innerHTML=`
   <div class="fd-compose">
-    <div class="fd-av">${avatarTiny(meM)}</div>
+    <div class="fd-av">${avatarBust(meM)}</div>
     <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
@@ -983,7 +997,7 @@ function renderFeed(){
       <div class="chip ${!feedSavedOnly&&feedSort==='recent'?'on':''}" data-sort="recent">최신순</div>
       <div class="chip ${!feedSavedOnly&&feedSort==='popular'?'on':''}" data-sort="popular">인기순</div>
     </div>
-    <button class="fd-bm ${feedSavedOnly?'on':''}" id="fdBm" title="저장한 글">${feedSavedOnly?'🔖 저장한 글':'🔖'}</button>
+    <button class="fd-bm ${feedSavedOnly?'on':''}" id="fdBm" title="저장한 글">${feedSavedOnly?ribbonIcon(true)+' 저장한 글':ribbonIcon(false)}</button>
   </div>
   <div id="fdList">${list.length?list.map(feedCard).join(''):empty}</div>`;
   bindFeed();
@@ -991,7 +1005,7 @@ function renderFeed(){
 function feedCard(p){
   const au=S.members[p.authorId];
   const name=au?au.name:'알 수 없음';
-  const avatar=au?avatarTiny(au):'';
+  const avatar=au?avatarBust(au):'';
   const liked=(p.likes||[]).includes(S.meId), saved=(p.saves||[]).includes(S.meId);
   const cmts=p.comments||[], open=feedExpanded.has(p.id);
   const canDel=p.authorId===S.meId||isOwner();
@@ -1006,7 +1020,7 @@ function feedCard(p){
     <div class="fd-acts">
       <button class="fd-like ${liked?'on':''}" data-id="${p.id}">${liked?'❤️':'🤍'} ${(p.likes||[]).length}</button>
       <button class="fd-cmt" data-id="${p.id}">💬 ${cmts.length}</button>
-      <button class="fd-save ${saved?'on':''}" data-id="${p.id}">${saved?'🔖 저장됨':'🔖 저장'}</button>
+      <button class="fd-save ${saved?'on':''}" data-id="${p.id}">${saved?ribbonIcon(true)+' 저장됨':ribbonIcon(false)+' 저장'}</button>
     </div>
     ${open?`<div class="fd-comments">
       ${cmts.map(c=>feedComment(c,p)).join('')||'<div class="fd-noc">첫 댓글을 남겨보세요</div>'}
@@ -1019,7 +1033,7 @@ function feedCard(p){
 }
 function feedComment(c,p){
   const cm=S.members[c.authorId];
-  const name=cm?cm.name:'알 수 없음', av=cm?avatarTiny(cm):'';
+  const name=cm?cm.name:'알 수 없음', av=cm?avatarBust(cm):'';
   const canDel=c.authorId===S.meId||isOwner();
   return `<div class="fd-c">
     <div class="fd-cav">${av}</div>
@@ -1145,11 +1159,11 @@ function renderCheckin(){
     const pct=bookPct(b);
     const prog=isEbook(b)?`${Math.round(b.cur||0)}%`:`${b.cur||0} / ${b.pages||'–'}p <span class="pc">${b.pages?pct+'%':''}</span>`;
     return `<div class="rbook ${b.id===checkinBookId?'on':''}" data-id="${b.id}">
-      <div class="chk">✓</div>
       <div class="rc" style="${b.cover?`background-image:url(${cleanCov(b.cover)})`:''}"></div>
       <div class="rt">${esc(b.title)}</div>
       <div class="rp">${prog}</div>
       <div class="rg"><i style="width:${pct}%"></i></div>
+      <div class="chk">✓</div>
     </div>`;
   }).join('')+`<div class="rbook add" id="ciAdd"><div class="plus">+</div><span>책장에서<br>등록</span></div>`;
 
@@ -1250,7 +1264,10 @@ function renderHome(){
     <div class="hs-head"><b>오늘 출석한 멤버</b><span class="hs-count">${att.length} / ${total}명</span></div>
     <div class="card att-card"><div class="att-row">
       ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}">
-        <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}${here(m)?'<span class="att-apple">🍎</span>':''}</div>
+        <div class="att-avwrap">
+          <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
+          ${here(m)?'<span class="att-apple">🍎</span>':''}
+        </div>
         <div class="att-nm">${escT(m.name)}</div>
         <div class="att-age">${age(m)}살</div>
       </div>`).join('')}
@@ -1546,9 +1563,15 @@ function drawBookList(){
     e.stopPropagation();
     const bk=me().books.find(b=>b.id===x.dataset.id);if(bk)openBookSheet(bk);
   });
-  if(isMe())$('#blist').querySelectorAll('.del').forEach(x=>x.onclick=async(e)=>{
+  if(isMe())$('#blist').querySelectorAll('.del').forEach(x=>x.onclick=(e)=>{
     e.stopPropagation();
-    const m=me();m.books=m.books.filter(b=>b.id!==x.dataset.id);await save();renderShelf();
+    const bk=me().books.find(b=>b.id===x.dataset.id);
+    confirmDialog({
+      title:'책을 삭제할까요?',
+      body:(bk?`'${esc2(bk.title)}'`:'이 책')+' 기록이 책장에서 완전히 사라져요.',
+      okText:'삭제', danger:true,
+      onOk:async()=>{const m=me();m.books=m.books.filter(b=>b.id!==x.dataset.id);await save();renderShelf();toast('삭제했어요');}
+    });
   });
 }
 function drawGallery(list,m){
@@ -1965,8 +1988,19 @@ function drawItems(){
 /* ---------- overlay ---------- */
 function openOv(){$('#ov').classList.add('on');}
 function closeOv(){$('#ov').classList.remove('on');}
+function confirmDialog(opt){ // {title, body, okText, danger, onOk}
+  $('#sheet').innerHTML=`<h3>${opt.title||'확인'}</h3>
+    ${opt.body?`<p style="text-align:center;color:var(--soft);font-size:13.5px;line-height:1.6;margin:-4px 4px 16px">${opt.body}</p>`:''}
+    <button class="btn" id="cfOk"${opt.danger?' style="background:#d6493f"':''}>${opt.okText||'확인'}</button>
+    <button class="btn ghost" id="cfCancel" style="margin-top:8px">취소</button>`;
+  openOv();
+  $('#cfOk').onclick=()=>{closeOv();opt.onOk&&opt.onOk();};
+  $('#cfCancel').onclick=closeOv;
+}
 $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
 $('#meBtn').onclick=openProfileSheet;
+$('#logo').onclick=()=>{if(S)go('home');};
+document.querySelector('.hd .t').onclick=()=>{if(S)go('home');};
 
 /* ---------- profile (이름 변경) ---------- */
 async function claimOwner(){
