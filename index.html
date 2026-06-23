@@ -32,6 +32,7 @@ input{font-family:inherit}
 .hd .me .av{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;display:grid;place-items:center}
 .hd .me .av img{width:100%;height:100%;object-fit:contain;margin-top:0}
 .hd .me .av .tinyav{width:100%;height:100%;margin-top:0}
+.hd .me .av .bustav{width:100%;height:100%}
 .hd .me .av .tinyav img{width:100%;height:100%;margin-top:0;object-fit:contain}
 .peer-cal{position:relative}
 .peer-del{position:absolute;top:6px;right:6px;width:19px;height:19px;border:none;border-radius:50%;background:#F0EADF;color:var(--soft);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;z-index:2}
@@ -53,14 +54,15 @@ input{font-family:inherit}
 /* PNG layer stack */
 .avstack{position:absolute;inset:0}
 .avstack img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none}
-.avstack.hz{transform:scale(2.0);transform-origin:50% 40%}   /* 얼굴 클로즈업(원형 리스트) */
-.avstack.bz{transform:scale(1.55);transform-origin:50% 33%}  /* 머리~상체(피드 등) */
+.avstack.hz{transform:scale(1.55);transform-origin:50% 36%}  /* 얼굴(원형 리스트) — 머리 안 잘리게 */
+.avstack.bz{transform:scale(1.55);transform-origin:50% 33%}  /* 머리~어깨(피드/헤더) */
+.avstack.uz{transform:scale(1.28);transform-origin:50% 42%}  /* 상반신(출첵 프로필) */
 .tinyav .avstack img,.bustav .avstack img{object-position:center top}
 .avatar .base{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
 .avatar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 /* home hero */
 .hero{text-align:center;padding-top:22px}
-.hero .avatar{max-width:158px;margin-top:2px}
+.hero .avatar{max-width:188px;margin-top:2px}
 .hero .nm{font-weight:900;font-size:22px;margin-top:6px}
 .agebadge{display:inline-flex;align-items:center;gap:6px;background:var(--honey-s);color:var(--honey-d);
   font-weight:800;font-size:13px;padding:5px 12px;border-radius:30px;margin-top:6px}
@@ -71,6 +73,7 @@ input{font-family:inherit}
 .pcard{display:flex;align-items:center;gap:15px;padding:18px 16px}
 .pc-av{flex:none;width:112px;height:112px;border-radius:50%;border:1px solid var(--line);overflow:hidden;position:relative}
 .pc-av .avatar{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:80px;max-width:none;margin:0}
+.pc-av .bustav{position:absolute;inset:0;width:100%;height:100%}
 .pc-body{flex:1;min-width:0}
 .pc-name{font-weight:900;font-size:22px;line-height:1.1;margin-bottom:9px}
 .pc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:13px}
@@ -885,6 +888,11 @@ function avatarBust(m){ // 머리~상체 크롭
   const bg=m.bg?`background:${m.bg};`:'';
   return `<div class="bustav" style="${bg}">${avatarStack(m,'bz')}</div>`;
 }
+function avatarUpper(m){ // 상반신까지 보이는 크롭 (출첵 프로필)
+  if(!m)return '';
+  const bg=m.bg?`background:${m.bg};`:'';
+  return `<div class="bustav" style="${bg}">${avatarStack(m,'uz')}</div>`;
+}
 
 /* ---------- state ----------
    member:<id>  (shared)   - each member's own reading record
@@ -1206,7 +1214,7 @@ function go(t){
 }
 function refreshHeader(){
   const m=me();$('#meNm').textContent=m.name;
-  $('#meAv').innerHTML=avatarTiny(m);
+  $('#meAv').innerHTML=avatarBust(m);
   $('#meAv').style.background=m.bg||'var(--card)';
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
@@ -1261,7 +1269,7 @@ function renderCheckin(){
     <div class="cistat ${readToday?'ok':''}">${readToday?'오늘 출석했어요 · 진도를 갱신할 수 있어요':'📌 오늘 아직 출석 전이에요'}</div>
   </div>`:''}
   <div class="card pcard" style="margin-top:14px">
-    <div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div>
+    <div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarUpper(m)}</div>
     <div class="pc-body">
       <div class="pc-name">${m.name}</div>
       <div class="pc-meta">
@@ -2003,9 +2011,10 @@ function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
   $('#s-dress').innerHTML=`
-  <div class="card hero" style="padding-bottom:10px;background:${m.bg||'var(--card)'}">
+  <div class="card hero" style="padding-bottom:14px;background:${m.bg||'var(--card)'}">
     ${avatarHTML(m)}
-    <div class="agebadge" style="margin-top:8px">${m.name} 캐릭터 꾸미기</div>
+    <div class="nm">${m.name}</div>
+    <div class="agebadge" style="margin-top:6px">🎂 ${age(m)}살 · ${nickname(age(m))}</div>
   </div>
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div class="items" id="items"></div>`;
