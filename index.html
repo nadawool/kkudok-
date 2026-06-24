@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>꾸독 · 함께 읽는 독서 모임</title>
+<link id="favIcon" rel="icon" type="image/png">
+<link id="favApple" rel="apple-touch-icon">
+<meta name="theme-color" content="#F2994A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -576,6 +579,8 @@ input{font-family:inherit}
 const CH = ASSETS.chars, CHKEYS = Object.keys(CH);
 document.getElementById('logo').src = ASSETS.logo;
 document.getElementById('onbLogo').src = ASSETS.logo;
+document.getElementById('favIcon').href = ASSETS.logo;
+document.getElementById('favApple').href = ASSETS.logo;
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
