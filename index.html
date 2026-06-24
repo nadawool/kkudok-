@@ -265,6 +265,13 @@ input{font-family:inherit}
 .item .nm{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--soft)}
 .item .bgswatch{width:100%;height:100%;border-radius:13px}
 .item.bgtile{background:#fff}
+/* 헤어 색상 칩 */
+.haircolors{grid-column:1/-1;display:flex;gap:11px;flex-wrap:wrap;margin:3px 1px 6px}
+.hcchip{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.hcchip .sw{width:34px;height:34px;border-radius:50%;border:2px solid #E0D7C6;box-sizing:border-box;transition:box-shadow .15s,border-color .15s}
+.hcchip.sel .sw{border-color:var(--honey);box-shadow:0 0 0 2px var(--honey),0 4px 12px rgba(242,153,74,.28)}
+.hcchip .hcnm{font-size:10px;font-weight:700;color:var(--soft)}
+.hcchip.sel .hcnm{color:var(--honey)}
 .item .lock{position:absolute;inset:0;background:rgba(251,250,247,.78);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--soft);text-align:center;line-height:1.4}
 .item.locked{cursor:default}
 .dsub{display:flex;gap:8px;margin:2px 2px 12px}
@@ -898,6 +905,35 @@ const BGCOLORS=[
   {hex:'#F0E9DA',name:'모래'},
   {hex:'#ECECEC',name:'그레이'},
 ];
+/* 헤어 색상 — 원본(검정) PNG를 SVG 필터로 틴팅. 기본 + 5색 */
+const HAIR_COLORS=[
+  {id:'',      name:'기본',  hex:''},        // 원본 검정
+  {id:'dbrown',name:'진갈색',hex:'#382112'},
+  {id:'brown', name:'갈색',  hex:'#6b422d'},
+  {id:'yellow',name:'노랑',  hex:'#f9e280'},
+  {id:'bleach',name:'탈색',  hex:'#fff7d7'},
+  {id:'white', name:'흰머리',hex:'#fffdf5'},
+];
+function _hx2n(h){return parseInt(h.slice(1),16);}
+function darkenHex(h,f){const n=_hx2n(h);const r=Math.round(((n>>16)&255)*f),g=Math.round(((n>>8)&255)*f),b=Math.round((n&255)*f);return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
+function hairColorById(id){return HAIR_COLORS.find(c=>c.id===(id||''))||HAIR_COLORS[0];}
+function ensureHairFilters(){ // 색상별 틴팅 필터를 <defs>에 1회 주입 (명도 스트레치→2점 색 매핑: 채움=메인색, 외곽선=어두운색)
+  if(typeof document==='undefined'||document.getElementById('hairFx'))return;
+  const nm=h=>{const n=_hx2n(h);return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255];};
+  let defs='';
+  HAIR_COLORS.forEach(c=>{ if(!c.id)return;
+    const [mr,mg,mb]=nm(c.hex), [dr,dg,db]=nm(darkenHex(c.hex,0.55));
+    defs+=`<filter id="hairFx_${c.id}" color-interpolation-filters="sRGB">`
+      +`<feComponentTransfer><feFuncR type="linear" slope="43" intercept="-6.75"/><feFuncG type="linear" slope="43" intercept="-6.75"/><feFuncB type="linear" slope="43" intercept="-6.75"/></feComponentTransfer>`
+      +`<feComponentTransfer><feFuncR type="table" tableValues="${dr} ${mr}"/><feFuncG type="table" tableValues="${dg} ${mg}"/><feFuncB type="table" tableValues="${db} ${mb}"/></feComponentTransfer>`
+      +`</filter>`;
+  });
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id='hairFx'; svg.setAttribute('aria-hidden','true');
+  svg.style.cssText='position:absolute;width:0;height:0;overflow:hidden';
+  svg.innerHTML=`<defs>${defs}</defs>`;
+  document.body.appendChild(svg);
+}
 function catBySlot(s){return CATALOG.filter(i=>i.slot===s);}
 function itemById(id){return CATALOG.find(i=>i.id===id);}
 
@@ -988,9 +1024,12 @@ function ensureItems(m){ // 마이그레이션/기본값 보장 (눈·입·헤�
   return m;
 }
 function avatarStack(m,zoom){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
-  ensureItems(m);
+  ensureItems(m); ensureHairFilters();
   let h=`<img src="${BASE_IMG}" alt="">`;
-  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(im)h+=`<img src="${im}" alt="">`;});
+  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
+    if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
+    else h+=`<img src="${im}" alt="">`;
+  });
   ACC_TYPES.forEach(t=>{const it=accItem(t.key,m.items.acc&&m.items.acc[t.key]);if(it)h+=`<img src="${it.img}" alt="">`;});
   return `<div class="avstack${zoom?' '+zoom:''}">${h}</div>`;
 }
@@ -2410,7 +2449,7 @@ function drawItems(){
     $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{m.bg=el.dataset.bg||null;await save();renderDress();});
     return;
   }
-  if(dressSlot==='hair'){ $('#items').innerHTML=slotGrid(m,'hair','hz'); }
+  if(dressSlot==='hair'){ $('#items').innerHTML=hairColorRow(m)+`<div class="dsec">스타일</div>`+slotGrid(m,'hair','hz'); }
   else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}${faceExtraGrid(m)}`; }
   else if(dressSlot==='cloth'){
     $('#dsub').innerHTML=`<div class="dsub">
@@ -2438,6 +2477,21 @@ function drawItems(){
     if((m.items.acc[t]||null)===id)return;
     m.items.acc[t]=id; await save(); renderDress();
   });
+  $('#items').querySelectorAll('.hcchip').forEach(el=>el.onclick=async()=>{
+    const id=el.dataset.hc||'';
+    if((me().items.hairColor||'')===id)return;
+    me().items.hairColor=id||null; await save(); renderDress();
+  });
+}
+
+function hairColorRow(m){ // 헤어 색상 칩 (기본 + 5색)
+  const cur=hairColorById(m.items.hairColor).id;
+  const chips=HAIR_COLORS.map(c=>{
+    const sel=c.id===cur, sw=c.hex||'#3a3a3a';
+    return `<div class="hcchip ${sel?'sel':''}" data-hc="${c.id}" title="${c.name}">
+      <span class="sw" style="background:${sw}"></span><span class="hcnm">${c.name}</span></div>`;
+  }).join('');
+  return `<div class="dsec">색상</div><div class="haircolors">${chips}</div>`;
 }
 
 /* ---------- overlay ---------- */
