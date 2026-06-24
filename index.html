@@ -1229,8 +1229,19 @@ async function removePost(id){
   if(p&&p.authorId!==S.meId&&!isOwner()){toast('내 글만 삭제할 수 있어요');return;}
   if(typeof confirm==='function'&&!confirm('이 글을 삭제할까요?'))return;
   S.posts=(S.posts||[]).filter(x=>x.id!==id);
+  removeNotifByPost(id);
   try{await window.storage.delete('post:'+id,true);}catch(e){}
   toast('글을 삭제했어요');renderFeed();
+}
+function removeNotifByPost(id){
+  const N=window._notif; if(!N||!N.list)return;
+  const key='p_'+id;
+  const ev=N.list.find(x=>x.id===key);
+  if(!ev)return;
+  if(!ev.read)N.unread=Math.max(0,(N.unread||0)-1);
+  N.list=N.list.filter(x=>x.id!==key);
+  if(N.seenPosts)N.seenPosts.add(id); // 재스캔 시 다시 안 뜨도록
+  saveNotif(); updateBellBadge();
 }
 function openComposeSheet(editing){
   _editPostId = editing&&editing.id ? editing.id : null;
@@ -1429,7 +1440,7 @@ function renderHome(){
   const attHTML=`<div class="home-sec">
     <div class="hs-head"><b>오늘 출석한 멤버</b><span class="hs-count">${att.length} / ${total}명</span></div>
     <div class="card att-card"><div class="att-row">
-      ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}">
+      ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}" data-uid="${m.id}">
         <div class="att-avwrap">
           <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
           ${here(m)?'<span class="att-apple">🍎</span>':''}
@@ -1504,7 +1515,21 @@ function renderHome(){
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#rfAll')&&($('#rfAll').onclick=()=>go('feed'));
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
+  $('#s-home').querySelectorAll('.att-m').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   applyPresenceDots();
+}
+function openMemberProfile(id){
+  const m=S.members[id]; if(!m)return;
+  const isMine=id===S.meId;
+  $('#sheet').innerHTML=`
+    <h3>${escT(m.name)}${isMine?'님 (나)':'님'}</h3>
+    <div style="display:flex;justify-content:center;margin:-2px 0 6px"><div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div></div>
+    <div style="text-align:center;color:var(--soft);font-size:12.5px;margin:0 0 16px">${genderLabel(m)} · ${age(m)}살 · 완독 ${doneBooks(m).length}권</div>
+    <button class="btn" id="mpShelf">📚 ${escT(m.name)}님의 책장 보러가기</button>
+    <button class="btn ghost" id="mpClose" style="margin-top:8px">닫기</button>`;
+  openOv();
+  $('#mpShelf').onclick=()=>{S.viewId=id;closeOv();go('shelf');};
+  $('#mpClose').onclick=closeOv;
 }
 function cmpJoin(a,b){return ((a.createdAt||'')<(b.createdAt||'')?-1:(a.createdAt||'')>(b.createdAt||'')?1:(a.name||'').localeCompare(b.name||'','ko'));}
 function chevR(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;}
@@ -2352,6 +2377,16 @@ function scanNotifications(){
   const curDone=new Set();
   Object.values(S.members).forEach(m=>(m.books||[]).forEach(b=>{ if(b.end) curDone.add(m.id+'::'+b.id); }));
   if(!N.ready){ N.seenPosts=curPosts; N.doneKey=curDone; N.ready=true; return; }  // 첫 로드는 기준선만
+  // 삭제된 글의 알림은 알림 목록에서도 제거
+  if(N.list&&N.list.length){
+    const before=N.list.length;
+    let removedUnread=0;
+    N.list=N.list.filter(ev=>{
+      if(ev.type==='post'){ const pid=ev.id.slice(2); if(!curPosts.has(pid)){ if(!ev.read)removedUnread++; return false; } }
+      return true;
+    });
+    if(N.list.length!==before){ N.unread=Math.max(0,(N.unread||0)-removedUnread); saveNotif(); updateBellBadge(); }
+  }
   const events=[];
   (S.posts||[]).forEach(p=>{
     if(p.id&&!N.seenPosts.has(p.id)&&p.authorId!==S.meId){
@@ -2363,7 +2398,7 @@ function scanNotifications(){
     if(m.id===S.meId)return;
     (m.books||[]).forEach(b=>{
       const k=m.id+'::'+b.id;
-      if(b.end&&!N.doneKey.has(k)) events.push({id:'d_'+k,type:'done',name:m.name,text:b.title||'',ts:b.lastTs||Date.now()});
+      if(b.end&&!N.doneKey.has(k)) events.push({id:'d_'+k,type:'done',uid:m.id,name:m.name,text:b.title||'',ts:b.lastTs||Date.now()});
     });
   });
   N.seenPosts=curPosts; N.doneKey=curDone;
@@ -2392,7 +2427,7 @@ function openNotifSheet(){
   if('Notification'in window&&Notification.permission==='default'){ try{Notification.requestPermission();}catch(e){} }
   const N=window._notif;
   const rows=N.list.length?N.list.map(ev=>`
-    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}">
+    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}" data-uid="${ev.uid||''}">
       <div class="ic ${ev.type}">${ev.type==='post'?'✨':'📚'}</div>
       <div class="body">
         <div class="tt"><b>${escT(ev.name)}</b>${ev.type==='post'?'님의 새 문장':'님 완독'}</div>
@@ -2404,7 +2439,14 @@ function openNotifSheet(){
     <button class="btn ghost" id="ntClose" style="margin-top:12px">닫기</button>`;
   openOv();
   $('#ntClose').onclick=closeOv;
-  $('#sheet').querySelectorAll('.nti').forEach(el=>el.onclick=()=>{ closeOv(); go(el.dataset.type==='post'?'feed':'shelf'); });
+  $('#sheet').querySelectorAll('.nti').forEach(el=>el.onclick=()=>{
+    closeOv();
+    if(el.dataset.type==='done'){
+      const uid=el.dataset.uid;
+      if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
+    }
+    go(el.dataset.type==='post'?'feed':'shelf');
+  });
   N.list.forEach(ev=>ev.read=true); N.unread=0; saveNotif(); updateBellBadge();
 }
 
@@ -2435,7 +2477,7 @@ function subscribeRealtime(){
 }
 
 function boot(){
-  refreshHeader();renderTabs();go('checkin');
+  refreshHeader();renderTabs();go('home');
   subscribeRealtime();
   initNotif();updateBellBadge();
   startPresence();
