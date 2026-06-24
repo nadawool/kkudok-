@@ -915,14 +915,13 @@ const HAIR_COLORS=[
   {id:'white', name:'흰머리',hex:'#fffdf5'},
 ];
 function _hx2n(h){return parseInt(h.slice(1),16);}
-function darkenHex(h,f){const n=_hx2n(h);const r=Math.round(((n>>16)&255)*f),g=Math.round(((n>>8)&255)*f),b=Math.round((n&255)*f);return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');}
 function hairColorById(id){return HAIR_COLORS.find(c=>c.id===(id||''))||HAIR_COLORS[0];}
 function ensureHairFilters(){ // 색상별 틴팅 필터를 <defs>에 1회 주입 (명도 스트레치→2점 색 매핑: 채움=메인색, 외곽선=어두운색)
   if(typeof document==='undefined'||document.getElementById('hairFx'))return;
   const nm=h=>{const n=_hx2n(h);return [((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255];};
   let defs='';
   HAIR_COLORS.forEach(c=>{ if(!c.id)return;
-    const [mr,mg,mb]=nm(c.hex), [dr,dg,db]=nm(darkenHex(c.hex,0.55));
+    const [mr,mg,mb]=nm(c.hex), dr=0,dg=0,db=0; // 외곽선=원본 검정 유지, 채움만 색칠
     defs+=`<filter id="hairFx_${c.id}" color-interpolation-filters="sRGB">`
       +`<feComponentTransfer><feFuncR type="linear" slope="43" intercept="-6.75"/><feFuncG type="linear" slope="43" intercept="-6.75"/><feFuncB type="linear" slope="43" intercept="-6.75"/></feComponentTransfer>`
       +`<feComponentTransfer><feFuncR type="table" tableValues="${dr} ${mr}"/><feFuncG type="table" tableValues="${dg} ${mg}"/><feFuncB type="table" tableValues="${db} ${mb}"/></feComponentTransfer>`
