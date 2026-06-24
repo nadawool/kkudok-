@@ -1707,13 +1707,15 @@ function homeBookCard({m,b}){
 function openBookView({m,b}){
   const r=b.rating||0;
   const mine=m.id===S.meId;
+  const matched=mine?null:myBookMatch(b.title,b.author);
+  const wishLabel=!matched?'📌 내 책장에 담기':(isWant(matched)?'📌 담음 · 탭하면 빼기':'📚 이미 책장에 있음');
   $('#sheet').innerHTML=`
     <div class="bv-cover" style="${b.cover?`background-image:url(${cleanCov(b.cover)})`:''}">${b.cover?'':'<div class="gph">📕</div>'}</div>
     <h3 style="text-align:center;margin:14px 0 2px">${escT(b.title)}</h3>
     <div style="text-align:center;color:var(--soft);font-size:12.5px;margin-bottom:14px">${escT(b.author||'저자 미상')} · ${escT(m.name)}님의 책</div>
     <div class="stars" style="justify-content:center;margin-bottom:14px">${[1,2,3,4,5].map(n=>`<span class="star static ${n<=r?'on':''}">★</span>`).join('')}</div>
     ${b.review?`<div class="bv-review">${esc2(b.review)}</div>`:`<div class="bv-review empty">아직 후기가 없어요</div>`}
-    ${mine?'':`<button class="btn" id="bvWish" style="margin-top:16px">📌 내 책장에 담기</button>`}
+    ${mine?'':`<button class="btn ${matched?'ghost':''}" id="bvWish" style="margin-top:16px">${wishLabel}</button>`}
     <button class="btn ghost" id="bvClose" style="margin-top:${mine?'16px':'9px'}">닫기</button>`;
   openOv();
   $('#bvClose').onclick=closeOv;
@@ -2152,33 +2154,32 @@ async function saveBook(){
   await save();closeOv();toast(status==='want'?'읽고 싶은 책에 담았어요 📌':endVal?'완독 책이 책장에 꽂혔어요 📚':'기록했어요');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
+function myBookMatch(title,author){
+  const nt=(title||'').trim(), na=(author||'').trim();
+  return me().books.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
+}
 async function addToWishlist(src){
-  const mine=me().books;
-  const nt=(src.title||'').trim(), na=(src.author||'').trim();
-  const dup=mine.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
-  if(dup){ toast(isWant(dup)?'이미 담아둔 책이에요 📌':'이미 책장에 있는 책이에요'); return; }
-  mine.push({id:'b'+Date.now(),title:src.title||'',author:src.author||'',start:'',end:'',cover:src.cover||'',pages:src.pages||0,type:src.type||'paper',cur:0,rating:0,review:'',status:'want'});
+  const existing=myBookMatch(src.title,src.author);
+  if(existing){
+    if(isWant(existing)){            // 아직 위시리스트 → 담기 취소(제거)
+      me().books=me().books.filter(b=>b.id!==existing.id);
+      await save(); closeOv(); toast('담기를 취소했어요');
+    } else {                         // 이미 읽는 중/완독 → 보호(삭제 안 함)
+      closeOv(); toast('이미 책장에 있는 책이에요');
+    }
+    ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+    return;
+  }
+  me().books.push({id:'b'+Date.now(),title:src.title||'',author:src.author||'',start:'',end:'',cover:src.cover||'',pages:src.pages||0,type:src.type||'paper',cur:0,rating:0,review:'',status:'want'});
   await save(); closeOv(); toast('읽고 싶은 책에 담았어요 📌');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
-async function wishlistFromRec(p){
-  const mine=me().books;
-  const nt=(p.bookTitle||'').trim(), na=(p.bookAuthor||'').trim();
-  const existing=mine.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
-  if(existing){
-    if(isWant(existing)){            // 아직 위시리스트 → 담기 취소(제거)
-      me().books=mine.filter(b=>b.id!==existing.id);
-      await save(); toast('담기를 취소했어요');
-      ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
-    } else {                         // 이미 읽는 중/완독 → 보호(삭제 안 함)
-      toast('이미 책장에 있는 책이에요');
-    }
-    return;
-  }
-  // 신규 담기 — 추천한 사람 책장에서 페이지·종류 보강
+function wishlistFromRec(p){
+  // 추천글엔 페이지·종류가 없으니, 추천한 사람 책장에서 원본을 찾아 보강한 뒤 토글에 위임
   const au=S.members[p.authorId];
   let pages=0, type='paper';
   if(au){
+    const nt=(p.bookTitle||'').trim(), na=(p.bookAuthor||'').trim();
     const orig=au.books.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
     if(orig){ pages=orig.pages||0; type=orig.type||'paper'; }
   }
@@ -2189,6 +2190,8 @@ async function wishlistFromRec(p){
 function openReviewSheet(book){
   const editable=isMe();
   let curRating=book.rating||0;
+  const matched=editable?null:myBookMatch(book.title,book.author);
+  const wishLabel=!matched?'📌 내 책장에 담기':(isWant(matched)?'📌 담음 · 탭하면 빼기':'📚 이미 책장에 있음');
   $('#sheet').innerHTML=`
     <h3>${esc2(book.title)}</h3>
     <div style="text-align:center;color:var(--soft);font-size:12.5px;margin:-6px 0 16px">${book.author||'저자 미상'}${book.end?' · 완독 '+fmt(book.end):''}</div>
@@ -2202,7 +2205,7 @@ function openReviewSheet(book){
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${esc2(book.review||'')}</textarea>
     </div>
     ${editable?`<div class="btnrow"><button class="btn ghost" id="rvCancel">닫기</button><button class="btn" id="rvSave">저장</button></div>`
-              :`<button class="btn" id="rvWish" style="margin-top:2px">📌 내 책장에 담기</button>
+              :`<button class="btn ${matched?'ghost':''}" id="rvWish" style="margin-top:2px">${wishLabel}</button>
                 <button class="btn ghost" id="rvCancel" style="margin-top:9px">닫기</button>`}`;
   openOv();
   $('#rvCancel').onclick=closeOv;
