@@ -585,7 +585,8 @@ document.getElementById('favApple').href = ASSETS.logo;
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
-const todayISO = () => new Date().toISOString().slice(0,10);
+const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const todayISO = () => isoLocal(new Date());
 const D = iso => { const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d); };
 const fmt = iso => iso ? iso.slice(5).replace('-','.') : '';
 const daysBetween = (a,b)=>Math.round((D(b)-D(a))/86400000);
@@ -1091,8 +1092,8 @@ function nickname(age){
 }
 function streak(m){const set=new Set(m.reads);let n=0,d=new Date();
   // allow streak to count if read today or yesterday
-  if(!set.has(todayISO())){d.setDate(d.getDate()-1);if(!set.has(d.toISOString().slice(0,10)))return 0;}
-  for(;;){const iso=d.toISOString().slice(0,10);if(set.has(iso)){n++;d.setDate(d.getDate()-1);}else break;}
+  if(!set.has(todayISO())){d.setDate(d.getDate()-1);if(!set.has(isoLocal(d)))return 0;}
+  for(;;){const iso=isoLocal(d);if(set.has(iso)){n++;d.setDate(d.getDate()-1);}else break;}
   return n;}
 function doneBooks(m){return m.books.filter(b=>b.end);}
 function inMonth(iso,y,mo){if(!iso)return false;const d=D(iso);return d.getFullYear()===y&&d.getMonth()===mo;}
@@ -1454,12 +1455,12 @@ function renderHome(){
     </div></div>
   </div>`;
 
-  // 2) 지금 멤버들이 읽고 있는 책 — 내가 오늘 출첵한 책이 맨 앞(최신순), 그 뒤로 최근 출첵 순
+  // 2) 지금 멤버들이 읽고 있는 책 — 오늘 출첵한 멤버의 책 먼저, 그 안에서 최근 출첵 순
   const reads=[];
   members.forEach(m=>m.books.filter(b=>!b.end).forEach(b=>reads.push({m,b})));
-  const mineToday=o=> o.m.id===S.meId && o.b.lastTs && new Date(o.b.lastTs).toISOString().slice(0,10)===today;
+  const readToday=o=> here(o.m); // 그 책 주인이 오늘 출첵했는지
   reads.sort((x,y)=>{
-    const ax=mineToday(x)?1:0, ay=mineToday(y)?1:0;
+    const ax=readToday(x)?1:0, ay=readToday(y)?1:0;
     if(ax!==ay)return ay-ax;
     return (y.b.lastTs||y.m.lastReadTs||0)-(x.b.lastTs||x.m.lastReadTs||0);
   });
