@@ -360,6 +360,8 @@ input{font-family:inherit}
 .fd-recinfo b{display:block;font-size:14.5px;font-weight:800;color:var(--ink)}
 .fd-recinfo .au{font-size:12.5px;color:var(--soft);margin-top:2px}
 .fd-recmsg{margin-top:11px;font-size:14px;line-height:1.65;color:#3a3733;white-space:pre-wrap;word-break:break-word}
+.fd-recwish{margin-top:12px;width:100%;background:#fff;border:1.5px solid var(--honey);color:var(--honey-d);font-size:13.5px;font-weight:800;padding:10px;border-radius:12px;cursor:pointer}
+.fd-recwish:active{background:#FFF4E8}
 .fd-acts{display:flex;align-items:center;gap:6px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
 .fd-acts button{border:none;background:none;font-size:13.5px;font-weight:700;color:var(--soft);cursor:pointer;padding:5px 7px;border-radius:10px}
 .fd-acts button:active{background:#F7F2EA}
@@ -1216,6 +1218,7 @@ function feedCard(p){
           </div>
         </div>
         ${p.text?`<div class="fd-recmsg">${escT(p.text)}</div>`:''}
+        ${p.authorId!==S.meId?`<button class="fd-recwish" data-id="${p.id}">📌 내 책장에 담기</button>`:''}
       </div>`
     : `${p.bookTitle?`<div class="fd-booktag">📖 ${escT(p.bookTitle)}${p.bookAuthor?` <span>· ${escT(p.bookAuthor)}</span>`:''}</div>`:''}
       <div class="fd-quote${canEdit?' editable':''}"${canEdit?` data-edit="${p.id}"`:''}>${escT(p.text)}</div>`;
@@ -1265,6 +1268,7 @@ function bindFeed(){
   L.querySelectorAll('.fd-del').forEach(b=>b.onclick=()=>removePost(b.dataset.id));
   L.querySelectorAll('.fd-edit').forEach(b=>b.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===b.dataset.id);if(p)openComposeSheet(p);});
   L.querySelectorAll('.fd-quote[data-edit]').forEach(q=>q.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===q.dataset.edit);if(p)openComposeSheet(p);});
+  L.querySelectorAll('.fd-recwish').forEach(b=>b.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===b.dataset.id);if(p)wishlistFromRec(p);});
   L.querySelectorAll('.fd-csend').forEach(b=>b.onclick=()=>{const inp=L.querySelector('.fd-cinp[data-id="'+b.dataset.id+'"]');submitComment(b.dataset.id,inp?inp.value:'');});
   L.querySelectorAll('.fd-cinp').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitComment(inp.dataset.id,inp.value);}});
   L.querySelectorAll('.fd-cdel').forEach(b=>b.onclick=()=>removeComment(b.dataset.pid,b.dataset.cid));
@@ -2153,6 +2157,17 @@ async function addToWishlist(src){
   mine.push({id:'b'+Date.now(),title:src.title||'',author:src.author||'',start:'',end:'',cover:src.cover||'',pages:src.pages||0,type:src.type||'paper',cur:0,rating:0,review:'',status:'want'});
   await save(); closeOv(); toast('읽고 싶은 책에 담았어요 📌');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+}
+function wishlistFromRec(p){
+  // 추천글엔 페이지·종류가 없으니, 추천한 사람 책장에서 원본을 찾아 보강
+  const au=S.members[p.authorId];
+  let pages=0, type='paper';
+  if(au){
+    const nt=(p.bookTitle||'').trim(), na=(p.bookAuthor||'').trim();
+    const orig=au.books.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
+    if(orig){ pages=orig.pages||0; type=orig.type||'paper'; }
+  }
+  addToWishlist({title:p.bookTitle,author:p.bookAuthor,cover:p.bookCover,pages,type});
 }
 
 /* ---------- review sheet (별점 · 후기) ---------- */
