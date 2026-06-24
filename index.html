@@ -75,7 +75,7 @@ input{font-family:inherit}
 /* ---- 가로형 프로필 카드 ---- */
 .pcard{display:flex;align-items:center;gap:15px;padding:18px 16px}
 .pc-av{flex:none;width:112px;height:112px;border-radius:50%;border:1px solid var(--line);overflow:hidden;position:relative}
-.pc-av .avatar{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:80px;max-width:none;margin:0}
+.pc-av .avatar{position:absolute;top:5px;left:0;right:0;width:72px;max-width:none;margin:0 auto}
 .pc-av .bustav{position:absolute;inset:0;width:100%;height:100%}
 .pc-body{flex:1;min-width:0}
 .pc-name{font-weight:900;font-size:22px;line-height:1.1;margin-bottom:9px}
@@ -393,7 +393,8 @@ input{font-family:inherit}
 .att-avwrap{position:relative;width:54px;margin:0 auto 5px}
 .att-av{width:54px;height:54px;border-radius:50%;border:1px solid var(--line);overflow:hidden;position:relative}
 .att-av .tinyav img{margin-top:0}
-.att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:grid;place-items:center;font-size:13px;line-height:1;z-index:3}
+.att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;z-index:3}
+.att-apple i{font-style:normal;display:block;transform:translate(-0.5px,-0.5px)}
 .att-nm{font-size:12px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-age{font-size:10.5px;color:var(--soft);font-weight:700;margin-top:1px}
 /* ===== 접속 표시(online dot) ===== */
@@ -1443,7 +1444,7 @@ function renderHome(){
       ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}" data-uid="${m.id}">
         <div class="att-avwrap">
           <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
-          ${here(m)?'<span class="att-apple">🍎</span>':''}
+          ${here(m)?'<span class="att-apple"><i>🍎</i></span>':''}
           <span class="odot" data-uid="${m.id}"></span>
         </div>
         <div class="att-nm">${escT(m.name)}</div>
