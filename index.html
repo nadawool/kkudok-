@@ -260,7 +260,10 @@ input{font-family:inherit}
 .item .bgswatch{width:100%;height:100%;border-radius:13px}
 .item.bgtile{background:#fff}
 .item .lock{position:absolute;inset:0;background:rgba(251,250,247,.78);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--soft);text-align:center;line-height:1.4}
-.item.eq{border-color:var(--moss)}
+.item.locked{cursor:default}
+.dsub{display:flex;gap:8px;margin:2px 2px 12px}
+.dsub .t{flex:1;text-align:center;padding:8px 0;border-radius:12px;background:#F4EFE6;font-size:13px;font-weight:800;color:var(--soft);cursor:pointer}
+.dsub .t.on{background:var(--honey);color:#fff}
 .item .chk{position:absolute;top:4px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--moss);color:#fff;font-size:11px;display:grid;place-items:center}
 /* bottom tabs */
 .tabs{position:sticky;bottom:0;display:flex;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
@@ -826,7 +829,7 @@ function itemById(id){return CATALOG.find(i=>i.id===id);}
 const CHARP='char/';                 // 레포 char/ 폴더 (Vercel 루트 기준)
 const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
 const AV_AR=0.7;                     // 700x1000
-const LAYER_ORDER=['eyes','mouth','hair']; // base 위 z-순서
+const LAYER_ORDER=['cloth_bottom','cloth_top','eyes','mouth','hair']; // base 위 z-순서 (악세사리는 이 위)
 const ITEMS={
   eyes:[
     {id:'eyes_basic',name:'기본',img:CHARP+'eyes/base_eyes_01.png'},
@@ -851,25 +854,64 @@ const ITEMS={
     {id:'hair_8',name:'투블럭',    img:CHARP+'hair/hair_008.png'},
     {id:'hair_9',name:'바가지',    img:CHARP+'hair/hair_009.png'},
   ],
+  cloth_top:[
+    {id:'top_1', name:'상의1', img:CHARP+'cloth/top/top_001.png'},
+    {id:'top_2', name:'상의2', img:CHARP+'cloth/top/top_002.png'},
+    {id:'top_3', name:'상의3', img:CHARP+'cloth/top/top_003.png'},
+    {id:'top_4', name:'상의4', img:CHARP+'cloth/top/top_004.png'},
+    {id:'top_5', name:'상의5', img:CHARP+'cloth/top/top_005.png'},
+    {id:'top_6', name:'상의6', img:CHARP+'cloth/top/top_006.png'},
+    {id:'top_7', name:'상의7', img:CHARP+'cloth/top/top_007.png'},
+    {id:'top_8', name:'상의8', img:CHARP+'cloth/top/top_008.png'},
+    {id:'top_9', name:'상의9', img:CHARP+'cloth/top/top_009.png'},
+    {id:'top_10',name:'상의10',img:CHARP+'cloth/top/top_010.png'},
+    {id:'ops_1', name:'원피스', img:CHARP+'cloth/top/ops_001.png'},
+    {id:'top_c1',name:'카라티1',img:CHARP+'cloth/top/top011_1th.png',age:1},
+    {id:'top_c2',name:'카라티2',img:CHARP+'cloth/top/top_012_1th.png',age:1},
+  ],
+  cloth_bottom:[
+    {id:'bot_1', name:'하의1', img:CHARP+'cloth/bottom/bottom_01.png'},
+    {id:'bot_2', name:'하의2', img:CHARP+'cloth/bottom/bottom_02.png'},
+    {id:'bot_3', name:'하의3', img:CHARP+'cloth/bottom/bottom_03.png'},
+    {id:'bot_4', name:'하의4', img:CHARP+'cloth/bottom/bottom_04.png'},
+    {id:'bot_5', name:'하의5', img:CHARP+'cloth/bottom/bottom_05.png'},
+    {id:'bot_6', name:'하의6', img:CHARP+'cloth/bottom/bottom_06.png'},
+    {id:'bot_7', name:'하의7', img:CHARP+'cloth/bottom/bottom_07.png'},
+    {id:'bot_8', name:'하의8', img:CHARP+'cloth/bottom/bottom_08.png'},
+    {id:'bot_9', name:'하의9', img:CHARP+'cloth/bottom/bottom_09.png'},
+    {id:'bot_10',name:'하의10',img:CHARP+'cloth/bottom/bottom_10.png'},
+  ],
 };
+// 악세사리: 타입별 1개씩 동시 착용 (z-순서대로 hair 위에 쌓임)
+const ACC_TYPES=[
+  {key:'hairacc',name:'머리장식',items:[
+    {id:'hairacc_1',name:'체리머리띠',img:CHARP+'acc/hairacc_001.png'},
+    {id:'hairacc_2',name:'헤드폰',    img:CHARP+'acc/hairacc_001_3th.png',age:3},
+  ]},
+];
 const DEFAULT_ITEMS={
   man:  {eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_m'},
   woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
 };
 function pItem(slot,id){return (ITEMS[slot]||[]).find(x=>x.id===id);}
 function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
+function accType(k){return ACC_TYPES.find(t=>t.key===k);}
+function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
+function itemAge(it){return (it&&it.age)||0;}
 function genderKey(m){return (m&&(m.gender==='f'||m.char==='woman'))?'woman':'man';}
 function genderLabel(m){return genderKey(m)==='woman'?'여자':'남자';}
-function ensureItems(m){ // 마이그레이션/기본값 보장 (눈·입·헤어는 항상 장착)
+function ensureItems(m){ // 마이그레이션/기본값 보장 (눈·입·헤어는 항상 장착, 옷은 기본=base)
   if(!m.items)m.items={};
   const d=DEFAULT_ITEMS[genderKey(m)];
   ['eyes','mouth','hair'].forEach(s=>{ if(!m.items[s]||!pItem(s,m.items[s])) m.items[s]=d[s]; });
+  if(typeof m.items.acc!=='object'||!m.items.acc)m.items.acc={};
   return m;
 }
-function avatarStack(m,zoom){ // base + 눈/입/헤어 PNG 레이어
+function avatarStack(m,zoom){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
   ensureItems(m);
   let h=`<img src="${BASE_IMG}" alt="">`;
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(im)h+=`<img src="${im}" alt="">`;});
+  ACC_TYPES.forEach(t=>{const it=accItem(t.key,m.items.acc&&m.items.acc[t.key]);if(it)h+=`<img src="${it.img}" alt="">`;});
   return `<div class="avstack${zoom?' '+zoom:''}">${h}</div>`;
 }
 
@@ -2009,8 +2051,8 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='face';
-const DCATS2=[['face','얼굴'],['hair','헤어'],['bg','배경']];
+let dressSlot='face', clothTab='top';
+const DCATS2=[['face','얼굴'],['hair','헤어'],['cloth','의상'],['acc','악세사리'],['bg','배경']];
 function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
@@ -2021,47 +2063,89 @@ function renderDress(){
     <div class="agebadge" style="margin-top:6px">🎂 ${age(m)}살 · ${nickname(age(m))}</div>
   </div>
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
+  <div id="dsub"></div>
   <div class="items" id="items"></div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   drawItems();
 }
-// 슬롯(눈/입/헤어) 아이템 그리드 HTML — 미니는 그 아이템을 실제 얼굴에 합성해 보여줌
-function slotGrid(m,slot){
+// 아이템 타일 (미니 프리뷰 + 잠금). preview=합성용 멤버, zoom=미니 줌, locked=잠금여부
+function tile(preview,zoom,label,eq,data,it){
+  const locked=it&&age(me())<itemAge(it);
+  return `<div class="item ${eq?'eq':''} ${locked?'locked':''}" ${data}>
+    <div class="mini">${avatarStack(preview,zoom)}</div>
+    <div class="nm">${label}</div>
+    ${eq?'<div class="chk">✓</div>':''}
+    ${locked?`<div class="lock">🔒<br>${itemAge(it)}살부터</div>`:''}
+  </div>`;
+}
+// 슬롯 그리드 (눈/입/헤어 — 교체전용, 없음 옵션 X)
+function slotGrid(m,slot,zoom){
   return ITEMS[slot].map(it=>{
     const eq=m.items[slot]===it.id;
-    const preview=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
-    return `<div class="item ${eq?'eq':''}" data-slot="${slot}" data-id="${it.id}">
-      <div class="mini">${avatarStack(preview,'hz')}</div>
-      <div class="nm">${it.name}</div>
-      ${eq?'<div class="chk">✓</div>':''}
-    </div>`;
+    const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
+    return tile(pv,zoom,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
+  }).join('');
+}
+// 의상 그리드 (상의/하의 — "기본"=base옷 노출 + 아이템들)
+function clothGrid(m,slot){
+  const baseTile=(()=>{const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:null})});
+    return tile(pv,null,'기본',!m.items[slot],`data-slot="${slot}" data-id=""`,null);})();
+  const items=ITEMS[slot].map(it=>{
+    const eq=m.items[slot]===it.id;
+    const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
+    return tile(pv,null,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
+  }).join('');
+  return baseTile+items;
+}
+// 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들, 타입마다 1개)
+function accGrid(m){
+  return ACC_TYPES.map(t=>{
+    const cur=(m.items.acc&&m.items.acc[t.key])||'';
+    const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:null});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
+      return tile(pv,'hz','없음',!cur,`data-acc="${t.key}" data-id=""`,null);})();
+    const items=t.items.map(it=>{
+      const eq=cur===it.id;
+      const acc=Object.assign({},m.items.acc,{[t.key]:it.id});
+      const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
+      return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
+    }).join('');
+    return `<div class="dsec">${t.name}</div>${none}${items}`;
   }).join('');
 }
 function drawItems(){
-  const m=me();
+  const m=me(); $('#dsub').innerHTML='';
   if(dressSlot==='bg'){
     $('#items').innerHTML=BGCOLORS.map(bg=>{
       const sel=(m.bg||'')===bg.hex;
       return `<div class="item bgtile ${sel?'eq':''}" data-bg="${bg.hex}">
         <div class="bgswatch" style="background:${bg.hex||'#FFFFFF'}"></div>
-        <div class="nm">${bg.name}</div>
-        ${sel?'<div class="chk">✓</div>':''}
-      </div>`;
+        <div class="nm">${bg.name}</div>${sel?'<div class="chk">✓</div>':''}</div>`;
     }).join('');
-    $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
-      m.bg=el.dataset.bg||null; await save(); renderDress();
-    });
+    $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{m.bg=el.dataset.bg||null;await save();renderDress();});
     return;
   }
-  if(dressSlot==='hair'){
-    $('#items').innerHTML=slotGrid(m,'hair');
-  } else { // 얼굴 = 눈 + 입
-    $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes')}<div class="dsec">입</div>${slotGrid(m,'mouth')}`;
+  if(dressSlot==='hair'){ $('#items').innerHTML=slotGrid(m,'hair','hz'); }
+  else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}`; }
+  else if(dressSlot==='cloth'){
+    $('#dsub').innerHTML=`<div class="dsub"><div class="t ${clothTab==='top'?'on':''}" data-t="top">상의</div><div class="t ${clothTab==='bottom'?'on':''}" data-t="bottom">하의</div></div>`;
+    $('#dsub').querySelectorAll('.t').forEach(t=>t.onclick=()=>{clothTab=t.dataset.t;drawItems();});
+    $('#items').innerHTML=clothGrid(m, clothTab==='top'?'cloth_top':'cloth_bottom');
   }
+  else if(dressSlot==='acc'){ $('#items').innerHTML=accGrid(m); }
+
+  // 클릭 핸들러
   $('#items').querySelectorAll('.item[data-slot]').forEach(el=>el.onclick=async()=>{
-    const slot=el.dataset.slot,id=el.dataset.id;
-    if(m.items[slot]===id)return;     // 이미 착용 — 해제 불가, 교체만
+    if(el.classList.contains('locked'))return;
+    const slot=el.dataset.slot,id=el.dataset.id||null;
+    if(m.items[slot]===id||(!id&&!m.items[slot]))return;
     m.items[slot]=id; await save(); renderDress();
+  });
+  $('#items').querySelectorAll('.item[data-acc]').forEach(el=>el.onclick=async()=>{
+    if(el.classList.contains('locked'))return;
+    const t=el.dataset.acc,id=el.dataset.id||null;
+    if(!m.items.acc)m.items.acc={};
+    if((m.items.acc[t]||null)===id)return;
+    m.items.acc[t]=id; await save(); renderDress();
   });
 }
 
