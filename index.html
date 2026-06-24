@@ -917,7 +917,11 @@ const ACC_TYPES=[
     {id:'hairacc_1',name:'체리머리띠',img:CHARP+'acc/hairacc_001.png'},
     {id:'hairacc_2',name:'헤드폰',    img:CHARP+'acc/hairacc_001_3th.png',age:3},
   ]},
+  // 얼굴 추가요소(수염·주근깨) — 악세사리 저장구조를 재사용하되 '얼굴' 탭에서만 노출
+  {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'}]},
+  {key:'freckle',name:'주근깨',items:[{id:'face_etc_002',name:'주근깨',img:CHARP+'face/face_etc_002.png'}]},
 ];
+const FACE_EXTRA_KEYS=['beard','freckle']; // '얼굴' 탭에 노출하는 acc 타입
 const DEFAULT_ITEMS={
   man:  {eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_m'},
   woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
@@ -2125,19 +2129,23 @@ function slotGrid(m,slot,zoom){
   }).join('');
 }
 // 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들, 타입마다 1개)
-function accGrid(m){
-  return ACC_TYPES.map(t=>{
-    const cur=(m.items.acc&&m.items.acc[t.key])||'';
-    const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:null});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
-      return tile(pv,'hz','없음',!cur,`data-acc="${t.key}" data-id=""`,null);})();
-    const items=t.items.map(it=>{
-      const eq=cur===it.id;
-      const acc=Object.assign({},m.items.acc,{[t.key]:it.id});
-      const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
-      return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
-    }).join('');
-    return `<div class="dsec">${t.name}</div>${none}${items}`;
+function accTypeGrid(m,t){
+  const cur=(m.items.acc&&m.items.acc[t.key])||'';
+  const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:null});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
+    return tile(pv,'hz','없음',!cur,`data-acc="${t.key}" data-id=""`,null);})();
+  const items=t.items.map(it=>{
+    const eq=cur===it.id;
+    const acc=Object.assign({},m.items.acc,{[t.key]:it.id});
+    const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
+    return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
   }).join('');
+  return `<div class="dsec">${t.name}</div>${none}${items}`;
+}
+function accGrid(m){
+  return ACC_TYPES.filter(t=>!FACE_EXTRA_KEYS.includes(t.key)).map(t=>accTypeGrid(m,t)).join('');
+}
+function faceExtraGrid(m){
+  return ACC_TYPES.filter(t=>FACE_EXTRA_KEYS.includes(t.key)).map(t=>accTypeGrid(m,t)).join('');
 }
 function drawItems(){
   const m=me(); $('#dsub').innerHTML='';
@@ -2152,7 +2160,7 @@ function drawItems(){
     return;
   }
   if(dressSlot==='hair'){ $('#items').innerHTML=slotGrid(m,'hair','hz'); }
-  else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}`; }
+  else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}${faceExtraGrid(m)}`; }
   else if(dressSlot==='cloth'){
     $('#dsub').innerHTML=`<div class="dsub">
       <div class="t ${clothTab==='all'?'on':''}" data-t="all">전체</div>
@@ -2396,6 +2404,9 @@ function openNotifSheet(){
 }
 
 
+
+/* ---------- boot ---------- */
+let _rtUnsub=null;
 
 function subscribeRealtime(){
   if(!window._fb||_rtUnsub)return;
