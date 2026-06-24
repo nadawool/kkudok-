@@ -1436,10 +1436,9 @@ function renderHome(){
   const total=members.length;
   const here=m=>new Set(m.reads).has(today);
 
-  // 1) 오늘 출석한 멤버 — 출석한 사람을 앞으로(최근 출첵 순), 나머지는 뒤로
-  const att=members.filter(here).sort((a,b)=>(b.lastReadTs||0)-(a.lastReadTs||0)||cmpJoin(a,b));
-  const rest=members.filter(m=>!here(m)).sort(cmpJoin);
-  const ordered=att.concat(rest);
+  // 1) 오늘 출석한 멤버 — 접속 중인 사람을 맨 앞(왼쪽), 그다음 오늘 출석(최근 출첵 순), 나머지
+  const att=members.filter(here);          // 헤더 카운트용
+  const ordered=attendOrder(members);
   const attHTML=`<div class="home-sec">
     <div class="hs-head"><b>오늘 출석한 멤버</b><span class="hs-count">${att.length} / ${total}명</span></div>
     <div class="card att-card"><div class="att-row">
@@ -1535,6 +1534,24 @@ function openMemberProfile(id){
   $('#mpClose').onclick=closeOv;
 }
 function cmpJoin(a,b){return ((a.createdAt||'')<(b.createdAt||'')?-1:(a.createdAt||'')>(b.createdAt||'')?1:(a.name||'').localeCompare(b.name||'','ko'));}
+function attendOrder(members){ // 접속 중 → 오늘 출석(최근 출첵순) → 나머지(가입순)
+  const on=window._online||new Set();
+  const today=todayISO();
+  const here=m=>new Set(m.reads).has(today);
+  return members.slice().sort((a,b)=>
+    (on.has(b.id)?1:0)-(on.has(a.id)?1:0) ||
+    (here(b)?1:0)-(here(a)?1:0) ||
+    (b.lastReadTs||0)-(a.lastReadTs||0) ||
+    cmpJoin(a,b)
+  );
+}
+function reorderHomeAttendees(){ // 접속 상태가 바뀌면 홈탭 멤버 줄을 다시 정렬(전체 리렌더 없이)
+  const row=document.querySelector('#s-home .att-row'); if(!row||!S)return;
+  const order={}; attendOrder(Object.values(S.members)).forEach((m,i)=>{order[m.id]=i;});
+  Array.from(row.querySelectorAll('.att-m'))
+    .sort((a,b)=>(order[a.dataset.uid]!=null?order[a.dataset.uid]:999)-(order[b.dataset.uid]!=null?order[b.dataset.uid]:999))
+    .forEach(n=>row.appendChild(n));
+}
 function chevR(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;}
 function withRanks(rows){let rank=0,prev=null;return rows.map((r,i)=>{if(prev===null||r.v!==prev){rank=i+1;prev=r.v;}return Object.assign({rank},r);});}
 function homeBookCard({m,b}){
@@ -2324,8 +2341,12 @@ function recomputeOnline(){
   const map=window._presenceAt||{},now=Date.now(),on=new Set();
   Object.keys(map).forEach(id=>{ if(now-(map[id]||0)<ONLINE_WINDOW) on.add(id); });
   if(S&&S.meId) on.add(S.meId);   // 나 자신은 항상 접속 중
+  const sig=Array.from(on).sort().join(',');
+  const changed=sig!==window._onlineSig; window._onlineSig=sig;
   window._online=on;
   applyPresenceDots();
+  // 접속자가 바뀌면 홈탭 '오늘 출석한 멤버' 순서 갱신(접속 중인 사람 왼쪽으로)
+  if(changed&&tab==='home') reorderHomeAttendees();
   // 모임 탭 접속 인원수 갱신
   if(tab==='club'){ const co=$('#s-club .club-online'); if(co){ const n=Array.from(on).filter(id=>S.members&&S.members[id]).length; co.textContent='● '+n+'명 접속'; } }
 }
