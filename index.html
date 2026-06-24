@@ -2161,12 +2161,24 @@ async function addToWishlist(src){
   await save(); closeOv(); toast('읽고 싶은 책에 담았어요 📌');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
-function wishlistFromRec(p){
-  // 추천글엔 페이지·종류가 없으니, 추천한 사람 책장에서 원본을 찾아 보강
+async function wishlistFromRec(p){
+  const mine=me().books;
+  const nt=(p.bookTitle||'').trim(), na=(p.bookAuthor||'').trim();
+  const existing=mine.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
+  if(existing){
+    if(isWant(existing)){            // 아직 위시리스트 → 담기 취소(제거)
+      me().books=mine.filter(b=>b.id!==existing.id);
+      await save(); toast('담기를 취소했어요');
+      ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+    } else {                         // 이미 읽는 중/완독 → 보호(삭제 안 함)
+      toast('이미 책장에 있는 책이에요');
+    }
+    return;
+  }
+  // 신규 담기 — 추천한 사람 책장에서 페이지·종류 보강
   const au=S.members[p.authorId];
   let pages=0, type='paper';
   if(au){
-    const nt=(p.bookTitle||'').trim(), na=(p.bookAuthor||'').trim();
     const orig=au.books.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
     if(orig){ pages=orig.pages||0; type=orig.type||'paper'; }
   }
