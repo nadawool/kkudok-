@@ -1061,8 +1061,10 @@ async function migrateLegacy(){ // brings forward data saved by the old single-u
 }
 async function syncClub(){ // re-fetch club data from shared storage (other members' updates)
   const wasTab=tab;
+  const wasView=S&&S.viewId;
   await loadClub();
   if(!S.meId||!S.members[S.meId]){showOnboarding();return;}
+  if(wasView&&S.members[wasView])S.viewId=wasView; // 다른 멤버 책장을 보던 중이면 유지
   scanNotifications();
   refreshHeader();renderTabs();
   tab=wasTab;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
@@ -2427,15 +2429,18 @@ function openNotifSheet(){
   initNotif();
   if('Notification'in window&&Notification.permission==='default'){ try{Notification.requestPermission();}catch(e){} }
   const N=window._notif;
-  const rows=N.list.length?N.list.map(ev=>`
-    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}" data-uid="${ev.uid||''}">
+  const rows=N.list.length?N.list.map(ev=>{
+    // uid 없는 기존 완독 알림은 id(d_<멤버id>::<책id>)에서 멤버 id 복원
+    const uid=ev.uid||(ev.type==='done'&&typeof ev.id==='string'?ev.id.slice(2).split('::')[0]:'');
+    return `
+    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}" data-uid="${uid||''}">
       <div class="ic ${ev.type}">${ev.type==='post'?'✨':'📚'}</div>
       <div class="body">
         <div class="tt"><b>${escT(ev.name)}</b>${ev.type==='post'?'님의 새 문장':'님 완독'}</div>
         <div class="sub">${escT(ev.text)||(ev.type==='post'?'피드에서 확인해요':'책장에 꽂혔어요')}</div>
       </div>
       <div class="ago">${timeAgo(ev.ts)}</div>
-    </div>`).join(''):`<div class="nti-empty">아직 새 소식이 없어요 🔔<br>친구들이 글을 올리거나 완독하면 여기에 떠요</div>`;
+    </div>`;}).join(''):`<div class="nti-empty">아직 새 소식이 없어요 🔔<br>친구들이 글을 올리거나 완독하면 여기에 떠요</div>`;
   $('#sheet').innerHTML=`<h3>알림</h3>${rows}
     <button class="btn ghost" id="ntClose" style="margin-top:12px">닫기</button>`;
   openOv();
