@@ -393,6 +393,33 @@ input{font-family:inherit}
 .att-apple{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(120,70,20,.22);display:grid;place-items:center;font-size:13px;line-height:1;z-index:3}
 .att-nm{font-size:12px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-age{font-size:10.5px;color:var(--soft);font-weight:700;margin-top:1px}
+/* ===== 접속 표시(online dot) ===== */
+.odot{position:absolute;width:12px;height:12px;border-radius:50%;background:#34C759;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);display:none;z-index:5;pointer-events:none}
+.odot.is-online{display:block}
+.att-avwrap .odot{top:1px;right:2px}
+.posw{position:relative;flex:none;display:grid;place-items:center}
+.posw .odot{right:-1px;bottom:-1px}
+.club-online{font-size:11px;font-weight:800;color:var(--moss);background:var(--moss-s);padding:2px 8px;border-radius:20px;margin-left:6px;white-space:nowrap}
+/* ===== 알림(bell) ===== */
+.hd .bell{margin-left:auto;position:relative;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
+.hd .bell:active{background:#F6F1E8}
+.hd .bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.hd .bell .bdg{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:900;display:grid;place-items:center;border:2px solid var(--bg)}
+.hd .bell .bdg[hidden]{display:none}
+.hd .me{margin-left:8px}
+.nti{display:flex;gap:11px;align-items:flex-start;padding:11px 6px;border-bottom:1px solid var(--line);cursor:pointer}
+.nti:last-child{border-bottom:0}
+.nti:active{background:#F6F1E8}
+.nti .ic{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:17px}
+.nti .ic.post{background:var(--honey-s)}
+.nti .ic.done{background:var(--moss-s)}
+.nti .body{flex:1;min-width:0}
+.nti .tt{font-size:13.5px;font-weight:700;line-height:1.4}
+.nti .tt b{color:var(--honey-d)}
+.nti .sub{font-size:12px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.nti .ago{font-size:11px;color:var(--soft);flex:none;margin-top:2px}
+.nti.unread{background:#FFF8F0}
+.nti-empty{text-align:center;color:var(--soft);font-size:13px;padding:34px 12px;line-height:1.6}
 .att-m.gone .att-av{opacity:.45;filter:grayscale(.3)}
 .att-m.gone .att-nm{color:var(--soft)}
 /* 지금 읽고 있는 책 */
@@ -495,6 +522,7 @@ input{font-family:inherit}
   <div class="hd">
     <img id="logo" alt="꾸독">
     <div class="t">꾸독<small>함께 꾸준히, 독서 모임</small></div>
+    <button class="bell" id="bellBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge" hidden>0</span></button>
     <button class="me" id="meBtn"><span class="av" id="meAv"></span><b id="meNm"></b></button>
   </div>
   <div class="viewbar" id="viewbar"><span id="viewtxt"></span><button id="backMe">내 기록으로</button></div>
@@ -1025,6 +1053,7 @@ async function syncClub(){ // re-fetch club data from shared storage (other memb
   const wasTab=tab;
   await loadClub();
   if(!S.meId||!S.members[S.meId]){showOnboarding();return;}
+  scanNotifications();
   refreshHeader();renderTabs();
   tab=wasTab;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('#s-'+tab).classList.add('on');renderTabs();
@@ -1395,6 +1424,7 @@ function renderHome(){
         <div class="att-avwrap">
           <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
           ${here(m)?'<span class="att-apple">🍎</span>':''}
+          <span class="odot" data-uid="${m.id}"></span>
         </div>
         <div class="att-nm">${escT(m.name)}</div>
         <div class="att-age">${age(m)}살</div>
@@ -1460,6 +1490,7 @@ function renderHome(){
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#rfAll')&&($('#rfAll').onclick=()=>go('feed'));
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
+  applyPresenceDots();
 }
 function cmpJoin(a,b){return ((a.createdAt||'')<(b.createdAt||'')?-1:(a.createdAt||'')>(b.createdAt||'')?1:(a.name||'').localeCompare(b.name||'','ko'));}
 function chevR(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;}
@@ -1947,13 +1978,13 @@ function renderClub(){
       <div><div class="nm">${top.m.name}</div><div class="ds">완독 ${top.done}권 · 읽은 날 ${top.days}일</div></div>
     </div>`:`<div class="shelf-empty">이번 달 첫 기록의 주인공이 되어보세요!</div>`}
     <div class="sec-t" style="margin-top:14px">
-      <span>모임 친구들 · 눌러서 기록 구경하기</span>
+      <span>모임 친구들 · 눌러서 기록 구경하기${(()=>{const n=(window._online?Array.from(window._online).filter(id=>S.members[id]).length:0);return n?`<span class="club-online">● ${n}명 접속</span>`:'';})()}</span>
       <button class="syncbtn" id="syncClub">↻ 새로고침</button>
     </div>
     ${ranked.map((r,i)=>`
       <div class="row-m ${r.m.id===S.meId?'meRow':''}" data-id="${r.m.id}">
         <div class="rk">${medal[i]||i+1}</div>
-        <div class="av">${avatarTiny(r.m)}</div>
+        <div class="posw"><div class="av">${avatarTiny(r.m)}</div><span class="odot" data-uid="${r.m.id}"></span></div>
         <div><div class="nm">${r.m.name}${r.m.id===S.meId?' <span style="font-size:11px;color:var(--honey-d)">(나)</span>':''}${r.m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
           <div class="sub">${genderLabel(r.m)} · ${age(r.m)}살</div></div>
         <div class="cnt"><b>${r.done}</b><small>이번 달 완독</small></div>
@@ -1965,6 +1996,7 @@ function renderClub(){
   });
   $('#syncClub').onclick=async()=>{toast('동기화 중…');await syncClub();};
   $('#manageMembers')&&($('#manageMembers').onclick=openManageSheet);
+  applyPresenceDots();
 }
 $('#backMe')&&($('#backMe').onclick=()=>{S.viewId=S.meId;go(tab);});
 
@@ -2235,8 +2267,128 @@ $('#onbStart').onclick=async()=>{
 };
 
 
-/* ---------- boot ---------- */
-let _rtUnsub=null;
+/* ---------- 접속 표시(presence) + 알림(notifications) ---------- */
+window._online=window._online||new Set();
+window._presenceAt=window._presenceAt||{};
+const ONLINE_WINDOW=75000;   // 마지막 신호 75초 이내면 접속 중
+const HEARTBEAT=30000;       // 30초마다 접속 신호
+
+function recomputeOnline(){
+  const map=window._presenceAt||{},now=Date.now(),on=new Set();
+  Object.keys(map).forEach(id=>{ if(now-(map[id]||0)<ONLINE_WINDOW) on.add(id); });
+  if(S&&S.meId) on.add(S.meId);   // 나 자신은 항상 접속 중
+  window._online=on;
+  applyPresenceDots();
+  // 모임 탭 접속 인원수 갱신
+  if(tab==='club'){ const co=$('#s-club .club-online'); if(co){ const n=Array.from(on).filter(id=>S.members&&S.members[id]).length; co.textContent='● '+n+'명 접속'; } }
+}
+function applyPresenceDots(){
+  const on=window._online||new Set();
+  document.querySelectorAll('.odot[data-uid]').forEach(d=>d.classList.toggle('is-online',on.has(d.getAttribute('data-uid'))));
+}
+function startPresence(){
+  if(!window._fb||window._presenceStarted||!S||!S.meId)return;
+  window._presenceStarted=true;
+  const {db,roomId}=window._fb;
+  const presCol=db.collection('rooms').doc(roomId).collection('presence');
+  const beat=()=>{ if(S&&S.meId) presCol.doc(S.meId).set({at:Date.now()},{merge:true}).catch(()=>{}); };
+  beat();
+  window._presHB=setInterval(beat,HEARTBEAT);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) beat(); });
+  window.addEventListener('focus',beat);
+  window.addEventListener('pagehide',()=>{ try{ if(S&&S.meId) presCol.doc(S.meId).set({at:0},{merge:true}); }catch(e){} });
+  presCol.onSnapshot(qs=>{
+    const map={}; qs.forEach(d=>{ map[d.id]=(d.data()&&d.data().at)||0; });
+    window._presenceAt=map; recomputeOnline();
+  },e=>console.warn('presence snapshot',e));
+  window._presTick=setInterval(recomputeOnline,20000);   // 신호 끊긴 멤버 자동 오프라인 처리
+}
+
+/* --- 알림 --- */
+function notifKey(){ return 'kkudok::notif::'+(window._kkRoom||'main')+'::'+((S&&S.meId)||'?'); }
+function initNotif(){
+  if(window._notif&&window._notif._wired)return;
+  let saved={list:[],unread:0};
+  try{ const raw=localStorage.getItem(notifKey()); if(raw)saved=JSON.parse(raw)||saved; }catch(e){}
+  window._notif=Object.assign({seenPosts:new Set(),doneKey:new Set(),ready:false,list:[],unread:0,_wired:true},
+    {list:Array.isArray(saved.list)?saved.list:[],unread:saved.unread||0});
+  const btn=document.getElementById('bellBtn');
+  if(btn) btn.onclick=openNotifSheet;
+  updateBellBadge();
+}
+function saveNotif(){
+  const N=window._notif; if(!N)return;
+  try{ localStorage.setItem(notifKey(),JSON.stringify({list:N.list.slice(0,50),unread:N.unread})); }catch(e){}
+}
+function updateBellBadge(){
+  const b=document.getElementById('bellBadge'); if(!b)return;
+  const n=(window._notif&&window._notif.unread)||0;
+  if(n>0){ b.hidden=false; b.textContent=n>99?'99+':String(n); } else b.hidden=true;
+}
+function scanNotifications(){
+  if(!window._notif) initNotif();
+  const N=window._notif;
+  const curPosts=new Set((S.posts||[]).map(p=>p.id));
+  const curDone=new Set();
+  Object.values(S.members).forEach(m=>(m.books||[]).forEach(b=>{ if(b.end) curDone.add(m.id+'::'+b.id); }));
+  if(!N.ready){ N.seenPosts=curPosts; N.doneKey=curDone; N.ready=true; return; }  // 첫 로드는 기준선만
+  const events=[];
+  (S.posts||[]).forEach(p=>{
+    if(p.id&&!N.seenPosts.has(p.id)&&p.authorId!==S.meId){
+      const au=S.members[p.authorId];
+      events.push({id:'p_'+p.id,type:'post',name:au?au.name:'멤버',text:(p.text||'').slice(0,60),ts:p.createdAt||Date.now()});
+    }
+  });
+  Object.values(S.members).forEach(m=>{
+    if(m.id===S.meId)return;
+    (m.books||[]).forEach(b=>{
+      const k=m.id+'::'+b.id;
+      if(b.end&&!N.doneKey.has(k)) events.push({id:'d_'+k,type:'done',name:m.name,text:b.title||'',ts:b.lastTs||Date.now()});
+    });
+  });
+  N.seenPosts=curPosts; N.doneKey=curDone;
+  if(events.length) pushNotifs(events);
+}
+function pushNotifs(events){
+  const N=window._notif;
+  events.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const exist=new Set(N.list.map(x=>x.id));
+  let added=0;
+  events.forEach(ev=>{ if(!exist.has(ev.id)){ N.list.unshift(Object.assign({read:false},ev)); added++; } });
+  if(!added)return;
+  N.list=N.list.slice(0,50);
+  N.unread+=added;
+  saveNotif(); updateBellBadge();
+  const top=events[0];
+  const msg=top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`:`${top.name}님이 «${top.text}» 완독했어요 📚`;
+  toast(msg);
+  try{
+    if('Notification'in window&&Notification.permission==='granted'&&document.hidden)
+      new Notification('꾸독',{body:msg,icon:ASSETS.logo,tag:'kkudok'});
+  }catch(e){}
+}
+function openNotifSheet(){
+  initNotif();
+  if('Notification'in window&&Notification.permission==='default'){ try{Notification.requestPermission();}catch(e){} }
+  const N=window._notif;
+  const rows=N.list.length?N.list.map(ev=>`
+    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}">
+      <div class="ic ${ev.type}">${ev.type==='post'?'✨':'📚'}</div>
+      <div class="body">
+        <div class="tt"><b>${escT(ev.name)}</b>${ev.type==='post'?'님의 새 문장':'님 완독'}</div>
+        <div class="sub">${escT(ev.text)||(ev.type==='post'?'피드에서 확인해요':'책장에 꽂혔어요')}</div>
+      </div>
+      <div class="ago">${timeAgo(ev.ts)}</div>
+    </div>`).join(''):`<div class="nti-empty">아직 새 소식이 없어요 🔔<br>친구들이 글을 올리거나 완독하면 여기에 떠요</div>`;
+  $('#sheet').innerHTML=`<h3>알림</h3>${rows}
+    <button class="btn ghost" id="ntClose" style="margin-top:12px">닫기</button>`;
+  openOv();
+  $('#ntClose').onclick=closeOv;
+  $('#sheet').querySelectorAll('.nti').forEach(el=>el.onclick=()=>{ closeOv(); go(el.dataset.type==='post'?'feed':'shelf'); });
+  N.list.forEach(ev=>ev.read=true); N.unread=0; saveNotif(); updateBellBadge();
+}
+
+
 
 function subscribeRealtime(){
   if(!window._fb||_rtUnsub)return;
@@ -2262,6 +2414,8 @@ function subscribeRealtime(){
 function boot(){
   refreshHeader();renderTabs();go('checkin');
   subscribeRealtime();
+  initNotif();updateBellBadge();
+  startPresence();
 }
   
 function showOnboarding(){
