@@ -250,8 +250,7 @@ input{font-family:inherit}
 .dcat .c{padding:8px 13px;border-radius:30px;background:#F4EFE6;font-size:13px;font-weight:700;color:var(--soft);white-space:nowrap}
 .dcat .c.on{background:var(--honey);color:#fff}
 .items{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.item{position:relative;border:2px solid var(--line);border-radius:16px;background:#fff;padding:6px;cursor:pointer;aspect-ratio:1;overflow:hidden;transition:border-color .15s,box-shadow .15s}
-.item.eq{border-color:var(--honey);box-shadow:0 6px 18px rgba(242,153,74,.22)}
+.item{position:relative;border:2px solid var(--line);border-radius:16px;background:#fff;padding:6px;cursor:pointer;aspect-ratio:1;overflow:hidden}
 .item.on{border-color:var(--honey);background:#FFF8F0}
 .item .mini{width:100%;height:100%;position:relative;overflow:hidden;border-radius:11px}
 .dsec{grid-column:1/-1;font-size:12.5px;font-weight:800;color:var(--soft);margin:6px 2px 0;padding-left:2px}
@@ -265,7 +264,7 @@ input{font-family:inherit}
 .dsub{display:flex;gap:8px;margin:2px 2px 12px}
 .dsub .t{flex:1;text-align:center;padding:8px 0;border-radius:12px;background:#F4EFE6;font-size:13px;font-weight:800;color:var(--soft);cursor:pointer}
 .dsub .t.on{background:var(--honey);color:#fff}
-.item .chk{position:absolute;top:5px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--honey);color:#fff;font-size:12px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(242,153,74,.45);z-index:5}
+.item .chk{position:absolute;top:4px;right:5px;width:18px;height:18px;border-radius:50%;background:var(--moss);color:#fff;font-size:11px;display:grid;place-items:center}
 /* bottom tabs */
 .tabs{position:sticky;bottom:0;display:flex;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
   border-top:1px solid var(--line);padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
@@ -2052,7 +2051,7 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='face', clothTab='all';
+let dressSlot='face', clothTab='top';
 const DCATS2=[['face','얼굴'],['hair','헤어'],['cloth','의상'],['acc','악세사리'],['bg','배경']];
 function renderDress(){
   refreshHeader();
@@ -2074,7 +2073,6 @@ function tile(preview,zoom,label,eq,data,it){
   const locked=it&&age(me())<itemAge(it);
   return `<div class="item ${eq?'eq':''} ${locked?'locked':''}" ${data}>
     <div class="mini">${avatarStack(preview,zoom)}</div>
-    <div class="nm">${label}</div>
     ${eq?'<div class="chk">✓</div>':''}
     ${locked?`<div class="lock">🔒<br>${itemAge(it)}살부터</div>`:''}
   </div>`;
@@ -2086,6 +2084,17 @@ function slotGrid(m,slot,zoom){
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
     return tile(pv,zoom,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
   }).join('');
+}
+// 의상 그리드 (상의/하의 — "기본"=base옷 노출 + 아이템들)
+function clothGrid(m,slot){
+  const baseTile=(()=>{const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:null})});
+    return tile(pv,null,'기본',!m.items[slot],`data-slot="${slot}" data-id=""`,null);})();
+  const items=ITEMS[slot].map(it=>{
+    const eq=m.items[slot]===it.id;
+    const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
+    return tile(pv,null,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
+  }).join('');
+  return baseTile+items;
 }
 // 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들, 타입마다 1개)
 function accGrid(m){
@@ -2117,14 +2126,9 @@ function drawItems(){
   if(dressSlot==='hair'){ $('#items').innerHTML=slotGrid(m,'hair','hz'); }
   else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}`; }
   else if(dressSlot==='cloth'){
-    $('#dsub').innerHTML=`<div class="dsub">
-      <div class="t ${clothTab==='all'?'on':''}" data-t="all">전체</div>
-      <div class="t ${clothTab==='top'?'on':''}" data-t="top">상의</div>
-      <div class="t ${clothTab==='bottom'?'on':''}" data-t="bottom">하의</div></div>`;
+    $('#dsub').innerHTML=`<div class="dsub"><div class="t ${clothTab==='top'?'on':''}" data-t="top">상의</div><div class="t ${clothTab==='bottom'?'on':''}" data-t="bottom">하의</div></div>`;
     $('#dsub').querySelectorAll('.t').forEach(t=>t.onclick=()=>{clothTab=t.dataset.t;drawItems();});
-    $('#items').innerHTML = clothTab==='all'
-      ? `<div class="dsec">상의</div>${slotGrid(m,'cloth_top',null)}<div class="dsec">하의</div>${slotGrid(m,'cloth_bottom',null)}`
-      : slotGrid(m, clothTab==='top'?'cloth_top':'cloth_bottom', null);
+    $('#items').innerHTML=clothGrid(m, clothTab==='top'?'cloth_top':'cloth_bottom');
   }
   else if(dressSlot==='acc'){ $('#items').innerHTML=accGrid(m); }
 
