@@ -955,7 +955,7 @@ function ensureHairFilters(){ // 색상별 틴팅 필터를 <defs>에 1회 주�
     const [mr,mg,mb]=nm(c.hex), dr=0,dg=0,db=0; // 외곽선=원본 검정 유지, 채움만 색칠
     // slope/intercept는 sRGB·linearRGB 어느 색공간에서 돌아도 채움이 1로 saturate되도록 robust하게 설정
     defs+=`<filter id="hairFx_${c.id}" color-interpolation-filters="sRGB">`
-      +`<feComponentTransfer><feFuncR type="linear" slope="80" intercept="-0.5"/><feFuncG type="linear" slope="80" intercept="-0.5"/><feFuncB type="linear" slope="80" intercept="-0.5"/></feComponentTransfer>`
+      +`<feComponentTransfer><feFuncR type="linear" slope="12" intercept="-0.6"/><feFuncG type="linear" slope="80" intercept="-0.5"/><feFuncB type="linear" slope="80" intercept="-0.5"/></feComponentTransfer>`
       +`<feComponentTransfer><feFuncR type="table" tableValues="${dr} ${mr}"/><feFuncG type="table" tableValues="${dg} ${mg}"/><feFuncB type="table" tableValues="${db} ${mb}"/></feComponentTransfer>`
       +`</filter>`;
   });
