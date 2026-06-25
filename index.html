@@ -1647,7 +1647,7 @@ function renderCheckin(){
     <div class="cal-h"><button id="pm">‹</button><span>${calY}년 ${calM+1}월</span><button id="nm">›</button></div>
     <div class="dow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
     <div class="grid" id="grid"></div>
-    <div class="gsub" style="text-align:center;margin-top:10px">읽은 날에 사과 도장이 콕 찍혀요 · 날짜를 눌러 기록을 바꿀 수 있어요</div>
+    <div class="gsub" style="text-align:center;margin-top:10px">읽은 날에 사과 도장이 콕 찍혀요 · 출첵은 오늘 날짜만 가능해요</div>
   </div>
   ${others.length?`
   <div class="sec-t" style="margin-top:2px">🍎 모임 친구들 사과 출첵</div>
@@ -1908,7 +1908,8 @@ function drawCal(){
   $('.cal-h span').textContent=`${calY}년 ${calM+1}월`;
   let h='';for(let i=0;i<first;i++)h+='<div class="cell pad"></div>';
   for(let d=1;d<=dim;d++){const iso=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const r=set.has(iso)&&iso<=today,t=iso===today,tap=isMe()&&D(iso)<=D(today);
+    // r: 사과(읽음) 표시 — 과거 기록 그대로 보임 / tap: 클릭(출첵) 가능 — 이제 '오늘'만 가능
+const r=set.has(iso)&&iso<=today,t=iso===today,tap=isMe()&&iso===today;
     h+=`<div class="cell ${r?'read':''} ${t?'today':''} ${tap?'tap':''}" data-d="${iso}"><span>${d}</span></div>`;}
   $('#grid').innerHTML=h;
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
@@ -1917,6 +1918,7 @@ function drawCal(){
   $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-del').forEach(b=>b.onclick=(e)=>{e.stopPropagation();removePeer(b.dataset.del);});
 }
 async function toggleRead(iso){
+  if(iso!==todayISO())return; // (변경) 앞으로는 오늘 날짜만 출첵 가능 — 과거 날짜 토글 차단
   const m=me(),i=m.reads.indexOf(iso);
   if(i>=0)m.reads.splice(i,1);else m.reads.push(iso);
   if(iso===todayISO()&&m.reads.includes(iso))m.lastReadTs=Date.now();
