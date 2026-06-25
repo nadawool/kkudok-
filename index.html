@@ -1004,7 +1004,7 @@ const ITEMS={
     {id:'hair_8',name:'투블럭',    img:CHARP+'hair/hair_008.png'},
     {id:'hair_9',name:'바가지',    img:CHARP+'hair/hair_009.png'},
     {id:'hair_9',name:'바가지',    img:CHARP+'hair/hair_009.png'},
-    {id:'hair_10_1th',name:'빵빵이',img:CHARP+'hair/hair_010_1th.png',age:1}, // 1살 잠금해제·15캐시
+    {id:'hair_10_1th',name:'빵빵이',img:CHARP+'hair/hair_010_1th.png',age:1, cost:10},
   ],
   cloth_top:[
     {id:'top_1', name:'상의1', img:CHARP+'cloth/top/top_001.png'},
@@ -1038,12 +1038,12 @@ const ITEMS={
 const ACC_TYPES=[
   {key:'hairacc',name:'머리장식',items:[
     {id:'hairacc_1',name:'체리머리띠',img:CHARP+'acc/hairacc_001.png'},
-    {id:'hairacc_2',name:'헤드폰',    img:CHARP+'acc/hairacc_001_3th.png',age:3},
-    {id:'hairacc_3',name:'머리장식3',img:CHARP+'acc/hairacc_003_5th.png',age:1}, // 1살·
-    {id:'hairacc_4',name:'머리장식4',img:CHARP+'acc/hairacc_004_5th.png',age:1},
-    {id:'hairacc_5',name:'머리장식5',img:CHARP+'acc/hairacc_005_5th.png',age:1},
-    {id:'hairacc_6',name:'머리장식6',img:CHARP+'acc/hairacc_006_5th.png',age:1},
-    {id:'hairacc_7',name:'머리장식7',img:CHARP+'acc/hairacc_007_5th.png',age:1},
+    {id:'hairacc_2',name:'헤드폰',    img:CHARP+'acc/hairacc_001_3th.png',age:3, cost:20},
+    {id:'hairacc_3',name:'머리장식3',img:CHARP+'acc/hairacc_003_5th.png',age:1, cost:10}, // 1살·
+    {id:'hairacc_4',name:'머리장식4',img:CHARP+'acc/hairacc_004_5th.png',age:1, cost:10},
+    {id:'hairacc_5',name:'머리장식5',img:CHARP+'acc/hairacc_005_5th.png',age:1, cost:10},
+    {id:'hairacc_6',name:'머리장식6',img:CHARP+'acc/hairacc_006_5th.png',age:1, cost:10},
+    {id:'hairacc_7',name:'머리장식7',img:CHARP+'acc/hairacc_007_5th.png',age:1, cost:10},
     {id:'hairacc_8',name:'머리장식8',img:CHARP+'acc/hairacc_008.png'},          // 0살·무료
     {id:'hairacc_14',name:'머리장식14',img:CHARP+'acc/hairacc_014.png'},          // 0살·무료
     {id:'hairacc_9',name:'머리장식9',img:CHARP+'acc/hairacc_009.png'},          // 0살·무료
@@ -1068,8 +1068,11 @@ function accType(k){return ACC_TYPES.find(t=>t.key===k);}
 function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
 function itemAge(it){return (it&&it.age)||0;}
 /* ----- 캐시(가상머니) 시스템 헬퍼 ----- */
-const CASH_PER_AGE=15;                                    // 나이 1살당 옷 가격 (1살=15, 3살=45캐시)
-function itemCost(it){return itemAge(it)*CASH_PER_AGE;}   // 아이템 가격 = 잠금나이 × 15
+let CASH_PER_AGE=15;                                      // 나이 1살당 기본 단가
+function itemCost(it){
+  if(it && typeof it.cost==='number') return it.cost;    // cost를 적었으면 그 가격
+  return itemAge(it)*CASH_PER_AGE;                        // 안 적었으면 나이×15
+}
 function ownsItem(m,id){return ((m.items&&m.items.owned)||[]).includes(id);} // 캐시로 샀는지
 function itemLocked(m,it){return !!(it&&age(m)<itemAge(it)&&!ownsItem(m,it.id));} // 나이도 안되고 안샀으면 잠김
 function genderKey(m){return (m&&(m.gender==='f'||m.char==='woman'))?'woman':'man';}
