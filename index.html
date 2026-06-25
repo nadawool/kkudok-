@@ -406,6 +406,14 @@ input{font-family:inherit}
 .gp.on{border-color:var(--honey);background:#FFF8F0;color:var(--ink)}
 .login{position:fixed;inset:0;background:var(--bg);z-index:70;display:none;flex-direction:column;overflow-y:auto}
 .login.on{display:flex}
+/* 부팅 스플래시: 로그인 상태 확인이 끝날 때까지 로고만 보여줘서 로그인창 깜빡임을 막음 */
+.splash{position:fixed;inset:0;background:var(--bg);z-index:80;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:18px;transition:opacity .25s ease}
+.splash.hide{opacity:0;pointer-events:none}          /* 인증 확인 끝나면 부드럽게 사라짐 */
+.splash img{width:84px;height:84px;object-fit:contain}
+.splash .spin{width:26px;height:26px;border:3px solid var(--honey-s);border-top-color:var(--honey);
+  border-radius:50%;animation:splashspin .7s linear infinite}
+@keyframes splashspin{to{transform:rotate(360deg)}}
 .login .inner{max-width:460px;margin:auto;width:100%;padding:34px 26px;text-align:center}
 .login .logo img{width:92px;margin-bottom:8px}
 .login h1{font-size:26px;font-weight:900;margin:6px 0 4px}
@@ -569,6 +577,8 @@ input{font-family:inherit}
   
 </head>
 <body>
+<!-- 부팅 스플래시: JS/인증보다 먼저 화면을 덮어서, 로그인 여부가 확정되기 전엔 로고만 보이게 함 -->
+<div class="splash" id="splash"><img id="splashLogo" alt="꾸독"><div class="spin"></div></div>
 <div class="app">
   <div class="hd">
     <img id="logo" alt="꾸독">
@@ -626,6 +636,7 @@ input{font-family:inherit}
 <script>
 const CH = ASSETS.chars, CHKEYS = Object.keys(CH);
 document.getElementById('logo').src = ASSETS.logo;
+document.getElementById('splashLogo').src = ASSETS.logo;
 document.getElementById('onbLogo').src = ASSETS.logo;
 document.getElementById('favIcon').href = ASSETS.logo;
 document.getElementById('favApple').href = ASSETS.logo;
@@ -2868,6 +2879,12 @@ function showOnboarding(){
 
 /* ---------- auth (Google) ---------- */
 window._authUid=null;
+function hideSplash(){               // 인증 확인이 끝나면 스플래시를 부드럽게 치움
+  const sp=document.getElementById('splash');
+  if(!sp) return;
+  sp.classList.add('hide');
+  setTimeout(()=>{ try{sp.remove();}catch(e){} },300);  // 트랜지션(.25s) 후 DOM에서 제거
+}
 function showLogin(){
   try{document.getElementById('loginLogo').src=ASSETS.logo;}catch(e){}
   $('#login').classList.add('on');
@@ -2887,7 +2904,7 @@ async function startAppForUser(uid){
 (function(){
   const hasAuth=!!(window._fb && window.firebase && firebase.auth);
   if(hasAuth){
-    showLogin();
+    // 로그인 화면을 미리 띄우지 않는다. 스플래시가 화면을 덮은 상태로 인증 확인을 기다림.
     const btn=document.getElementById('googleBtn');
     if(btn) btn.onclick=async()=>{
       const note=document.getElementById('loginNote');
@@ -2903,16 +2920,26 @@ async function startAppForUser(uid){
       }
     };
     firebase.auth().onAuthStateChanged(async user=>{
-      if(user){ try{await startAppForUser(user.uid);}catch(e){console.error(e);} }
-      else { showLogin(); }
+      if(user){
+        // 이미 로그인된(세션 복원) 사용자 → 로그인창 없이 바로 앱으로
+        try{ await startAppForUser(user.uid); }
+        catch(e){ console.error(e); }
+        finally{ hideSplash(); }
+      } else {
+        // 진짜 로그인이 필요한 경우에만 로그인 화면을 보여줌
+        showLogin();
+        hideSplash();
+      }
     });
   } else {
     // 비-Firebase(아티팩트 미리보기 등): 기존 흐름 유지
     (async function(){
-      await loadClub();
-      if(!S.meId||!S.members[S.meId])await migrateLegacy();
-      if(!S.meId||!S.members[S.meId]){ showOnboarding();return; }
-      boot();
+      try{
+        await loadClub();
+        if(!S.meId||!S.members[S.meId])await migrateLegacy();
+        if(!S.meId||!S.members[S.meId]){ showOnboarding();return; }
+        boot();
+      } finally { hideSplash(); }
     })();
   }
 })();
