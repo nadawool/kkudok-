@@ -481,7 +481,7 @@ input{font-family:inherit}
 .posw .odot{right:-1px;bottom:-1px}
 .club-online{font-size:11px;font-weight:800;color:var(--moss);background:var(--moss-s);padding:2px 8px;border-radius:20px;margin-left:6px;white-space:nowrap}
 /* ===== 알림(bell) ===== */
-.hd .bell{position:relative;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
+.hd .bell{position:relative;width:31px;height:31px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
 .hd .bell:active{background:#F6F1E8}
   /* 헤더 캐시 코인 배지 (벨 왼쪽, 작게) — 골드 동그라미 C + 숫자 */
 .hd .hdcash{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);
@@ -489,9 +489,13 @@ input{font-family:inherit}
 .hd .hdcash .coin{width:17px;height:17px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;
   font-size:10px;font-weight:900;display:grid;place-items:center;flex:none}
 .hd .hdcash b{font-weight:800;line-height:1}
-.hd .bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.hd .bell svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .hd .bell .bdg{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:900;display:grid;place-items:center;border:2px solid var(--bg)}
 .hd .bell .bdg[hidden]{display:none}
+/* 꾸미기 탭: 캐릭터 박스 우측 상단 모서리의 설정 ⚙️ 버튼 */
+.dress-gear{position:absolute;top:12px;right:14px;z-index:2;width:34px;height:34px;padding:0;border:none;background:transparent;
+  font-size:21px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:.9;-webkit-tap-highlight-color:transparent}
+.dress-gear:active{opacity:.55;transform:scale(.92)}
 .hd .me{margin-left:8px}
 .nti{display:flex;gap:11px;align-items:flex-start;padding:11px 6px;border-bottom:1px solid var(--line);cursor:pointer}
 .nti:last-child{border-bottom:0}
@@ -601,7 +605,6 @@ input{font-family:inherit}
     <div class="t">꾸독<small>함께 꾸준히, 독서 모임</small></div>
     <div class="hdcash" id="hdCashWrap"><span class="coin">C</span><b id="hdCash">0</b></div>
     <button class="bell" id="bellBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge" hidden>0</span></button>
-    <button class="me" id="meBtn"><span class="av" id="meAv"></span><b id="meNm"></b></button>
   </div>
   <div class="viewbar" id="viewbar"><span id="viewtxt"></span><button id="backMe">내 기록으로</button></div>
   <div class="scroll">
@@ -1629,10 +1632,11 @@ function go(t){
   $('.scroll').scrollTop=0;
 }
 function refreshHeader(){
-  const m=me();$('#meNm').textContent=m.name;
+  const m=me();
+  // 프로필 버튼은 헤더에서 제거됨 → 요소가 있을 때만 갱신(혹시 남아있어도 안전)
+  const mn=$('#meNm'); if(mn)mn.textContent=m.name;
   const hc=$('#hdCash'); if(hc)hc.textContent=(m.cash||0).toLocaleString(); // 헤더 캐시 잔액
-  $('#meAv').innerHTML=avatarBust(m);
-  $('#meAv').style.background=m.bg||'var(--card)';
+  const ma=$('#meAv'); if(ma){ ma.innerHTML=avatarBust(m); ma.style.background=m.bg||'var(--card)'; }
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
   else vb.classList.remove('on');
@@ -2540,7 +2544,9 @@ function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
   $('#s-dress').innerHTML=`
-  <div class="card hero" style="padding-bottom:14px;background:${m.bg||'var(--card)'}">
+  <div class="card hero" style="position:relative;padding-bottom:14px;background:${m.bg||'var(--card)'}">
+    <!-- 캐릭터 우측 상단 모서리: 프로필 설정창(이름변경·백업·로그아웃 등)을 여는 ⚙️ -->
+    <button class="dress-gear" id="dressGear" aria-label="설정">⚙️</button>
     ${avatarHTML(m)}
     <!-- 이름~다음생일 묶음을 하얀 카드로 감싸 배경색에 묻히지 않게 함 -->
     <div style="background:#fff;border-radius:18px;padding:12px 16px 14px;margin:6px 10px 0;box-shadow:0 2px 10px rgba(60,45,30,.08)">
@@ -2557,6 +2563,7 @@ function renderDress(){
   <div id="dsub"></div>
   <div class="items" id="items"></div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
+  $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   drawItems();
 }
 // 아이템 타일 (미니 프리뷰 + 잠금). preview=합성용 멤버, zoom=미니 줌, locked=잠금여부
@@ -2727,7 +2734,8 @@ function confirmDialog(opt){ // {title, body, okText, danger, onOk}
   $('#cfCancel').onclick=closeOv;
 }
 $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
-$('#meBtn').onclick=openProfileSheet;
+// 프로필 설정창은 이제 헤더가 아니라 꾸미기 탭 캐릭터 우측 모서리의 ⚙️로 연다
+// (meBtn 제거 — 아래 #meBtn 핸들러도 함께 삭제됨)
 $('#logo').onclick=()=>{if(S)go('home');};
 document.querySelector('.hd .t').onclick=()=>{if(S)go('home');};
 
