@@ -1423,14 +1423,9 @@ async function removePost(id){
   toast('글을 삭제했어요');renderFeed();
 }
 function removeNotifByPost(id){
-  const N=window._notif; if(!N||!N.list)return;
-  const key='p_'+id;
-  const ev=N.list.find(x=>x.id===key);
-  if(!ev)return;
-  if(!ev.read)N.unread=Math.max(0,(N.unread||0)-1);
-  N.list=N.list.filter(x=>x.id!==key);
-  if(N.seenPosts)N.seenPosts.add(id); // 재스캔 시 다시 안 뜨도록
-  saveNotif(); updateBellBadge();
+  // 알림 목록은 글 데이터(S.posts)에서 그때그때 계산하므로,
+  // 글이 지워지면 목록에서도 자동으로 빠진다. 배지 숫자만 다시 맞춘다.
+  updateBellBadge();
 }
 function openComposeChooser(){
   $('#sheet').innerHTML=`<h3>무엇을 올릴까요?</h3>
@@ -1714,15 +1709,12 @@ function renderHome(){
     </div></div>
   </div>`;
 
-  // 2) 지금 멤버들이 읽고 있는 책 — 오늘 출첵한 멤버의 책 먼저, 그 안에서 최근 출첵 순
+  // 2) 지금 멤버들이 읽는 책 — '출첵으로 진도를 찍은 책'만, 가장 최근에 출첵한 순.
+  //    예전엔 읽는 중(isReading)인 책을 전부 보여줘서, 그냥 등록만 해둔 책까지 다 떴음.
+  //    이제는 출첵 때 b.lastTs가 찍힌 책만 노출하고, lastTs(=마지막 출첵 시각) 최신순 정렬.
   const reads=[];
-  members.forEach(m=>m.books.filter(isReading).forEach(b=>reads.push({m,b})));
-  const readToday=o=> here(o.m); // 그 책 주인이 오늘 출첵했는지
-  reads.sort((x,y)=>{
-    const ax=readToday(x)?1:0, ay=readToday(y)?1:0;
-    if(ax!==ay)return ay-ax;
-    return (y.b.lastTs||y.m.lastReadTs||0)-(x.b.lastTs||x.m.lastReadTs||0);
-  });
+  members.forEach(m=>m.books.filter(b=>isReading(b)&&b.lastTs).forEach(b=>reads.push({m,b})));
+  reads.sort((x,y)=>(y.b.lastTs||0)-(x.b.lastTs||0));
   const readsHTML=`<div class="home-sec">
     <div class="hs-head"><b>지금 멤버들이 읽는 책</b>
       ${reads.length?`<span class="hs-all" id="hbAll">전체보기 ${chevR()}</span>`:''}</div>
@@ -2483,9 +2475,10 @@ function renderDress(){
     <div class="nm">${m.name}</div>
     <div class="agebadge" style="margin-top:6px">🎂 ${age(m)}살 · ${nickname(age(m))}</div>
     <div class="cashbadge">💰 ${m.cash||0}캐시</div>
-    <!-- 캐시 배지 아래 안내: 30일 출첵마다 나이(=생일) 오르는 규칙 -->
-    <div style="font-size:11.5px;color:var(--soft);font-weight:600;margin-top:7px;line-height:1.4">
-      📅 출첵 30번마다 생일이 와요 · 한 살씩 자라요 🎂</div>
+    <!-- 캐시 배지 아래: 다음 생일(나이↑)까지 진행도 가로 그래프 + 안내 문구.
+         출첵 30일 = 한 살. ageProg(m)=출첵일수%30 (0~29)이라 30으로 나눠 % 계산. -->
+    <div class="gauge" style="max-width:240px;margin:12px auto 4px"><i style="width:${(ageProg(m)/30*100).toFixed(0)}%"></i></div>
+    <div class="gsub" style="text-align:center">다음 생일까지 ${30-ageProg(m)}일 더 읽으면 돼요</div>
   </div>
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
@@ -2801,88 +2794,86 @@ function startPresence(){
   window._presTick=setInterval(recomputeOnline,20000);   // 신호 끊긴 멤버 자동 오프라인 처리
 }
 
-/* --- 알림 --- */
-function notifKey(){ return 'kkudok::notif::'+(window._kkRoom||'main')+'::'+((S&&S.meId)||'?'); }
+/* --- 알림 (Firestore 동기화 · 모든 기기 공통) ---
+   [예전] 알림 목록/읽음 상태를 기기별 localStorage에 따로 저장 → PC·모바일 내용이 달랐음.
+   [지금] 목록을 따로 저장하지 않고, 이미 동기화돼 있는 글(S.posts)·완독(멤버 책장)에서
+          그때그때 계산한다. "마지막으로 알림을 본 시각"(notifSeenTs) 하나만 내 멤버 문서에
+          저장하는데, 이 문서는 모든 기기가 함께 보는 값이라 한 기기에서 알림을 열면
+          다른 기기의 안읽음 표시도 같이 사라진다. (추가 읽기 비용 거의 없음) */
+
+// 마지막으로 알림을 확인한 시각(ms). 기록이 없으면 0.
+function notifSeenTs(){ const m=me(); return (m&&m.notifSeenTs)||0; }
+
+// 지금 보여줄 알림 목록을 데이터에서 바로 계산한다 (저장하지 않음).
+function notifEvents(){
+  if(!S||!S.meId) return [];
+  const meId=S.meId, ev=[];
+  // 1) 다른 사람이 올린 새 글
+  (S.posts||[]).forEach(p=>{
+    if(p&&p.id&&p.authorId!==meId){
+      const au=S.members[p.authorId];
+      ev.push({id:'p_'+p.id,type:'post',name:au?au.name:'멤버',
+               text:(p.text||'').slice(0,60),ts:p.createdAt||0});
+    }
+  });
+  // 2) 다른 사람이 완독한 책
+  Object.values(S.members).forEach(m=>{
+    if(m.id===meId)return;
+    (m.books||[]).forEach(b=>{
+      if(b&&b.end) ev.push({id:'d_'+m.id+'::'+b.id,type:'done',uid:m.id,
+                            name:m.name,text:b.title||'',ts:b.lastTs||0});
+    });
+  });
+  ev.sort((a,b)=>(b.ts||0)-(a.ts||0)); // 최신순
+  return ev.slice(0,50);
+}
+// 마지막 확인 시각보다 새로운 이벤트 개수 = 안읽음
+function unreadCount(){ const t=notifSeenTs(); return notifEvents().filter(e=>(e.ts||0)>t).length; }
+
 function initNotif(){
-  if(window._notif&&window._notif._wired)return;
-  let saved={list:[],unread:0};
-  try{ const raw=localStorage.getItem(notifKey()); if(raw)saved=JSON.parse(raw)||saved; }catch(e){}
-  window._notif=Object.assign({seenPosts:new Set(),doneKey:new Set(),ready:false,list:[],unread:0,_wired:true},
-    {list:Array.isArray(saved.list)?saved.list:[],unread:saved.unread||0});
+  // 처음 쓰는 사용자는 "지금 이후"부터 알림을 받도록 기준 시각만 한 번 찍어둔다.
+  const m=me();
+  if(m && typeof m.notifSeenTs!=='number'){ m.notifSeenTs=Date.now(); save(); }
   const btn=document.getElementById('bellBtn');
   if(btn) btn.onclick=openNotifSheet;
   updateBellBadge();
 }
-function saveNotif(){
-  const N=window._notif; if(!N)return;
-  try{ localStorage.setItem(notifKey(),JSON.stringify({list:N.list.slice(0,50),unread:N.unread})); }catch(e){}
-}
+
 function updateBellBadge(){
   const b=document.getElementById('bellBadge'); if(!b)return;
-  const n=(window._notif&&window._notif.unread)||0;
+  const n=unreadCount();
   if(n>0){ b.hidden=false; b.textContent=n>99?'99+':String(n); } else b.hidden=true;
 }
+
+// 실시간 갱신 때마다 호출됨: 배지 갱신 + 새 소식이면 토스트(이 기기에서만 한 번)
+let _notifTopTs=0;
 function scanNotifications(){
-  if(!window._notif) initNotif();
-  const N=window._notif;
-  const curPosts=new Set((S.posts||[]).map(p=>p.id));
-  const curDone=new Set();
-  Object.values(S.members).forEach(m=>(m.books||[]).forEach(b=>{ if(b.end) curDone.add(m.id+'::'+b.id); }));
-  if(!N.ready){ N.seenPosts=curPosts; N.doneKey=curDone; N.ready=true; return; }  // 첫 로드는 기준선만
-  // 삭제된 글의 알림은 알림 목록에서도 제거
-  if(N.list&&N.list.length){
-    const before=N.list.length;
-    let removedUnread=0;
-    N.list=N.list.filter(ev=>{
-      if(ev.type==='post'){ const pid=ev.id.slice(2); if(!curPosts.has(pid)){ if(!ev.read)removedUnread++; return false; } }
-      return true;
-    });
-    if(N.list.length!==before){ N.unread=Math.max(0,(N.unread||0)-removedUnread); saveNotif(); updateBellBadge(); }
+  const evs=notifEvents();
+  const t=notifSeenTs();
+  const top=evs[0];
+  // 가장 최근 이벤트가 (안읽음이고) 직전에 알린 것보다 새로우면 토스트
+  if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
+    _notifTopTs=top.ts||0;
+    const msg=top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
+                               :`${top.name}님이 «${top.text}» 완독했어요 📚`;
+    toast(msg);
+    try{
+      if('Notification'in window&&Notification.permission==='granted'&&document.hidden)
+        new Notification('꾸독',{body:msg,icon:ASSETS.logo,tag:'kkudok'});
+    }catch(e){}
   }
-  const events=[];
-  (S.posts||[]).forEach(p=>{
-    if(p.id&&!N.seenPosts.has(p.id)&&p.authorId!==S.meId){
-      const au=S.members[p.authorId];
-      events.push({id:'p_'+p.id,type:'post',name:au?au.name:'멤버',text:(p.text||'').slice(0,60),ts:p.createdAt||Date.now()});
-    }
-  });
-  Object.values(S.members).forEach(m=>{
-    if(m.id===S.meId)return;
-    (m.books||[]).forEach(b=>{
-      const k=m.id+'::'+b.id;
-      if(b.end&&!N.doneKey.has(k)) events.push({id:'d_'+k,type:'done',uid:m.id,name:m.name,text:b.title||'',ts:b.lastTs||Date.now()});
-    });
-  });
-  N.seenPosts=curPosts; N.doneKey=curDone;
-  if(events.length) pushNotifs(events);
+  updateBellBadge();
 }
-function pushNotifs(events){
-  const N=window._notif;
-  events.sort((a,b)=>(b.ts||0)-(a.ts||0));
-  const exist=new Set(N.list.map(x=>x.id));
-  let added=0;
-  events.forEach(ev=>{ if(!exist.has(ev.id)){ N.list.unshift(Object.assign({read:false},ev)); added++; } });
-  if(!added)return;
-  N.list=N.list.slice(0,50);
-  N.unread+=added;
-  saveNotif(); updateBellBadge();
-  const top=events[0];
-  const msg=top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`:`${top.name}님이 «${top.text}» 완독했어요 📚`;
-  toast(msg);
-  try{
-    if('Notification'in window&&Notification.permission==='granted'&&document.hidden)
-      new Notification('꾸독',{body:msg,icon:ASSETS.logo,tag:'kkudok'});
-  }catch(e){}
-}
+
 function openNotifSheet(){
-  initNotif();
   if('Notification'in window&&Notification.permission==='default'){ try{Notification.requestPermission();}catch(e){} }
-  const N=window._notif;
-  const rows=N.list.length?N.list.map(ev=>{
-    // uid 없는 기존 완독 알림은 id(d_<멤버id>::<책id>)에서 멤버 id 복원
-    const uid=ev.uid||(ev.type==='done'&&typeof ev.id==='string'?ev.id.slice(2).split('::')[0]:'');
+  const t=notifSeenTs();
+  const evs=notifEvents();
+  const rows=evs.length?evs.map(ev=>{
+    const uid=ev.uid||'';
+    const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
     return `
-    <div class="nti ${ev.read?'':'unread'}" data-type="${ev.type}" data-uid="${uid||''}">
+    <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}">
       <div class="ic ${ev.type}">${ev.type==='post'?'✨':'📚'}</div>
       <div class="body">
         <div class="tt"><b>${escT(ev.name)}</b>${ev.type==='post'?'님의 새 문장':'님 완독'}</div>
@@ -2902,7 +2893,9 @@ function openNotifSheet(){
     }
     go(el.dataset.type==='post'?'feed':'shelf');
   });
-  N.list.forEach(ev=>ev.read=true); N.unread=0; saveNotif(); updateBellBadge();
+  // 알림을 열어 봤으니 "마지막 확인 시각"을 지금으로 저장 → 모든 기기에서 안읽음이 사라짐
+  const m=me(); if(m){ m.notifSeenTs=Date.now(); _notifTopTs=m.notifSeenTs; save(); }
+  updateBellBadge();
 }
 
 
