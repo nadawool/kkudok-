@@ -273,10 +273,15 @@ input{font-family:inherit}
 .hcchip.sel .sw{border-color:var(--honey);box-shadow:0 0 0 2px var(--honey),0 4px 12px rgba(242,153,74,.28)}
 .hcchip .hcnm{font-size:10px;font-weight:700;color:var(--soft)}
 .hcchip.sel .hcnm{color:var(--honey)}
-.item .lock{position:absolute;inset:0;background:rgba(251,250,247,.78);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--soft);text-align:center;line-height:1.4}
 .item.locked{cursor:default}
 .item.buyable{cursor:pointer}                         /* 캐시로 살 수 있는 잠금 아이템은 탭 가능 */
-.item .lock .price{display:inline-block;margin-top:3px;background:var(--honey);color:#fff;font-size:10px;padding:2px 8px;border-radius:20px} /* 가격표(주황 알약) */
+.item.locked .mini{opacity:.55}                       /* 안 산 아이템은 살짝 흐리게 → 소유한 것과 구분 */
+.item .lockbadge{position:absolute;top:5px;left:6px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.92);font-size:11px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(60,45,30,.18);z-index:5} /* 박스 좌상단 작은 자물쇠 */
+/* 아이템 박스 + 그 아래 가격을 세로로 묶는 셀 */
+.itembox{display:flex;flex-direction:column;gap:5px}
+/* 박스 아래 가격표: 동그란 코인(C) + 숫자 (젭토 스타일) */
+.ptag{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12.5px;font-weight:800;color:var(--ink)}
+.ptag .coin{width:16px;height:16px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;font-size:10px;font-weight:900;display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 /* 꾸미기 탭 캐시 잔액 배지 (나이 배지 옆) */
 .cashbadge{display:inline-flex;align-items:center;gap:6px;background:#FFF1D6;color:#C8881F;
   font-weight:800;font-size:13px;padding:5px 12px;border-radius:30px;margin-top:6px;margin-left:6px}
@@ -2528,11 +2533,15 @@ function renderDress(){
 }
 // 아이템 타일 (미니 프리뷰 + 잠금). preview=합성용 멤버, zoom=미니 줌, locked=잠금여부
 function tile(preview,zoom,label,eq,data,it){
-  const m=me(), locked=itemLocked(m,it);   // 나이도 안되고 캐시로도 안 산 상태
-  return `<div class="item ${eq?'eq':''} ${locked?'locked buyable':''}" ${data}>
-    <div class="mini">${avatarStack(preview,zoom)}</div>
-    ${eq?'<div class="chk">✓</div>':''}
-    ${locked?`<div class="lock">🔒 ${itemAge(it)}살<br><span class="price">${itemCost(it)}캐시</span></div>`:''}
+  const m=me(), locked=itemLocked(m,it);   // 캐시로 아직 안 산 유료 아이템
+  const cost=it?itemCost(it):0;
+  return `<div class="itembox">
+    <div class="item ${eq?'eq':''} ${locked?'locked buyable':''}" ${data}>
+      <div class="mini">${avatarStack(preview,zoom)}</div>
+      ${eq?'<div class="chk">✓</div>':''}
+      ${locked?'<div class="lockbadge">🔒</div>':''}
+    </div>
+    ${locked?`<div class="ptag"><span class="coin">C</span>${cost}</div>`:''}
   </div>`;
 }
 // 슬롯 그리드 (눈/입/헤어 — 교체전용, 없음 옵션 X)
