@@ -284,7 +284,7 @@ input{font-family:inherit}
 .ptag .coin{width:16px;height:16px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;font-size:10px;font-weight:900;display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 /* 아이템 우하단 찜(하트) 버튼 */
 .item .favbtn{position:absolute;bottom:5px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.92);border:none;font-size:12px;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px rgba(60,45,30,.18);z-index:6;padding:0;line-height:1}
-/* 찜·내 옷장 비었을 때 안내 */
+/* 찜 비었을 때 안내 */
 .dempty{grid-column:1/-1;text-align:center;color:var(--soft);font-size:13px;font-weight:600;padding:38px 10px;line-height:1.7}
 /* 꾸미기 탭 캐시 잔액 배지 (나이 배지 옆) */
 .cashbadge{display:inline-flex;align-items:center;gap:6px;background:#FFF1D6;color:#C8881F;
@@ -2522,7 +2522,7 @@ function renderStats(){
 
 /* ---------- DRESS ---------- */
 let dressSlot='face', clothTab='all';
-const DCATS2=[['face','얼굴'],['hair','헤어'],['cloth','의상'],['acc','악세사리'],['bg','배경'],['fav','찜'],['closet','내 옷장']];
+const DCATS2=[['face','얼굴'],['hair','헤어'],['cloth','의상'],['acc','악세사리'],['bg','배경'],['fav','찜']];
 function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
@@ -2588,7 +2588,7 @@ function accGrid(m){
 function faceExtraGrid(m){
   return ACC_TYPES.filter(t=>FACE_EXTRA_KEYS.includes(t.key)).map(t=>accTypeGrid(m,t)).join('');
 }
-// 모든 착용 아이템을 한 줄로 펼친 목록 (찜/내 옷장 같은 '슬롯 섞인' 화면용)
+// 모든 착용 아이템을 한 줄로 펼친 목록 (찜처럼 슬롯 섞인 화면용)
 function allItemsFlat(){
   const out=[];
   Object.keys(ITEMS).forEach(slot=>{ (ITEMS[slot]||[]).forEach(it=>out.push({it,slot})); }); // 눈·입·헤어·상의·하의
@@ -2635,14 +2635,12 @@ function drawItems(){
       : slotGrid(m, clothTab==='top'?'cloth_top':'cloth_bottom', null);
   }
   else if(dressSlot==='acc'){ $('#items').innerHTML=accGrid(m); }
-  else if(dressSlot==='fav'||dressSlot==='closet'){
-    // 찜: 하트 누른 아이템만 / 내 옷장: 보유한 아이템만(무료 + 캐시로 산 것 = 잠기지 않은 것)
-    const list=allItemsFlat().filter(en=> dressSlot==='fav' ? isFav(en.it.id) : !itemLocked(m,en.it));
+  else if(dressSlot==='fav'){
+    // 찜: 하트 누른 아이템만 모아보기
+    const list=allItemsFlat().filter(en=>isFav(en.it.id));
     $('#items').innerHTML = list.length
       ? list.map(en=>flatTile(m,en)).join('')
-      : `<div class="dempty">${dressSlot==='fav'
-          ? '아직 찜한 아이템이 없어요 🤍<br>아이템의 하트를 눌러 담아보세요'
-          : '보유한 아이템이 여기에 모여요 👕'}</div>`;
+      : `<div class="dempty">아직 찜한 아이템이 없어요 🤍<br>아이템의 하트를 눌러 담아보세요</div>`;
   }
 
   // 클릭 핸들러
