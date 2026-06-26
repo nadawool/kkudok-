@@ -338,6 +338,11 @@ input{font-family:inherit}
 .fd-cinput{flex:1;color:var(--soft);font-size:13.5px;padding:4px 2px;cursor:text}
 .fd-plus{width:40px;height:40px;border-radius:50%;background:var(--honey);color:#fff;border:none;font-size:24px;line-height:1;flex:none;cursor:pointer;box-shadow:0 3px 8px rgba(242,153,74,.4)}
 .fd-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+/* 피드 캐시 적립 안내 배너 */
+.fd-cashtip{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+  background:var(--honey-s);color:var(--honey-d);font-size:12px;font-weight:700;line-height:1.4;
+  padding:8px 12px;border-radius:12px;margin:-4px 0 12px;text-align:center}
+.fd-cashtip b{font-weight:900}
 .fd-sorts{display:flex;gap:7px}
 .fd-bm{border:none;background:#F4EFE6;color:var(--soft);font-size:13px;font-weight:800;padding:6px 13px;border-radius:30px;cursor:pointer;white-space:nowrap;flex:none}
 .fd-bm.on{background:var(--honey-s);color:var(--honey-d)}
@@ -1358,6 +1363,8 @@ function renderFeed(){
     <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
+  <!-- 캐시 적립 안내: 문장 공유·댓글·좋아요는 각각 하루 1번 +1캐시 -->
+  <div class="fd-cashtip">🎁 문장 공유 · 댓글 · 좋아요 하면 <b>하루 1번 +1캐시</b> 💰</div>
   <div class="fd-bar">
     <div class="fd-sorts">
       <div class="chip ${!feedSavedOnly&&feedSort==='recent'?'on':''}" data-sort="recent">최신순</div>
