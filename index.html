@@ -2542,7 +2542,7 @@ function renderDress(){
       <!-- 캐시 배지 아래: 다음 생일(나이↑)까지 진행도 가로 그래프 + 안내 문구.
            출첵 30일 = 한 살. ageProg(m)=출첵일수%30 (0~29)이라 30으로 나눠 % 계산. -->
       <div class="gauge" style="max-width:240px;margin:12px auto 4px"><i style="width:${(ageProg(m)/30*100).toFixed(0)}%"></i></div>
-      <div class="gsub" style="text-align:center">다음 생일까지 ${30-ageProg(m)}일 더 읽으면 돼요</div>
+      <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일 · 🎁 +10캐시</div>
     </div>
   </div>
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
