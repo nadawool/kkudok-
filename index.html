@@ -481,8 +481,14 @@ input{font-family:inherit}
 .posw .odot{right:-1px;bottom:-1px}
 .club-online{font-size:11px;font-weight:800;color:var(--moss);background:var(--moss-s);padding:2px 8px;border-radius:20px;margin-left:6px;white-space:nowrap}
 /* ===== 알림(bell) ===== */
-.hd .bell{margin-left:auto;position:relative;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
+.hd .bell{position:relative;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
 .hd .bell:active{background:#F6F1E8}
+  /* 헤더 캐시 코인 배지 (벨 왼쪽, 작게) — 골드 동그라미 C + 숫자 */
+.hd .hdcash{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);
+  color:var(--ink);font-weight:800;font-size:12.5px;padding:6px 11px 6px 6px;border-radius:30px;flex:none}
+.hd .hdcash .coin{width:17px;height:17px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;
+  font-size:10px;font-weight:900;display:grid;place-items:center;flex:none}
+.hd .hdcash b{font-weight:800;line-height:1}
 .hd .bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .hd .bell .bdg{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:900;display:grid;place-items:center;border:2px solid var(--bg)}
 .hd .bell .bdg[hidden]{display:none}
@@ -593,6 +599,7 @@ input{font-family:inherit}
   <div class="hd">
     <img id="logo" alt="꾸독">
     <div class="t">꾸독<small>함께 꾸준히, 독서 모임</small></div>
+    <div class="hdcash" id="hdCashWrap"><span class="coin">C</span><b id="hdCash">0</b></div>
     <button class="bell" id="bellBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge" hidden>0</span></button>
     <button class="me" id="meBtn"><span class="av" id="meAv"></span><b id="meNm"></b></button>
   </div>
@@ -1623,6 +1630,7 @@ function go(t){
 }
 function refreshHeader(){
   const m=me();$('#meNm').textContent=m.name;
+  const hc=$('#hdCash'); if(hc)hc.textContent=(m.cash||0).toLocaleString(); // 헤더 캐시 잔액
   $('#meAv').innerHTML=avatarBust(m);
   $('#meAv').style.background=m.bg||'var(--card)';
   const vb=$('#viewbar');
