@@ -2483,6 +2483,9 @@ function renderDress(){
     <div class="nm">${m.name}</div>
     <div class="agebadge" style="margin-top:6px">🎂 ${age(m)}살 · ${nickname(age(m))}</div>
     <div class="cashbadge">💰 ${m.cash||0}캐시</div>
+    <!-- 캐시 배지 아래 안내: 30일 출첵마다 나이(=생일) 오르는 규칙 -->
+    <div style="font-size:11.5px;color:var(--soft);font-weight:600;margin-top:7px;line-height:1.4">
+      📅 출첵 30번마다 생일이 와요 · 한 살씩 자라요 🎂</div>
   </div>
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
