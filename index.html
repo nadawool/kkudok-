@@ -1165,12 +1165,23 @@ try{
   else S.ownerId=cur;
 }catch(e){}
 }
-async function loadClub(){
+async function loadClub(light){            // light=true 면 "가벼운 부팅" 모드
   let myId=null;
   try{const r=await window.storage.get('myid');if(r&&r.value)myId=r.value;}catch(e){}
   let ownerId=null;
   try{const r=await window.storage.get('owner',true);if(r&&r.value)ownerId=r.value;}catch(e){}
   const members={};
+  // ── 가벼운 부팅: 멤버/글 컬렉션 전체를 읽지 않고 "내 문서" 1건만 읽는다.
+  //    나머지 멤버·글은 곧바로 붙는 실시간 리스너(subscribeRealtime)가 채워주므로
+  //    예전처럼 같은 데이터를 두 번 읽던 낭비가 사라진다 → 진입 빨라지고 읽기 절반.
+  if(light && myId){
+    try{
+      const r=await window.storage.get('member:'+myId,true);
+      if(r&&r.value){const mm=JSON.parse(r.value);if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0];ensureItems(mm);members[mm.id]=mm;}
+    }catch(e){}
+    S={members,meId:myId,viewId:myId,ownerId,posts:[]};
+    return;                                // 전체 컬렉션 list 건너뜀
+  }
   try{
     const idx=await window.storage.list('member:',true);
     const keys=(idx&&idx.keys)||[];
@@ -2990,7 +3001,7 @@ async function startAppForUser(uid){
   // 구글 계정(uid)을 회원 식별자로 사용 → 기기 바꿔도 같은 계정이면 동일 회원
   try{localStorage.setItem('kkudok::myid::'+(window._kkRoom||'main'),uid);}catch(e){}
 
-  await loadClub();
+  await loadClub(true);   // 가벼운 부팅: 내 문서만 읽고 나머지는 리스너가 채움
   $('#login').classList.remove('on');
 
   if(S.meId===uid && S.members[uid]){ boot(); }   // 기존 회원 → 홈
