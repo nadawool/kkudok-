@@ -1010,7 +1010,7 @@ function itemById(id){return CATALOG.find(i=>i.id===id);}
 const CHARP='char/';                 // 레포 char/ 폴더 (Vercel 루트 기준)
 const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
 const AV_AR=0.7;                     // 700x1000
-const LAYER_ORDER=['cloth_bottom','shoes','cloth_top','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 악세사리는 맨 위)
+const LAYER_ORDER=['cloth_bottom','shoes','cloth_top','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 가방은 상의 위, 악세사리는 맨 위)
 const ITEMS={
   eyes:[
     {id:'eyes_basic',name:'기본',img:CHARP+'eyes/base_eyes_01.png'},
@@ -1075,12 +1075,15 @@ const ITEMS={
     {id:'bot_9', name:'하의9', img:CHARP+'cloth/bottom/bottom_09.png'},
     {id:'bot_10',name:'하의10',img:CHARP+'cloth/bottom/bottom_10.png'},
   ],
-  // 신발/가방 — 하의에서 분리한 별도 슬롯. 발 위치에만 그림이 있어 전신에서 발에 보임
+  // 신발 — 발 위치에만 그림이 있어 전신에서 발에 보임
   shoes:[
     {id:'shoes_1',name:'빨간구두',img:CHARP+'shoes/shoes_001.png', cost:1},
     {id:'shoes_2',name:'갈색구두',img:CHARP+'shoes/shoes_002.png', cost:1},
-    // 가방 이미지를 char/shoes/(또는 char/bag/)에 올린 뒤 여기에 추가하세요
-    // {id:'bag_1',name:'에코백',img:CHARP+'shoes/bag_001.png'},
+  ],
+  // 가방 — 신발과 별도 슬롯이라 신발+가방 동시 착용 가능
+  bag:[
+    // 가방 이미지를 char/bag/ 에 올린 뒤 아래 예시처럼 추가하세요
+    // {id:'bag_1',name:'에코백',img:CHARP+'bag/bag_001.png'},
   ],
 };
 // 악세사리: 타입별 1개씩 동시 착용 (z-순서대로 hair 위에 쌓임)
@@ -2636,18 +2639,23 @@ function slotGrid(m,slot,zoom){
     return tile(pv,zoom,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
   }).join('');
 }
-// 신발/가방 그리드 — 슬롯이지만 맨 앞에 '없음'(벗기) 타일을 추가. zoom=null(전신)이라 발이 보임
-function shoesGrid(m){
-  const slot='shoes';
-  const noneEq=!m.items[slot];                                                  // 아무것도 안 신었는지
+// 슬롯 섹션 — 헤더 + '없음'(벗기) + 아이템들. 부위별로 섹션을 나눌 때 사용 (zoom=null=전신)
+function slotSection(m,slot,name){
+  const list=ITEMS[slot]||[];
+  const noneEq=!m.items[slot];                                                   // 이 부위에 아무것도 안 걸쳤는지
   const npv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:null})});
-  let out=tile(npv,null,'없음',noneEq,`data-slot="${slot}" data-id=""`,null);    // '없음' 타일
-  out+=ITEMS[slot].map(it=>{
+  let out=`<div class="dsec">${name}</div>`;                                      // 섹션 제목 (예: 신발 / 가방)
+  out+=tile(npv,null,'없음',noneEq,`data-slot="${slot}" data-id=""`,null);        // '없음'(벗기) 타일
+  out+=list.map(it=>{
     const eq=m.items[slot]===it.id;
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:it.id})});
     return tile(pv,null,it.name,eq,`data-slot="${slot}" data-id="${it.id}"`,it);
   }).join('');
   return out;
+}
+// 신발/가방 탭 — 신발·가방을 별도 섹션으로 (각각 다른 슬롯이라 동시 착용 가능)
+function shoesGrid(m){
+  return slotSection(m,'shoes','신발')+slotSection(m,'bag','가방');
 }
 // 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들, 타입마다 1개)
 function accTypeGrid(m,t){
