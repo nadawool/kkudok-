@@ -289,6 +289,11 @@ input{font-family:inherit}
 /* 꾸미기 탭 캐시 잔액 배지 (나이 배지 옆) */
 .cashbadge{display:inline-flex;align-items:center;gap:6px;background:#FFF1D6;color:#C8881F;
   font-weight:800;font-size:13px;padding:5px 12px;border-radius:30px;margin-top:6px;margin-left:6px}
+  /* 캐시 잔액 코인 배지 (젭토 상단 스타일: 골드 동그라미 C + 숫자) */
+.cashcoin{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);color:var(--ink);
+  font-weight:800;font-size:13.5px;padding:5px 13px 5px 7px;border-radius:30px;margin-top:8px;box-shadow:0 2px 8px rgba(60,45,30,.08)}
+.cashcoin .coin{width:18px;height:18px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;
+  font-size:11px;font-weight:900;display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .dsub{display:flex;gap:8px;margin:2px 2px 12px}
 .dsub .t{flex:1;text-align:center;padding:8px 0;border-radius:12px;background:#F4EFE6;font-size:13px;font-weight:800;color:var(--soft);cursor:pointer}
 .dsub .t.on{background:var(--honey);color:#fff}
@@ -1681,7 +1686,7 @@ function renderCheckin(){
         <span class="nickbadge">${nickname(a)}</span>
       </div>
       <div class="gauge"><i style="width:${(prog/30*100).toFixed(0)}%"></i></div>
-      <div class="gsub">다음 생일까지 ${30-prog}일 더 읽으면 10캐시가 적립돼요!🎁</div>
+      <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일 · 🎁 +10캐시</div>
     </div>
   </div>
   <div class="card">
@@ -2533,7 +2538,7 @@ function renderDress(){
     <div style="background:#fff;border-radius:18px;padding:12px 16px 14px;margin:6px 10px 0;box-shadow:0 2px 10px rgba(60,45,30,.08)">
       <div class="nm">${m.name}</div>
       <div class="agebadge" style="margin-top:6px">🎂 ${age(m)}살 · ${nickname(age(m))}</div>
-      <div class="cashbadge">💰 ${m.cash||0}캐시</div>
+      <div class="cashcoin"><span class="coin">C</span>${(m.cash||0).toLocaleString()}</div>
       <!-- 캐시 배지 아래: 다음 생일(나이↑)까지 진행도 가로 그래프 + 안내 문구.
            출첵 30일 = 한 살. ageProg(m)=출첵일수%30 (0~29)이라 30으로 나눠 % 계산. -->
       <div class="gauge" style="max-width:240px;margin:12px auto 4px"><i style="width:${(ageProg(m)/30*100).toFixed(0)}%"></i></div>
