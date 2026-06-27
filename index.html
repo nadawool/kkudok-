@@ -2832,6 +2832,39 @@ $('#ov').onclick=e=>{if(e.target===$('#ov'))closeOv();};
 $('#logo').onclick=()=>{if(S)go('home');};
 document.querySelector('.hd .t').onclick=()=>{if(S)go('home');};
 
+/* ---------- 데스크톱 드래그 스크롤 ----------
+   가로로 넘치는 영역(.dcat 카테고리, 책장 줄, 필터 등)을 마우스로 잡아끌어 옆으로 넘기게 함.
+   모바일은 터치 스와이프가 기본 동작이라 손대지 않음. 문서 전체에 한 번만 걸어서 새로 그려진 줄에도 자동 적용. */
+(function enableDragScroll(){
+  let el=null, startX=0, startLeft=0, moved=false, pid=null;
+  // 클릭한 지점에서 위로 올라가며 '가로로 실제 넘치는' 스크롤 컨테이너를 찾음
+  function scrollableX(t){
+    for(let n=t; n && n!==document.body; n=n.parentElement){
+      if(n.scrollWidth>n.clientWidth+2){
+        const ox=getComputedStyle(n).overflowX;
+        if(ox==='auto'||ox==='scroll') return n;
+      }
+    }
+    return null;
+  }
+  document.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='mouse') return;          // 터치는 기본 스와이프 사용
+    const sc=scrollableX(e.target); if(!sc) return;
+    el=sc; startX=e.clientX; startLeft=sc.scrollLeft; moved=false; pid=e.pointerId;
+  });
+  document.addEventListener('pointermove',e=>{
+    if(!el||e.pointerId!==pid) return;
+    const dx=e.clientX-startX;
+    if(!moved && Math.abs(dx)>4){ moved=true; try{el.setPointerCapture(pid);}catch(_){ } document.body.style.userSelect='none'; }
+    if(moved){ el.scrollLeft=startLeft-dx; e.preventDefault(); } // 잡아끈 만큼 스크롤
+  });
+  function end(){ if(el){ try{el.releasePointerCapture(pid);}catch(_){ } } el=null; pid=null; document.body.style.userSelect=''; }
+  document.addEventListener('pointerup',end);
+  document.addEventListener('pointercancel',end);
+  // 드래그로 끝났으면(=옆으로 넘긴 거면) 손 뗀 자리의 버튼/탭이 눌리지 않게 클릭 1회 취소
+  document.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true);
+})();
+
 /* ---------- profile (이름 변경) ---------- */
 async function claimOwner(){
   if(S.ownerId&&S.members[S.ownerId]){toast('이미 모임장이 있어요');return;}
