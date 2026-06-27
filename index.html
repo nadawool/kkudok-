@@ -253,6 +253,9 @@ input{font-family:inherit}
 /* dress */
 .dcat{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .dcat::-webkit-scrollbar{display:none}
+/* 가로 스크롤 줄: 마우스 올리면 잡는 손, 끌면 쥔 손 (드래그 스크롤 안내용) */
+.rbooks,.filters,.yearflt,.dcat,.att-row,.hb-row{cursor:grab}
+body.dragx,body.dragx *{cursor:grabbing!important}
 .dcat .c{padding:8px 13px;border-radius:30px;background:#F4EFE6;font-size:13px;font-weight:700;color:var(--soft);white-space:nowrap}
 .dcat .c.on{background:var(--honey);color:#fff}
 .items{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -2855,10 +2858,10 @@ document.querySelector('.hd .t').onclick=()=>{if(S)go('home');};
   document.addEventListener('pointermove',e=>{
     if(!el||e.pointerId!==pid) return;
     const dx=e.clientX-startX;
-    if(!moved && Math.abs(dx)>4){ moved=true; try{el.setPointerCapture(pid);}catch(_){ } document.body.style.userSelect='none'; }
+    if(!moved && Math.abs(dx)>4){ moved=true; try{el.setPointerCapture(pid);}catch(_){ } document.body.style.userSelect='none'; document.body.classList.add('dragx'); }
     if(moved){ el.scrollLeft=startLeft-dx; e.preventDefault(); } // 잡아끈 만큼 스크롤
   });
-  function end(){ if(el){ try{el.releasePointerCapture(pid);}catch(_){ } } el=null; pid=null; document.body.style.userSelect=''; }
+  function end(){ if(el){ try{el.releasePointerCapture(pid);}catch(_){ } } el=null; pid=null; document.body.style.userSelect=''; document.body.classList.remove('dragx'); }
   document.addEventListener('pointerup',end);
   document.addEventListener('pointercancel',end);
   // 드래그로 끝났으면(=옆으로 넘긴 거면) 손 뗀 자리의 버튼/탭이 눌리지 않게 클릭 1회 취소
