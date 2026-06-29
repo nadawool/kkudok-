@@ -2638,6 +2638,23 @@ function renderDress(){
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   drawItems();
 }
+/* 아이템 착용/구매 시 화면 전체(renderDress)를 다시 그리면 스크롤이 맨 위(캐릭터 미리보기)로 튀어
+   목록에서 보던 위치를 잃는다. 그래서 바뀌는 부분만 제자리에서 갱신한다:
+   캐릭터 미리보기 아바타 · 배경색 · 캐시 잔액 · 헤더 · 아이템 타일(✓/미리보기). 스크롤은 유지됨. */
+function refreshDressPreview(){
+  const host=$('#s-dress'); if(!host){renderDress();return;}
+  const m=me(); ensureItems(m);
+  const hero=host.querySelector('.hero');
+  if(hero){
+    hero.style.background=m.bg||'var(--card)';                                  // 배경 변경 반영
+    const cc=hero.querySelector('.cashcoin');
+    if(cc) cc.innerHTML=`<span class="coin">C</span>${(m.cash||0).toLocaleString()}`; // 구매 후 캐시 반영
+    const av=hero.querySelector('.avatar');
+    if(av) av.outerHTML=avatarHTML(m);                                          // 미리보기 아바타만 교체
+  }
+  refreshHeader();   // 상단 헤더 캐시 배지
+  drawItems();       // 아이템 타일 다시 그리기(체크/미니 미리보기) — 컨테이너 높이 유지로 스크롤 안 튐
+}
 // 아이템 타일 (미니 프리뷰 + 잠금). preview=합성용 멤버, zoom=미니 줌, locked=잠금여부
 function tile(preview,zoom,label,eq,data,it){
   const m=me(), locked=itemLocked(m,it);   // 캐시로 아직 안 산 유료 아이템
@@ -2751,7 +2768,7 @@ function drawItems(){
       if(el.classList.contains('locked')){        // 잠금=구매 확인 후 바로 적용
         tryBuyItem(bg,()=>{m.bg=hex||null;}); return;
       }
-      m.bg=hex||null; await save(); renderDress(); // 무료/보유 배경=바로 적용
+      m.bg=hex||null; await save(); refreshDressPreview(); // 무료/보유 배경=바로 적용
     });
     return;
   }
@@ -2781,13 +2798,13 @@ function drawItems(){
   // 하트(찜) 토글 — 착용/구매로 안 번지게 stopPropagation
   $('#items').querySelectorAll('.favbtn').forEach(el=>el.onclick=async(e)=>{
     e.stopPropagation();
-    toggleFav(el.dataset.fav); await save(); renderDress();
+    toggleFav(el.dataset.fav); await save(); refreshDressPreview();
   });
   $('#items').querySelectorAll('.item[data-slot]').forEach(el=>el.onclick=async()=>{
     const slot=el.dataset.slot,id=el.dataset.id||null;
     if(el.classList.contains('locked')){ tryBuyItem(pItem(slot,id),()=>{m.items[slot]=id;}); return; } // 잠금=구매 후 바로 착용
     if(m.items[slot]===id||(!id&&!m.items[slot]))return;
-    m.items[slot]=id; await save(); renderDress();
+    m.items[slot]=id; await save(); refreshDressPreview();
   });
   $('#items').querySelectorAll('.item[data-acc]').forEach(el=>el.onclick=async()=>{
     const t=el.dataset.acc,id=el.dataset.id||'';
@@ -2795,17 +2812,17 @@ function drawItems(){
     if(!Array.isArray(m.items.acc[t]))m.items.acc[t]=m.items.acc[t]?[m.items.acc[t]]:[]; // 안전: 배열 보장
     if(!id){ // '모두 벗기' 타일 → 이 타입 전체 해제
       if(m.items.acc[t].length===0)return;
-      m.items.acc[t]=[]; await save(); renderDress(); return;
+      m.items.acc[t]=[]; await save(); refreshDressPreview(); return;
     }
     if(el.classList.contains('locked')){ tryBuyItem(accItem(t,id),()=>{if(!m.items.acc[t].includes(id))m.items.acc[t].push(id);}); return; } // 잠금=구매 후 바로 착용
     const i=m.items.acc[t].indexOf(id);
     i<0?m.items.acc[t].push(id):m.items.acc[t].splice(i,1); // 토글: 없으면 입고, 있으면 벗기 (중복 착용 가능)
-    await save(); renderDress();
+    await save(); refreshDressPreview();
   });
   $('#items').querySelectorAll('.hcchip').forEach(el=>el.onclick=async()=>{
     const id=el.dataset.hc||'';
     if((me().items.hairColor||'')===id)return;
-    me().items.hairColor=id||null; await save(); renderDress();
+    me().items.hairColor=id||null; await save(); refreshDressPreview();
   });
 }
 
@@ -2826,7 +2843,7 @@ function tryBuyItem(it,equipFn){
       if(equipFn)equipFn();        // 구매하자마자 바로 착용
       await save();
       toast(`${it.name} 해제 완료! 🎉`);
-      renderDress();
+      refreshDressPreview();
     }
   });
 }
