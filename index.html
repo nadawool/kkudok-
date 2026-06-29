@@ -511,6 +511,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .nti .ic{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:17px}
 .nti .ic.post{background:var(--honey-s)}
 .nti .ic.done{background:var(--moss-s)}
+.nti .ic.comment{background:#F6E1E1}
 .nti .body{flex:1;min-width:0}
 .nti .tt{font-size:13.5px;font-weight:700;line-height:1.4}
 .nti .tt b{color:var(--honey-d)}
@@ -1041,7 +1042,6 @@ const ITEMS={
     {id:'hair_7',name:'슬릭',      img:CHARP+'hair/hair_007.png'},
     {id:'hair_8',name:'투블럭',    img:CHARP+'hair/hair_008.png'},
     {id:'hair_9',name:'바가지',    img:CHARP+'hair/hair_009.png'},
-    {id:'hair_9',name:'바가지',    img:CHARP+'hair/hair_009.png'},
     {id:'hair_10_1th',name:'빵빵이',img:CHARP+'hair/hair_010_1th.png',age:1, cost:5},
     {id:'hair_11',name:'재영님그라데이션(갈색)',img:CHARP+'hair/hair_006_1.png', cost:10},
     {id:'hair_12',name:'재영님그라데이션(노란)',img:CHARP+'hair/hair_007_1.png', cost:10},
@@ -1094,10 +1094,6 @@ const ACC_TYPES=[
   {key:'hairacc',name:'헤어장식',items:[
     {id:'hairacc_1',name:'체리머리띠',img:CHARP+'acc/hairacc_001.png'},
     {id:'hairacc_2',name:'검정헤드셋',    img:CHARP+'acc/hairacc_001_3th.png', cost:5},
-    {id:'glass_1',name:'검정 선글라스',img:CHARP+'acc/glass/glass_001.png', cost:3},
-    {id:'glass_2',name:'갈색 뿔테',img:CHARP+'acc/glass/glass_002.png', cost:3},
-    {id:'glass_3',name:'검정 뿔테',img:CHARP+'acc/glass/glass_003.png', cost:3},
-    
     {id:'hairacc_3',name:'사과탈',img:CHARP+'acc/hairacc_003_5th.png', cost:5}, // 1살·
     {id:'hairacc_4',name:'풋사과탈',img:CHARP+'acc/hairacc_004_5th.png', cost:5},
     {id:'hairacc_5',name:'수박탈',img:CHARP+'acc/hairacc_005_5th.png', cost:5},
@@ -1119,9 +1115,11 @@ const ACC_TYPES=[
     {id:'headset_5',name:'헤드셋(블루)',img:CHARP+'acc/headset_005.png',cost:1},
     {id:'headset_6',name:'헤드셋(그린)',img:CHARP+'acc/headset_006.png',cost:1},
   ]},
-  // 안경 — 아직 이미지가 없어 비어있음. char/acc/ 에 올린 뒤 아래 예시처럼 추가하세요
+  // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
   {key:'glasses',name:'안경',items:[
-    // {id:'glasses_1',name:'동그란안경',img:CHARP+'acc/glasses_001.png'},
+    {id:'glass_1',name:'검정 선글라스',img:CHARP+'acc/glass/glass_001.png', cost:3},
+    {id:'glass_2',name:'갈색 뿔테',img:CHARP+'acc/glass/glass_002.png', cost:3},
+    {id:'glass_3',name:'검정 뿔테',img:CHARP+'acc/glass/glass_003.png', cost:3},
   ]},
   // 귀걸이 — 헤어장식과 별개 타입이라 머리띠와 동시 착용 가능
   {key:'earring',name:'귀걸이',items:[
@@ -1145,6 +1143,12 @@ function pItem(slot,id){return (ITEMS[slot]||[]).find(x=>x.id===id);}
 function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
 function accType(k){return ACC_TYPES.find(t=>t.key===k);}
 function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
+// ----- 악세사리 다중 착용 헬퍼 -----
+// m.items.acc[key] 는 착용한 아이템 id들의 '배열'. (예전엔 문자열 1개였음 → ensureItems에서 배열로 변환)
+function accList(m,key){const a=m.items&&m.items.acc&&m.items.acc[key];return Array.isArray(a)?a:(a?[a]:[]);}
+function accHas(m,key,id){return accList(m,key).includes(id);}
+// 미리보기/실착용용: 해당 타입 배열에서 id를 토글한 새 배열을 돌려줌
+function accToggled(m,key,id){const cur=accList(m,key);return cur.includes(id)?cur.filter(x=>x!==id):cur.concat([id]);}
 function itemAge(it){return (it&&it.age)||0;}
 /* ----- 캐시(가상머니) 시스템 헬퍼 ----- */
 let CASH_PER_AGE=15;                                      // 나이 1살당 기본 단가
@@ -1161,6 +1165,12 @@ function ensureItems(m){ // 마이그레이션/기본값 보장 (눈·입·헤�
   const d=DEFAULT_ITEMS[genderKey(m)];
   ['eyes','mouth','hair'].forEach(s=>{ if(!m.items[s]||!pItem(s,m.items[s])) m.items[s]=d[s]; });
   if(typeof m.items.acc!=='object'||!m.items.acc)m.items.acc={};
+  // 악세사리 다중 착용: 예전 {type:'id'} (문자열 1개) → {type:['id']} (배열)로 변환
+  Object.keys(m.items.acc).forEach(k=>{
+    const v=m.items.acc[k];
+    if(v==null||v===''){ m.items.acc[k]=[]; }
+    else if(!Array.isArray(v)){ m.items.acc[k]=[v]; }
+  });
   // 신발을 하의에서 분리 → 예전에 하의칸에 신발을 신고 있었으면 새 shoes 칸으로 옮김
   if(m.items.cloth_bottom && /^shoes_/.test(m.items.cloth_bottom)){
     if(!m.items.shoes) m.items.shoes=m.items.cloth_bottom;
@@ -1192,7 +1202,7 @@ function avatarStack(m,zoom){ // base → 하의 → 상의 → 눈 → 입 → 
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
     else h+=`<img src="${im}" alt="">`;
   });
-  ACC_TYPES.forEach(t=>{const it=accItem(t.key,m.items.acc&&m.items.acc[t.key]);if(it)h+=`<img src="${it.img}" alt="">`;});
+  ACC_TYPES.forEach(t=>{ accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
   return `<div class="avstack${zoom?' '+zoom:''}">${h}</div>`;
 }
 
@@ -2679,14 +2689,14 @@ function slotSection(m,slot,name){
 function shoesGrid(m){
   return slotSection(m,'shoes','신발')+slotSection(m,'bag','가방');
 }
-// 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들, 타입마다 1개)
+// 악세사리 그리드 (타입별 섹션 — "모두 벗기" + 아이템들. 타입 안에서 여러 개 동시 착용 가능)
 function accTypeGrid(m,t){
-  const cur=(m.items.acc&&m.items.acc[t.key])||'';
-  const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:null});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
-    return tile(pv,'hz','없음',!cur,`data-acc="${t.key}" data-id=""`,null);})();
+  const cur=accList(m,t.key);
+  const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:[]});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
+    return tile(pv,'hz','모두 벗기',cur.length===0,`data-acc="${t.key}" data-id=""`,null);})();
   const items=t.items.map(it=>{
-    const eq=cur===it.id;
-    const acc=Object.assign({},m.items.acc,{[t.key]:it.id});
+    const eq=cur.includes(it.id);                                                  // 이미 착용 중이면 선택 표시
+    const acc=Object.assign({},m.items.acc,{[t.key]:accToggled(m,t.key,it.id)});   // 미리보기: 이 아이템을 토글한 상태
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
   }).join('');
@@ -2713,9 +2723,8 @@ function flatTile(m,en){
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{[en.slot]:it.id})});
     return tile(pv,zoom,it.name,eq,`data-slot="${en.slot}" data-id="${it.id}"`,it);
   }else{
-    const cur=(m.items.acc&&m.items.acc[en.accKey])||'';
-    const eq=cur===it.id;
-    const acc=Object.assign({},m.items.acc,{[en.accKey]:it.id});
+    const eq=accHas(m,en.accKey,it.id);
+    const acc=Object.assign({},m.items.acc,{[en.accKey]:accToggled(m,en.accKey,it.id)});
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,zoom,it.name,eq,`data-acc="${en.accKey}" data-id="${it.id}"`,it);
   }
@@ -2781,11 +2790,17 @@ function drawItems(){
     m.items[slot]=id; await save(); renderDress();
   });
   $('#items').querySelectorAll('.item[data-acc]').forEach(el=>el.onclick=async()=>{
-    const t=el.dataset.acc,id=el.dataset.id||null;
-    if(el.classList.contains('locked')){ tryBuyItem(accItem(t,id),()=>{if(!m.items.acc)m.items.acc={};m.items.acc[t]=id;}); return; } // 잠금=구매 후 바로 착용
+    const t=el.dataset.acc,id=el.dataset.id||'';
     if(!m.items.acc)m.items.acc={};
-    if((m.items.acc[t]||null)===id)return;
-    m.items.acc[t]=id; await save(); renderDress();
+    if(!Array.isArray(m.items.acc[t]))m.items.acc[t]=m.items.acc[t]?[m.items.acc[t]]:[]; // 안전: 배열 보장
+    if(!id){ // '모두 벗기' 타일 → 이 타입 전체 해제
+      if(m.items.acc[t].length===0)return;
+      m.items.acc[t]=[]; await save(); renderDress(); return;
+    }
+    if(el.classList.contains('locked')){ tryBuyItem(accItem(t,id),()=>{if(!m.items.acc[t].includes(id))m.items.acc[t].push(id);}); return; } // 잠금=구매 후 바로 착용
+    const i=m.items.acc[t].indexOf(id);
+    i<0?m.items.acc[t].push(id):m.items.acc[t].splice(i,1); // 토글: 없으면 입고, 있으면 벗기 (중복 착용 가능)
+    await save(); renderDress();
   });
   $('#items').querySelectorAll('.hcchip').forEach(el=>el.onclick=async()=>{
     const id=el.dataset.hc||'';
@@ -3083,6 +3098,18 @@ function notifEvents(){
                             name:m.name,text:b.title||'',ts:b.lastTs||0});
     });
   });
+  // 3) 내가 쓴 글에 다른 사람이 남긴 댓글
+  (S.posts||[]).forEach(p=>{
+    if(p&&p.id&&p.authorId===meId){
+      (p.comments||[]).forEach(c=>{
+        if(c&&c.authorId&&c.authorId!==meId){
+          const cu=S.members[c.authorId];
+          ev.push({id:'c_'+p.id+'::'+c.id,type:'comment',pid:p.id,
+                   name:cu?cu.name:'멤버',text:(c.text||'').slice(0,60),ts:c.createdAt||0});
+        }
+      });
+    }
+  });
   ev.sort((a,b)=>(b.ts||0)-(a.ts||0)); // 최신순
   return ev.slice(0,50);
 }
@@ -3114,6 +3141,7 @@ function scanNotifications(){
   if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
     _notifTopTs=top.ts||0;
     const msg=top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
+             :top.type==='comment'?`${top.name}님이 내 글에 댓글을 남겼어요 💬`
                                :`${top.name}님이 «${top.text}» 완독했어요 📚`;
     toast(msg);
     try{
@@ -3131,12 +3159,15 @@ function openNotifSheet(){
   const rows=evs.length?evs.map(ev=>{
     const uid=ev.uid||'';
     const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
+    const icon=ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
+    const ttl=ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
+    const subDef=ev.type==='done'?'책장에 꽂혔어요':'피드에서 확인해요';
     return `
-    <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}">
-      <div class="ic ${ev.type}">${ev.type==='post'?'✨':'📚'}</div>
+    <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}" data-pid="${ev.pid||''}">
+      <div class="ic ${ev.type}">${icon}</div>
       <div class="body">
-        <div class="tt"><b>${escT(ev.name)}</b>${ev.type==='post'?'님의 새 문장':'님 완독'}</div>
-        <div class="sub">${escT(ev.text)||(ev.type==='post'?'피드에서 확인해요':'책장에 꽂혔어요')}</div>
+        <div class="tt"><b>${escT(ev.name)}</b>${ttl}</div>
+        <div class="sub">${escT(ev.text)||subDef}</div>
       </div>
       <div class="ago">${timeAgo(ev.ts)}</div>
     </div>`;}).join(''):`<div class="nti-empty">아직 새 소식이 없어요 🔔<br>친구들이 글을 올리거나 완독하면 여기에 떠요</div>`;
@@ -3149,6 +3180,11 @@ function openNotifSheet(){
     if(el.dataset.type==='done'){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
+    }
+    if(el.dataset.type==='comment'){
+      const pid=el.dataset.pid;
+      if(pid)feedExpanded.add(pid); // 해당 글 댓글창을 펼친 채로 피드 열기
+      go('feed');return;
     }
     go(el.dataset.type==='post'?'feed':'shelf');
   });
