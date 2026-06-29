@@ -1143,12 +1143,11 @@ function pItem(slot,id){return (ITEMS[slot]||[]).find(x=>x.id===id);}
 function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
 function accType(k){return ACC_TYPES.find(t=>t.key===k);}
 function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
-// ----- 악세사리 다중 착용 헬퍼 -----
-// m.items.acc[key] 는 착용한 아이템 id들의 '배열'. (예전엔 문자열 1개였음 → ensureItems에서 배열로 변환)
+// ----- 악세사리 착용 헬퍼 (섹션당 1개, 섹션끼리는 동시 착용) -----
+// m.items.acc[key] 는 '배열'로 저장하되 섹션당 최대 1개만 담는다(0개=안 씀, 1개=착용).
+// 배열로 두는 이유: 예전 단일 문자열 데이터와의 호환 + avatarStack이 배열을 순회해 합성하기 때문.
 function accList(m,key){const a=m.items&&m.items.acc&&m.items.acc[key];return Array.isArray(a)?a:(a?[a]:[]);}
 function accHas(m,key,id){return accList(m,key).includes(id);}
-// 미리보기/실착용용: 해당 타입 배열에서 id를 토글한 새 배열을 돌려줌
-function accToggled(m,key,id){const cur=accList(m,key);return cur.includes(id)?cur.filter(x=>x!==id):cur.concat([id]);}
 function itemAge(it){return (it&&it.age)||0;}
 /* ----- 캐시(가상머니) 시스템 헬퍼 ----- */
 let CASH_PER_AGE=15;                                      // 나이 1살당 기본 단가
@@ -2706,14 +2705,14 @@ function slotSection(m,slot,name){
 function shoesGrid(m){
   return slotSection(m,'shoes','신발')+slotSection(m,'bag','가방');
 }
-// 악세사리 그리드 (타입별 섹션 — "모두 벗기" + 아이템들. 타입 안에서 여러 개 동시 착용 가능)
+// 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들. 섹션당 1개만, 다른 섹션은 그대로 유지)
 function accTypeGrid(m,t){
-  const cur=accList(m,t.key);
+  const cur=accList(m,t.key);                                                       // 이 섹션에 착용한 것(0~1개)
   const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:[]});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
-    return tile(pv,'hz','모두 벗기',cur.length===0,`data-acc="${t.key}" data-id=""`,null);})();
+    return tile(pv,'hz','없음',cur.length===0,`data-acc="${t.key}" data-id=""`,null);})();
   const items=t.items.map(it=>{
-    const eq=cur.includes(it.id);                                                  // 이미 착용 중이면 선택 표시
-    const acc=Object.assign({},m.items.acc,{[t.key]:accToggled(m,t.key,it.id)});   // 미리보기: 이 아이템을 토글한 상태
+    const eq=cur.includes(it.id);                                                   // 지금 이걸 착용 중이면 선택 표시
+    const acc=Object.assign({},m.items.acc,{[t.key]:[it.id]});                       // 미리보기: 이 섹션은 이 아이템만, 다른 섹션(안경·귀걸이 등)은 유지
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
   }).join('');
@@ -2741,7 +2740,7 @@ function flatTile(m,en){
     return tile(pv,zoom,it.name,eq,`data-slot="${en.slot}" data-id="${it.id}"`,it);
   }else{
     const eq=accHas(m,en.accKey,it.id);
-    const acc=Object.assign({},m.items.acc,{[en.accKey]:accToggled(m,en.accKey,it.id)});
+    const acc=Object.assign({},m.items.acc,{[en.accKey]:[it.id]});
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,zoom,it.name,eq,`data-acc="${en.accKey}" data-id="${it.id}"`,it);
   }
@@ -2810,13 +2809,14 @@ function drawItems(){
     const t=el.dataset.acc,id=el.dataset.id||'';
     if(!m.items.acc)m.items.acc={};
     if(!Array.isArray(m.items.acc[t]))m.items.acc[t]=m.items.acc[t]?[m.items.acc[t]]:[]; // 안전: 배열 보장
-    if(!id){ // '모두 벗기' 타일 → 이 타입 전체 해제
+    if(!id){ // '없음' 타일 → 이 섹션 벗기
       if(m.items.acc[t].length===0)return;
       m.items.acc[t]=[]; await save(); refreshDressPreview(); return;
     }
-    if(el.classList.contains('locked')){ tryBuyItem(accItem(t,id),()=>{if(!m.items.acc[t].includes(id))m.items.acc[t].push(id);}); return; } // 잠금=구매 후 바로 착용
-    const i=m.items.acc[t].indexOf(id);
-    i<0?m.items.acc[t].push(id):m.items.acc[t].splice(i,1); // 토글: 없으면 입고, 있으면 벗기 (중복 착용 가능)
+    if(el.classList.contains('locked')){ tryBuyItem(accItem(t,id),()=>{m.items.acc[t]=[id];}); return; } // 잠금=구매 후 바로 착용(섹션당 1개)
+    const worn=m.items.acc[t];
+    if(worn.length===1&&worn[0]===id) m.items.acc[t]=[];   // 같은 걸 다시 누르면 벗기
+    else m.items.acc[t]=[id];                               // 섹션당 1개 — 다른 걸 누르면 교체
     await save(); refreshDressPreview();
   });
   $('#items').querySelectorAll('.hcchip').forEach(el=>el.onclick=async()=>{
