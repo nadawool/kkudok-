@@ -600,6 +600,9 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .bv-review.empty{color:var(--soft);text-align:center;font-style:italic}
 /* member management */
 .kickbtn{margin-left:auto;background:#FBEAEA;color:#C0504D;font-weight:700;font-size:11.5px;padding:7px 11px;border-radius:20px;flex:none}
+.mg-acts{margin-left:auto;display:flex;gap:6px;flex:none;align-items:center}
+.mg-acts .kickbtn{margin-left:0}
+.mg-gift{background:#FFF1D6;color:#C8881F;font-weight:700;font-size:13px;padding:7px 10px;border-radius:20px;flex:none}
 .ownerbadge{font-size:10.5px;color:var(--honey-d);font-weight:800;margin-left:5px}
 .syncbtn{margin-left:auto;background:#F4EFE6;border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--soft);flex:none}
 </style>
@@ -1404,6 +1407,10 @@ let _recBookId=null;
 function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
 function ribbonIcon(filled){return `<svg class="ribbon" viewBox="0 0 24 24" width="15" height="15" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>`;}
 function renderFeed(){
+  // 쓰던 댓글(인라인 입력창) 백업 → 리렌더로 입력창이 날아가도 복원
+  const _ae=document.activeElement; let _keep=null;
+  if(_ae && _ae.classList && _ae.classList.contains('fd-cinp'))
+    _keep={id:_ae.dataset.id, v:_ae.value, s:_ae.selectionStart, e:_ae.selectionEnd};
   refreshHeader();
   const meM=me();
   let list=(S.posts||[]).slice();
@@ -1439,6 +1446,11 @@ function renderFeed(){
   </div>
   <div id="fdList">${list.length?list.map(feedCard).join(''):empty}</div>`;
   bindFeed();
+  // 백업해둔 댓글 입력값·커서·포커스 복원
+  if(_keep){
+    const inp=$('#fdList .fd-cinp[data-id="'+_keep.id+'"]');
+    if(inp){ inp.value=_keep.v; try{inp.focus();inp.setSelectionRange(_keep.s,_keep.e);}catch(e){} }
+  }
 }
 function feedCard(p){
   const au=S.members[p.authorId];
@@ -2529,23 +2541,59 @@ $('#backMe')&&($('#backMe').onclick=()=>{S.viewId=S.meId;go(tab);});
 /* ---------- member management (모임장 전용) ---------- */
 function openManageSheet(){
   $('#sheet').innerHTML=`<h3>멤버 관리</h3>
-    <div class="hint" style="text-align:center;margin:-6px 0 14px">모임장만 멤버를 내보낼 수 있어요</div>
+    <div class="hint" style="text-align:center;margin:-6px 0 14px">💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
     <div>${Object.values(S.members).map(m=>`
       <div class="row-m" data-id="${m.id}" style="cursor:default">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
-          <div class="sub">${genderLabel(m)} · 가입 ${fmt(m.createdAt)}</div></div>
-        ${m.id!==S.ownerId?`<button class="kickbtn" data-id="${m.id}">내보내기</button>`:''}
+          <div class="sub">${genderLabel(m)} · 💰${(m.cash||0).toLocaleString()}</div></div>
+        <div class="mg-acts">
+          <button class="mg-gift mgcash" data-id="${m.id}" title="캐시 지급">💰</button>
+          <button class="mg-gift mgitem" data-id="${m.id}" title="아이템 잠금해제">🎁</button>
+          ${m.id!==S.ownerId?`<button class="kickbtn" data-id="${m.id}">내보내기</button>`:''}
+        </div>
       </div>`).join('')}</div>
     <button class="btn ghost" id="mgClose" style="margin-top:8px">닫기</button>`;
   openOv();
   $('#mgClose').onclick=closeOv;
+  $('#sheet').querySelectorAll('.mgcash').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveCash(b.dataset.id);});
+  $('#sheet').querySelectorAll('.mgitem').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveItem(b.dataset.id);});
   $('#sheet').querySelectorAll('.kickbtn').forEach(b=>b.onclick=async(e)=>{
     e.stopPropagation();
     await removeMember(b.dataset.id);
     ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
     openManageSheet();
   });
+}
+
+/* 모임장 → 다른 멤버 문서에 직접 반영(공유 컬렉션이라 운영자 권한으로 쓰기 가능) */
+async function saveMember(m){
+  try{ await window.storage.set('member:'+m.id, JSON.stringify(m), true); }catch(e){}
+}
+async function ownerGiveCash(id){
+  if(!isOwner()){toast('모임장만 지급할 수 있어요');return;}
+  const m=S.members[id]; if(!m)return;
+  const v=prompt(`${m.name}님에게 줄 캐시 (음수면 회수)`,'10');
+  if(v===null)return;
+  const n=parseInt(v,10); if(!Number.isFinite(n)||n===0)return;
+  ensureItems(m); m.cash=Math.max(0,(m.cash||0)+n);
+  await saveMember(m);
+  if(id===S.meId)refreshHeader();
+  toast(`${m.name}님 캐시 ${n>0?'+':''}${n} → 보유 ${m.cash}💰`);
+  openManageSheet();
+}
+async function ownerGiveItem(id){
+  if(!isOwner()){toast('모임장만 지급할 수 있어요');return;}
+  const m=S.members[id]; if(!m)return;
+  const iid=(prompt(`${m.name}님에게 잠금 해제할 아이템 id\n(예: hair_11 = 빵빵이 헤어)`,'')||'').trim();
+  if(!iid)return;
+  ensureItems(m); m.items.owned=m.items.owned||[];
+  if(m.items.owned.includes(iid)){toast('이미 보유 중이에요');return;}
+  m.items.owned.push(iid);
+  await saveMember(m);
+  if(id===S.meId)refreshDressPreview&&refreshDressPreview();
+  toast(`${m.name}님에게 ${iid} 지급(잠금 해제) 🎁`);
+  openManageSheet();
 }
 
 /* ---------- STATS ---------- */
@@ -3227,7 +3275,14 @@ function subscribeRealtime(){
   const rerender=()=>{
     if($('#ov').classList.contains('on'))return;            // 오버레이 열려 있으면 갱신 보류
     clearTimeout(_timer);
-    _timer=setTimeout(()=>{
+    _timer=setTimeout(function run(){
+      // 인라인 댓글 입력 중이면(입력창 포커스) 다 쓸 때까지 피드 전체 렌더를 미룸
+      const ae=document.activeElement;
+      if(ae && ae.classList && ae.classList.contains('fd-cinp')){
+        updateBellBadge();             // 알림 배지만 갱신하고
+        _timer=setTimeout(run,700);    // 잠시 후 다시 시도
+        return;
+      }
       // 내 기록이 사라진 경우(내보내짐 등)는 예외적으로 전체 동기화로 처리
       if(!S||!S.meId||!S.members[S.meId]){ syncClub(); return; }
       scanNotifications();
