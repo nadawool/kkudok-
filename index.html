@@ -2672,7 +2672,7 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
-let dressSlot='face', clothTab='top';
+let dressSlot='face', clothTab='top', accTab='hairacc';
 const DCATS2=[['my','🛍️MY'],['fav','❤️'],['face','얼굴'],['hair','헤어'],['cloth','의상'],['shoes','신발/가방'],['acc','악세사리'],['bg','배경']];
 function renderDress(){
   refreshHeader();
@@ -2769,7 +2769,7 @@ function shoesGrid(m){
   return slotSection(m,'shoes','신발')+slotSection(m,'bag','가방');
 }
 // 악세사리 그리드 (타입별 섹션 — "없음" + 아이템들. 섹션당 1개만, 다른 섹션은 그대로 유지)
-function accTypeGrid(m,t){
+function accTypeGrid(m,t,hideHeader){
   const cur=accList(m,t.key);                                                       // 이 섹션에 착용한 것(0~1개)
   const none=(()=>{const acc=Object.assign({},m.items.acc,{[t.key]:[]});const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,'hz','없음',cur.length===0,`data-acc="${t.key}" data-id=""`,null);})();
@@ -2779,7 +2779,7 @@ function accTypeGrid(m,t){
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{acc})});
     return tile(pv,'hz',it.name,eq,`data-acc="${t.key}" data-id="${it.id}"`,it);
   }).join('');
-  return `<div class="dsec">${t.name}</div>${none}${items}`;
+  return `${hideHeader?'':`<div class="dsec">${t.name}</div>`}${none}${items}`;
 }
 function accGrid(m){
   return ACC_TYPES.filter(t=>!FACE_EXTRA_KEYS.includes(t.key)).map(t=>accTypeGrid(m,t)).join('');
@@ -2847,7 +2847,15 @@ function drawItems(){
     else                         $('#items').innerHTML=clothGrid(m,false);              // 상의만(원피스 제외)
   }
   else if(dressSlot==='shoes'){ $('#items').innerHTML=shoesGrid(m); }
-  else if(dressSlot==='acc'){ $('#items').innerHTML=accGrid(m); }
+  else if(dressSlot==='acc'){
+    const accTypes=ACC_TYPES.filter(t=>!FACE_EXTRA_KEYS.includes(t.key)); // 헤어장식/안경/귀걸이/목걸이
+    if(!accTypes.some(t=>t.key===accTab)) accTab=accTypes[0].key;         // 안전: 없는 탭이면 첫 탭으로
+    $('#dsub').innerHTML=`<div class="dsub">${accTypes.map(t=>
+      `<div class="t ${accTab===t.key?'on':''}" data-t="${t.key}">${t.name}</div>`).join('')}</div>`;
+    $('#dsub').querySelectorAll('.t').forEach(el=>el.onclick=()=>{accTab=el.dataset.t;drawItems();});
+    const cur=accTypes.find(t=>t.key===accTab);
+    $('#items').innerHTML=accTypeGrid(m,cur,true); // 선택한 소분류만 (탭에 이름 있으니 헤더 생략)
+  }
   else if(dressSlot==='fav'){
     // 찜: 하트 누른 아이템만 모아보기
     const list=allItemsFlat().filter(en=>isFav(en.it.id));
