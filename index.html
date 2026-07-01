@@ -2666,7 +2666,7 @@ function renderStats(){
 
 /* ---------- DRESS ---------- */
 let dressSlot='face', clothTab='top';
-const DCATS2=[['fav','❤️'],['face','얼굴'],['hair','헤어'],['cloth','의상'],['shoes','신발/가방'],['acc','악세사리'],['bg','배경']];
+const DCATS2=[['my','🛍️MY'],['fav','❤️'],['face','얼굴'],['hair','헤어'],['cloth','의상'],['shoes','신발/가방'],['acc','악세사리'],['bg','배경']];
 function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
@@ -2847,6 +2847,13 @@ function drawItems(){
     $('#items').innerHTML = list.length
       ? list.map(en=>flatTile(m,en)).join('')
       : `<div class="dempty">아직 찜한 아이템이 없어요 🤍<br>아이템의 하트를 눌러 담아보세요</div>`;
+  }
+  else if(dressSlot==='my'){
+    // MY: 캐시로 산 아이템만 모아보기 (owned 목록). 슬롯 섞어서 flat으로.
+    const list=allItemsFlat().filter(en=>ownsItem(m,en.it.id));
+    $('#items').innerHTML = list.length
+      ? list.map(en=>flatTile(m,en)).join('')
+      : `<div class="dempty">아직 구매한 아이템이 없어요 🛍️<br>잠긴 아이템을 캐시로 구매하면 여기에 모여요</div>`;
   }
 
   // 클릭 핸들러
