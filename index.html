@@ -1573,6 +1573,13 @@ function bindFeed(){
 }
 // 답글달기 클릭: 댓글창을 펼치고(닫혀있었으면) 공용 입력창을 해당 댓글에 답글 다는 모드로 전환 후 포커스
 function openReplyTo(pid,cid){
+  if(replyTarget[pid] && replyTarget[pid].cid===cid){
+    // 이미 이 댓글에 답글 다는 중인데 또 눌렀으면: 답글 모드 취소하고 댓글창까지 닫기
+    delete replyTarget[pid];
+    feedExpanded.delete(pid);
+    renderFeed();
+    return;
+  }
   const post=(S.posts||[]).find(x=>x.id===pid);
   const c=post&&(post.comments||[]).find(x=>x.id===cid);
   if(!c)return;
