@@ -415,12 +415,19 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .fd-cav{width:28px;height:28px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
 .fd-cbody{flex:1;font-size:13.5px;line-height:1.55;color:#3a3733;word-break:break-word}
 .fd-cname{font-weight:800;margin-right:5px}
-.fd-ctime{font-size:11px;color:var(--soft);margin-top:3px}
+.fd-cbot{display:flex;align-items:center;gap:10px;margin-top:3px}
+.fd-ctime{font-size:11px;color:var(--soft)}
+.fd-rbtn{font-size:11.5px;color:var(--honey-d);font-weight:700;cursor:pointer}
 .fd-cdel{border:none;background:none;color:var(--soft);font-size:12px;cursor:pointer;padding:2px 4px;flex:none}
 .fd-noc{font-size:12.5px;color:var(--soft);text-align:center;padding:2px 0 13px}
 .fd-cwrite{display:flex;gap:7px;align-items:center}
-.fd-cinp{flex:1;border:1.5px solid var(--line);border-radius:30px;padding:9px 14px;font-size:13.5px;background:#FCFBF8;font-family:inherit;min-width:0}
-.fd-csend{border:none;background:var(--honey);color:#fff;font-weight:800;font-size:13px;padding:9px 15px;border-radius:30px;cursor:pointer;flex:none}
+.fd-cinp,.fd-rinp{flex:1;border:1.5px solid var(--line);border-radius:30px;padding:9px 14px;font-size:13.5px;background:#FCFBF8;font-family:inherit;min-width:0}
+.fd-csend,.fd-rsend{border:none;background:var(--honey);color:#fff;font-weight:800;font-size:13px;padding:9px 15px;border-radius:30px;cursor:pointer;flex:none}
+.fd-creplies{margin:8px 0 0 34px;padding-left:12px;border-left:2px solid var(--line)}
+.fd-creplies .fd-c{margin-bottom:10px}
+.fd-creplies .fd-cwrite{margin-top:2px}
+.fd-creply .fd-cav{width:24px;height:24px}
+.fd-creply .fd-cbody{font-size:13px}
 .btn:disabled{opacity:.5}
 .btnrow{display:flex;gap:10px}
 /* onboarding */
@@ -1416,15 +1423,18 @@ function timeAgo(ts){
 /* ---------- FEED (문장 공유) ---------- */
 let feedSort='recent', feedSavedOnly=false, feedMineOnly=false; // feedMineOnly: '내 글'만 보기 모드
 const feedExpanded=new Set();
+const replyOpen=new Set(); // 답글 입력창이 열려있는 댓글 id 모음
 let _composeCover='',_composeBookT='',_composeBookA='',_editPostId=null;
 let _recBookId=null;
 function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
 function ribbonIcon(filled){return `<svg class="ribbon" viewBox="0 0 24 24" width="15" height="15" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>`;}
 function renderFeed(){
   // 쓰던 댓글(인라인 입력창) 백업 → 리렌더로 입력창이 날아가도 복원
-  const _ae=document.activeElement; let _keep=null;
+  const _ae=document.activeElement; let _keep=null,_keepR=null;
   if(_ae && _ae.classList && _ae.classList.contains('fd-cinp'))
     _keep={id:_ae.dataset.id, v:_ae.value, s:_ae.selectionStart, e:_ae.selectionEnd};
+  if(_ae && _ae.classList && _ae.classList.contains('fd-rinp'))
+    _keepR={cid:_ae.dataset.cid, v:_ae.value, s:_ae.selectionStart, e:_ae.selectionEnd};
   refreshHeader();
   const meM=me();
   let list=(S.posts||[]).slice();
@@ -1464,6 +1474,10 @@ function renderFeed(){
   if(_keep){
     const inp=$('#fdList .fd-cinp[data-id="'+_keep.id+'"]');
     if(inp){ inp.value=_keep.v; try{inp.focus();inp.setSelectionRange(_keep.s,_keep.e);}catch(e){} }
+  }
+  if(_keepR){
+    const inp=$('#fdList .fd-rinp[data-cid="'+_keepR.cid+'"]');
+    if(inp){ inp.value=_keepR.v; try{inp.focus();inp.setSelectionRange(_keepR.s,_keepR.e);}catch(e){} }
   }
 }
 function feedCard(p){
@@ -1510,23 +1524,39 @@ function feedCard(p){
         : `<button class="fd-save ${saved?'on':''}" data-id="${p.id}">${saved?ribbonIcon(true)+' 저장됨':ribbonIcon(false)+' 저장'}</button>`}
     </div>
     ${open?`<div class="fd-comments">
-      ${cmts.map(c=>feedComment(c,p)).join('')||'<div class="fd-noc">첫 댓글을 남겨보세요</div>'}
+      ${cmts.filter(c=>!c.parentId).map(c=>feedCommentBlock(c,p)).join('')||'<div class="fd-noc">첫 댓글을 남겨보세요</div>'}
       <div class="fd-cwrite">
         <input class="fd-cinp" data-id="${p.id}" placeholder="댓글 달기…" maxlength="200" autocomplete="off">
         <button class="fd-csend" data-id="${p.id}">등록</button>
       </div>
-    </div>`:''}
+    </div>`:(cmts.length?`<div class="fd-comments fd-cprev">${feedComment(cmts[cmts.length-1],p,!!cmts[cmts.length-1].parentId)}</div>`:'')}
   </div>`;
 }
-function feedComment(c,p){
+function feedComment(c,p,isReply){
   const cm=S.members[c.authorId];
   const name=cm?cm.name:'알 수 없음', av=cm?avatarBust(cm):'';
   const canDel=c.authorId===S.meId||isOwner();
-  return `<div class="fd-c">
+  return `<div class="fd-c${isReply?' fd-creply':''}">
     <div class="fd-cav">${av}</div>
-    <div class="fd-cbody"><span class="fd-cname">${escT(name)}</span>${escT(c.text)}<div class="fd-ctime">${timeAgo(c.createdAt)}</div></div>
+    <div class="fd-cbody"><span class="fd-cname">${escT(name)}</span>${escT(c.text)}
+      <div class="fd-cbot">
+        <span class="fd-ctime">${timeAgo(c.createdAt)}</span>
+        ${!isReply?`<span class="fd-rbtn" data-pid="${p.id}" data-cid="${c.id}">답글달기</span>`:''}
+      </div>
+    </div>
     ${canDel?`<button class="fd-cdel" data-pid="${p.id}" data-cid="${c.id}">✕</button>`:''}
   </div>`;
+}
+// 댓글 하나 + 그 밑에 달린 답글들 + (열려있으면) 답글 입력창까지 묶어서 렌더
+function feedCommentBlock(c,p){
+  const replies=(p.comments||[]).filter(r=>r.parentId===c.id);
+  const rOpen=replyOpen.has(c.id);
+  const repliesHtml=replies.length?`<div class="fd-creplies">${replies.map(r=>feedComment(r,p,true)).join('')}</div>`:'';
+  const writeHtml=rOpen?`<div class="fd-creplies"><div class="fd-cwrite">
+      <input class="fd-rinp" data-pid="${p.id}" data-cid="${c.id}" placeholder="답글 달기…" maxlength="200" autocomplete="off">
+      <button class="fd-rsend" data-pid="${p.id}" data-cid="${c.id}">등록</button>
+    </div></div>`:'';
+  return feedComment(c,p,false)+repliesHtml+writeHtml;
 }
 function bindFeed(){
   $('#fdPlus')&&($('#fdPlus').onclick=openComposeChooser);
@@ -1545,6 +1575,9 @@ function bindFeed(){
   L.querySelectorAll('.fd-csend').forEach(b=>b.onclick=()=>{const inp=L.querySelector('.fd-cinp[data-id="'+b.dataset.id+'"]');submitComment(b.dataset.id,inp?inp.value:'');});
   L.querySelectorAll('.fd-cinp').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitComment(inp.dataset.id,inp.value);}});
   L.querySelectorAll('.fd-cdel').forEach(b=>b.onclick=()=>removeComment(b.dataset.pid,b.dataset.cid));
+  L.querySelectorAll('.fd-rbtn').forEach(b=>b.onclick=()=>{const id=b.dataset.cid;replyOpen.has(id)?replyOpen.delete(id):replyOpen.add(id);renderFeed();});
+  L.querySelectorAll('.fd-rsend').forEach(b=>b.onclick=()=>{const inp=L.querySelector('.fd-rinp[data-cid="'+b.dataset.cid+'"]');submitComment(b.dataset.pid,inp?inp.value:'',b.dataset.cid);});
+  L.querySelectorAll('.fd-rinp').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitComment(inp.dataset.pid,inp.value,inp.dataset.cid);}});
 }
 // 최신 상태를 다시 읽어 반영(동시 수정 충돌 최소화)
 async function _mutatePost(id,fn){
@@ -1566,16 +1599,19 @@ async function toggleLike(id){
   if(adding && othersPost && earnDaily(me(),'like',1)){ await save(); toast('좋아요 +1캐시 💰'); }
 }
 function toggleSave(id){return _mutatePost(id,p=>{p.saves=p.saves||[];const i=p.saves.indexOf(S.meId);i<0?p.saves.push(S.meId):p.saves.splice(i,1);});}
-async function submitComment(id,txt){
+async function submitComment(id,txt,parentId){
   txt=(txt||'').trim(); if(!txt)return;
   feedExpanded.add(id);
   const target=(S.posts||[]).find(x=>x.id===id);   // 댓글을 다는 대상 글
   const othersPost=!!(target && target.authorId!==S.meId); // 남의 글이면 true
-  await _mutatePost(id,p=>{p.comments=p.comments||[];p.comments.push({id:'c'+Date.now(),authorId:S.meId,text:txt,createdAt:Date.now()});});
-  // 남의 글 + 오늘 첫 댓글이면 +1캐시 (내 글 댓글은 적립 X)
+  const c={id:'c'+Date.now(),authorId:S.meId,text:txt,createdAt:Date.now()};
+  if(parentId) c.parentId=parentId;                 // 답글이면 원댓글 id 연결
+  await _mutatePost(id,p=>{p.comments=p.comments||[];p.comments.push(c);});
+  if(parentId) replyOpen.delete(parentId);           // 답글 등록했으면 입력창 닫기
+  // 남의 글 + 오늘 첫 댓글이면 +1캐시 (내 글 댓글은 적립 X, 답글도 동일하게 적립)
   if(othersPost && earnDaily(me(),'comment',1)){ await save(); toast('댓글 +1캐시 💰'); }
 }
-function removeComment(pid,cid){return _mutatePost(pid,p=>{p.comments=(p.comments||[]).filter(c=>c.id!==cid);});}
+function removeComment(pid,cid){return _mutatePost(pid,p=>{p.comments=(p.comments||[]).filter(c=>c.id!==cid&&c.parentId!==cid);});}
 async function removePost(id){
   const p=(S.posts||[]).find(x=>x.id===id);
   if(p&&p.authorId!==S.meId&&!isOwner()){toast('내 글만 삭제할 수 있어요');return;}
