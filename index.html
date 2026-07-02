@@ -1110,6 +1110,21 @@ const ITEMS={
 };
 // 악세사리: 타입별 1개씩 동시 착용 (z-순서대로 hair 위에 쌓임)
 const ACC_TYPES=[
+  // 모자 — 헤어장식에서 분리 (과일탈 5종 + 뒤캡모자·스냅백 7종). 헤드셋보다 먼저 그려지도록 헤어장식보다 앞에 배치(=헤어장식이 모자 위로 쌓임)
+  {key:'hat',name:'모자',items:[
+    {id:'hairacc_3',name:'사과탈',img:CHARP+'acc/hairacc/hairacc_003.png', cost:5}, // 1살·
+    {id:'hairacc_4',name:'풋사과탈',img:CHARP+'acc/hairacc/hairacc_004.png', cost:5},
+    {id:'hairacc_5',name:'수박탈',img:CHARP+'acc/hairacc/hairacc_005.png', cost:5},
+    {id:'hairacc_6',name:'오렌지탈',img:CHARP+'acc/hairacc/hairacc_006.png', cost:5},
+    {id:'hairacc_7',name:'감자탈',img:CHARP+'acc/hairacc/hairacc_007.png', cost:5},
+    {id:'cap_1',name:'뒤캡모자(블랙)',img:CHARP+'acc/cap/cap_001.png',cost:7},
+    {id:'cap_2',name:'뒤캡모자(블루)',img:CHARP+'acc/cap/cap_002.png',cost:7},
+    {id:'cap_3',name:'뒤캡모자(밤색)',img:CHARP+'acc/cap/cap_003.png',cost:7},
+    {id:'cap_4',name:'뒤캡모자(빨강)',img:CHARP+'acc/cap/cap_004.png',cost:7},
+    {id:'cap_5',name:'뒤캡모자(주황)',img:CHARP+'acc/cap/cap_005.png',cost:7},
+    {id:'cap_6',name:'뒤캡모자(버터)',img:CHARP+'acc/cap/cap_006.png',cost:7},
+    {id:'cap_7',name:'뒤캡모자(아이)',img:CHARP+'acc/cap/cap_007.png',cost:7},
+  ]},
   {key:'hairacc',name:'헤어장식',items:[
     {id:'hairacc_1',name:'사과머리띠',img:CHARP+'acc/hairacc/hairacc_001.png'},
     {id:'hairacc_2',name:'검정헤드셋',img:CHARP+'acc/hairacc/headset_001.png', cost:5},
@@ -1129,21 +1144,6 @@ const ACC_TYPES=[
     {id:'hairacc_18',name:'방장',img:CHARP+'acc/hairacc/hairacc_018.png'},         
     {id:'hairacc_19',name:'성공',img:CHARP+'acc/hairacc/hairacc_019.png'},
     {id:'hairacc_20',name:'열정',img:CHARP+'acc/hairacc/hairacc_020.png'}, 
-  ]},
-  // 모자 — 헤어장식에서 분리 (과일탈 5종 + 뒤캡모자·스냅백 7종). 헤어장식과 별개 타입이라 동시 착용 가능
-  {key:'hat',name:'모자',items:[
-    {id:'hairacc_3',name:'사과탈',img:CHARP+'acc/hairacc/hairacc_003.png', cost:5}, // 1살·
-    {id:'hairacc_4',name:'풋사과탈',img:CHARP+'acc/hairacc/hairacc_004.png', cost:5},
-    {id:'hairacc_5',name:'수박탈',img:CHARP+'acc/hairacc/hairacc_005.png', cost:5},
-    {id:'hairacc_6',name:'오렌지탈',img:CHARP+'acc/hairacc/hairacc_006.png', cost:5},
-    {id:'hairacc_7',name:'감자탈',img:CHARP+'acc/hairacc/hairacc_007.png', cost:5},
-    {id:'cap_1',name:'뒤캡모자(블랙)',img:CHARP+'acc/cap/cap_001.png',cost:7},
-    {id:'cap_2',name:'뒤캡모자(블루)',img:CHARP+'acc/cap/cap_002.png',cost:7},
-    {id:'cap_3',name:'뒤캡모자(밤색)',img:CHARP+'acc/cap/cap_003.png',cost:7},
-    {id:'cap_4',name:'뒤캡모자(빨강)',img:CHARP+'acc/cap/cap_004.png',cost:7},
-    {id:'cap_5',name:'뒤캡모자(주황)',img:CHARP+'acc/cap/cap_005.png',cost:7},
-    {id:'cap_6',name:'뒤캡모자(버터)',img:CHARP+'acc/cap/cap_006.png',cost:7},
-    {id:'cap_7',name:'뒤캡모자(아이)',img:CHARP+'acc/cap/cap_007.png',cost:7},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
   {key:'glasses',name:'안경',items:[
