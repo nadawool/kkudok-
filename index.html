@@ -349,7 +349,9 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .fd-sorts{display:flex;gap:7px}
 .fd-bm{border:none;background:#F4EFE6;color:var(--soft);font-size:13px;font-weight:800;padding:6px 13px;border-radius:30px;cursor:pointer;white-space:nowrap;flex:none}
 .fd-bm.on{background:var(--honey-s);color:var(--honey-d)}
-.fd-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fd-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px 16px;margin-bottom:14px;box-shadow:var(--shadow);transition:box-shadow .3s,border-color .3s}
+.fd-card.fd-focus{border-color:var(--honey);box-shadow:0 0 0 3px var(--honey-s),var(--shadow);animation:fdFocusPulse 1.8s ease}
+@keyframes fdFocusPulse{0%{box-shadow:0 0 0 6px var(--honey-s),var(--shadow)}100%{box-shadow:0 0 0 3px var(--honey-s),var(--shadow)}}
 .fd-top{display:flex;align-items:center;gap:10px;margin-bottom:11px}
 .fc-av{width:38px;height:38px;border-radius:50%;background:var(--honey-s);overflow:hidden;flex:none;position:relative}
 .fd-meta{line-height:1.25}
@@ -1435,6 +1437,7 @@ function timeAgo(ts){
 /* ---------- FEED (문장 공유) ---------- */
 let feedSort='recent', feedSavedOnly=false, feedMineOnly=false; // feedMineOnly: '내 글'만 보기 모드
 const feedExpanded=new Set();
+let _feedFocusPid=null; // 알림 클릭 등으로 특정 글로 스크롤 이동해야 할 때 그 글의 id
 const replyTarget={}; // { [postId]: {cid, name} } 답글 작성 대상. 있으면 공용 입력창이 답글모드로 동작
 let _composeCover='',_composeBookT='',_composeBookA='',_editPostId=null;
 let _recBookId=null;
@@ -1484,6 +1487,19 @@ function renderFeed(){
   if(_keep){
     const inp=$('#fdList .fd-cinp[data-id="'+_keep.id+'"]');
     if(inp){ inp.value=_keep.v; try{inp.focus();inp.setSelectionRange(_keep.s,_keep.e);}catch(e){} }
+  }
+  // 알림을 눌러 들어온 경우: 해당 글로 스크롤 이동 + 잠깐 하이라이트
+  // (go()가 렌더 직후 스크롤을 0으로 되돌리므로, 그 다음 프레임에 실행해야 함)
+  if(_feedFocusPid){
+    const pid=_feedFocusPid; _feedFocusPid=null;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const card=$('#fdList .fd-card[data-id="'+pid+'"]');
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.classList.add('fd-focus');
+        setTimeout(()=>card.classList.remove('fd-focus'),1800);
+      }
+    }));
   }
 }
 function feedCard(p){
@@ -3238,7 +3254,7 @@ function notifEvents(){
   (S.posts||[]).forEach(p=>{
     if(p&&p.id&&p.authorId!==meId){
       const au=S.members[p.authorId];
-      ev.push({id:'p_'+p.id,type:'post',name:au?au.name:'멤버',
+      ev.push({id:'p_'+p.id,type:'post',pid:p.id,name:au?au.name:'멤버',
                text:(p.text||'').slice(0,60),ts:p.createdAt||0});
     }
   });
@@ -3333,12 +3349,15 @@ function openNotifSheet(){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
     }
-    if(el.dataset.type==='comment'){
+    if(el.dataset.type==='comment'||el.dataset.type==='post'){
       const pid=el.dataset.pid;
-      if(pid)feedExpanded.add(pid); // 해당 글 댓글창을 펼친 채로 피드 열기
+      if(pid){
+        if(el.dataset.type==='comment')feedExpanded.add(pid); // 해당 글 댓글창을 펼친 채로 피드 열기
+        _feedFocusPid=pid; // 피드 열리면 이 글로 스크롤 + 하이라이트
+      }
       go('feed');return;
     }
-    go(el.dataset.type==='post'?'feed':'shelf');
+    go('shelf');
   });
   // 알림을 열어 봤으니 "마지막 확인 시각"을 지금으로 저장 → 모든 기기에서 안읽음이 사라짐
   const m=me(); if(m){ m.notifSeenTs=Date.now(); _notifTopTs=m.notifSeenTs; save(); }
