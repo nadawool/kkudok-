@@ -2380,7 +2380,7 @@ function openBookSheet(book){
     </div>
     <div class="field">
       <label>한줄 후기 <span style="font-weight:400">(선택)</span></label>
-      <textarea id="reviewTxt" rows="2" maxlength="120" placeholder="어떤 책이었나요? 한 줄로 남겨보세요"
+      <textarea id="reviewTxt" rows="2" maxlength="300" placeholder="어떤 책이었나요? 한 줄로 남겨보세요"
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${book?esc2(book.review||''):''}</textarea>
     </div>
     <div class="btnrow">
@@ -2565,7 +2565,7 @@ function openReviewSheet(book){
     </div>
     <div class="field">
       <label>한줄 후기</label>
-      <textarea id="reviewTxt" rows="3" maxlength="120" placeholder="${editable?'어떤 책이었나요? 한 줄로 남겨보세요':'아직 후기가 없어요'}" ${editable?'':'disabled'}
+      <textarea id="reviewTxt" rows="3" maxlength="300" placeholder="${editable?'어떤 책이었나요? 한 줄로 남겨보세요':'아직 후기가 없어요'}" ${editable?'':'disabled'}
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${esc2(book.review||'')}</textarea>
     </div>
     ${editable?`<div class="btnrow"><button class="btn ghost" id="rvCancel">닫기</button><button class="btn" id="rvSave">저장</button></div>`
