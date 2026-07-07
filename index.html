@@ -492,6 +492,14 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .att-apple i{font-style:normal;display:block;transform:translate(-0.5px,-0.5px)}
 .att-nm{font-size:12px;font-weight:800;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .att-age{font-size:10.5px;color:var(--soft);font-weight:700;margin-top:1px}
+/* ===== 📖 디스코드 독서중 표시 ===== */
+.att-read{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:900;color:#fff;
+  background:linear-gradient(135deg,var(--honey,#F5A623),#F7B36A);padding:2px 8px;border-radius:20px;
+  line-height:1;white-space:nowrap;box-shadow:0 1px 4px rgba(120,70,20,.28)}
+.att-m.reading .att-av{box-shadow:0 0 0 3px rgba(245,166,35,.35);animation:readPulse 1.8s ease-in-out infinite}
+.att-m.reading .att-av,.att-m.reading.gone .att-av{opacity:1;filter:none} /* 독서중이면 회색처리 무시 */
+.att-m.reading.gone .att-nm{color:var(--ink)}
+@keyframes readPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,166,35,.35)}50%{box-shadow:0 0 0 5px rgba(245,166,35,.12)}}
 /* ===== 접속 표시(online dot) ===== */
 .odot{position:absolute;width:12px;height:12px;border-radius:50%;background:#34C759;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);display:none;z-index:5;pointer-events:none}
 .odot.is-online{display:block}
@@ -1970,6 +1978,20 @@ function renderCheckin(){
   $('#nm').onclick=()=>{calM++;if(calM>11){calM=0;calY++;}drawCal();};
   drawCal();
 }
+/* 📖 디스코드 독서중 — 경과 시간 계산 (readingSince는 봇이 기록한 시작 시각) */
+function readSinceMs(m){var t=m&&m.readingSince;if(!t)return 0;
+  if(typeof t==='number')return t;
+  if(typeof t.toMillis==='function')return t.toMillis();
+  if(t.seconds!=null)return t.seconds*1000;
+  var d=new Date(t);return isNaN(d)?0:d.getTime();}
+function readLabel(ms){var min=ms?Math.max(0,Math.floor((Date.now()-ms)/60000)):-1;
+  return min>=1?('📖 '+min+'분째'):'📖 독서중';}
+function readBadge(m){var ms=readSinceMs(m);
+  return '<span class="att-read" data-since="'+ms+'">'+readLabel(ms)+'</span>';}
+function tickReadings(){ // 전체 리렌더 없이 '분째' 숫자만 갱신
+  document.querySelectorAll('.att-read[data-since]').forEach(function(el){
+    el.textContent=readLabel(+el.getAttribute('data-since')||0);});}
+
 function renderHome(){
   refreshHeader();
   S.viewId=S.meId;
@@ -1984,14 +2006,14 @@ function renderHome(){
   const attHTML=`<div class="home-sec">
     <div class="hs-head"><b>오늘 출석한 멤버</b><span class="hs-count">${att.length} / ${total}명</span></div>
     <div class="card att-card"><div class="att-row">
-      ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'}" data-uid="${m.id}">
+      ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'} ${m.discordReading?'reading':''}" data-uid="${m.id}">
         <div class="att-avwrap">
           <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
           ${here(m)?'<span class="att-apple"><i>🍎</i></span>':''}
           <span class="odot" data-uid="${m.id}"></span>
         </div>
         <div class="att-nm">${escT(m.name)}</div>
-        <div class="att-age">${age(m)}살</div>
+        <div class="att-age">${m.discordReading?readBadge(m):age(m)+'살'}</div>
       </div>`).join('')}
     </div></div>
   </div>`;
@@ -2082,6 +2104,7 @@ function attendOrder(members){ // 접속 중 → 오늘 출석(최근 출첵순)
   const today=todayISO();
   const here=m=>new Set(m.reads).has(today);
   return members.slice().sort((a,b)=>
+    ((b.discordReading?1:0)-(a.discordReading?1:0)) ||   /* 📖 디스코드 독서중이 맨 앞 */
     (on.has(b.id)?1:0)-(on.has(a.id)?1:0) ||
     (here(b)?1:0)-(here(a)?1:0) ||
     (b.lastReadTs||0)-(a.lastReadTs||0) ||
@@ -3285,6 +3308,7 @@ function startPresence(){
     window._presenceAt=map; recomputeOnline();
   },e=>console.warn('presence snapshot',e));
   window._presTick=setInterval(recomputeOnline,20000);   // 신호 끊긴 멤버 자동 오프라인 처리
+  if(!window._readTick)window._readTick=setInterval(tickReadings,30000); // 📖 독서 '분째' 갱신
 }
 
 /* --- 알림 (Firestore 동기화 · 모든 기기 공통) ---
