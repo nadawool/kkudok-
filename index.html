@@ -2695,13 +2695,14 @@ $('#backMe')&&($('#backMe').onclick=()=>{S.viewId=S.meId;go(tab);});
 /* ---------- member management (모임장 전용) ---------- */
 function openManageSheet(){
   $('#sheet').innerHTML=`<h3>멤버 관리</h3>
-    <div class="hint" style="text-align:center;margin:-6px 0 14px">💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
+    <div class="hint" style="text-align:center;margin:-6px 0 14px">🍎출첵 처리 · 💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
     <div>${Object.values(S.members).map(m=>`
       <div class="row-m" data-id="${m.id}" style="cursor:default">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
           <div class="sub">${genderLabel(m)} · 💰${(m.cash||0).toLocaleString()}</div></div>
         <div class="mg-acts">
+          <button class="mg-gift mgcheck" data-id="${m.id}" title="출첵 처리">🍎</button>
           <button class="mg-gift mgcash" data-id="${m.id}" title="캐시 지급">💰</button>
           <button class="mg-gift mgitem" data-id="${m.id}" title="아이템 잠금해제">🎁</button>
           ${m.id!==S.ownerId?`<button class="kickbtn" data-id="${m.id}">내보내기</button>`:''}
@@ -2710,6 +2711,7 @@ function openManageSheet(){
     <button class="btn ghost" id="mgClose" style="margin-top:8px">닫기</button>`;
   openOv();
   $('#mgClose').onclick=closeOv;
+  $('#sheet').querySelectorAll('.mgcheck').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerCheckIn(b.dataset.id);});
   $('#sheet').querySelectorAll('.mgcash').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveCash(b.dataset.id);});
   $('#sheet').querySelectorAll('.mgitem').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveItem(b.dataset.id);});
   $('#sheet').querySelectorAll('.kickbtn').forEach(b=>b.onclick=async(e)=>{
@@ -2747,6 +2749,31 @@ async function ownerGiveItem(id){
   await saveMember(m);
   if(id===S.meId)refreshDressPreview&&refreshDressPreview();
   toast(`${m.name}님에게 ${iid} 지급(잠금 해제) 🎁`);
+  openManageSheet();
+}
+async function ownerCheckIn(id){
+  if(!isOwner()){toast('모임장만 출첵 처리할 수 있어요');return;}
+  const m=S.members[id]; if(!m)return;
+  m.reads=m.reads||[];
+  const raw=prompt(`${m.name}님을 출첵 처리할 날짜 (YYYY-MM-DD)\n오늘이면 그대로 확인을 누르세요`, todayISO());
+  if(raw===null)return;
+  const iso=(raw||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)){toast('날짜 형식이 올바르지 않아요 (예: 2026-07-07)');return;}
+  if(iso>todayISO()){toast('미래 날짜는 출첵할 수 없어요');return;}
+  const i=m.reads.indexOf(iso);
+  if(i>=0){
+    if(!confirm(`${m.name}님은 ${iso}에 이미 출첵돼 있어요.\n출첵을 취소할까요?`))return;
+    m.reads.splice(i,1);
+    await saveMember(m);
+    toast(`${m.name}님 ${iso} 출첵 취소`);
+  }else{
+    m.reads.push(iso);
+    if(iso===todayISO())m.lastReadTs=Date.now();
+    await saveMember(m);
+    toast(`🍎 ${m.name}님 ${iso} 출첵 처리 완료`);
+  }
+  if(id===S.meId)refreshHeader();
+  ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
   openManageSheet();
 }
 
