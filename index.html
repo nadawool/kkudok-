@@ -1984,8 +1984,10 @@ function readSinceMs(m){var t=m&&m.readingSince;if(!t)return 0;
   if(typeof t.toMillis==='function')return t.toMillis();
   if(t.seconds!=null)return t.seconds*1000;
   var d=new Date(t);return isNaN(d)?0:d.getTime();}
-function readLabel(ms){var min=ms?Math.max(0,Math.floor((Date.now()-ms)/60000)):-1;
-  return min>=1?('📖 '+min+'분째'):'📖 독서중';}
+function readLabel(ms){if(!ms)return '📖 독서중';
+  var sec=Math.max(0,Math.floor((Date.now()-ms)/1000));
+  var m=Math.floor(sec/60),s=sec%60;
+  return '📖 '+m+':'+(s<10?'0'+s:s);}
 function readBadge(m){var ms=readSinceMs(m);
   return '<span class="att-read" data-since="'+ms+'">'+readLabel(ms)+'</span>';}
 function tickReadings(){ // 전체 리렌더 없이 '분째' 숫자만 갱신
@@ -3308,7 +3310,7 @@ function startPresence(){
     window._presenceAt=map; recomputeOnline();
   },e=>console.warn('presence snapshot',e));
   window._presTick=setInterval(recomputeOnline,20000);   // 신호 끊긴 멤버 자동 오프라인 처리
-  if(!window._readTick)window._readTick=setInterval(tickReadings,30000); // 📖 독서 '분째' 갱신
+  if(!window._readTick)window._readTick=setInterval(tickReadings,1000); // 📖 독서 시간 1초마다 갱신
 }
 
 /* --- 알림 (Firestore 동기화 · 모든 기기 공통) ---
