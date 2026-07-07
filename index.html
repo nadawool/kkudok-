@@ -482,7 +482,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .home-empty{text-align:center;color:var(--soft);font-size:12.5px;line-height:1.7;padding:20px 8px}
 /* 오늘 출석한 멤버 */
 .att-card{padding:14px 8px 12px}
-.att-row{display:flex;gap:6px;overflow-x:auto;padding:2px 8px;scrollbar-width:none;-ms-overflow-style:none}
+.att-row{display:flex;gap:6px;overflow-x:auto;padding:10px 8px;scrollbar-width:none;-ms-overflow-style:none}
 .att-row::-webkit-scrollbar{display:none}
 .att-m{flex:0 0 auto;width:60px;text-align:center}
 .att-avwrap{position:relative;width:54px;margin:0 auto 5px}
@@ -496,10 +496,10 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .att-read{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:900;color:#fff;
   background:linear-gradient(135deg,var(--honey,#F5A623),#F7B36A);padding:2px 8px;border-radius:20px;
   line-height:1;white-space:nowrap;box-shadow:0 1px 4px rgba(120,70,20,.28)}
-.att-m.reading .att-av{box-shadow:0 0 0 3px rgba(245,166,35,.35);animation:readPulse 1.8s ease-in-out infinite}
+.att-m.reading .att-av{box-shadow:0 0 0 3px #F5A623,0 0 0 6px rgba(245,166,35,.30);animation:readPulse 1.6s ease-in-out infinite}
 .att-m.reading .att-av,.att-m.reading.gone .att-av{opacity:1;filter:none} /* 독서중이면 회색처리 무시 */
 .att-m.reading.gone .att-nm{color:var(--ink)}
-@keyframes readPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,166,35,.35)}50%{box-shadow:0 0 0 5px rgba(245,166,35,.12)}}
+@keyframes readPulse{0%,100%{box-shadow:0 0 0 3px #F5A623,0 0 0 6px rgba(245,166,35,.30)}50%{box-shadow:0 0 0 3px #F5A623,0 0 0 8px rgba(245,166,35,0)}}
 /* ===== 접속 표시(online dot) ===== */
 .odot{position:absolute;width:12px;height:12px;border-radius:50%;background:#34C759;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.05);display:none;z-index:5;pointer-events:none}
 .odot.is-online{display:block}
