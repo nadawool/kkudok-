@@ -2045,6 +2045,17 @@ function renderHome(){
     </div>
   </div>`;
 
+  // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 함께 읽은 누적 시간 · totalMinutes>0만)
+  const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const tmMax=Math.max(1,...tmRows.map(r=>r.v));
+  const timeHTML=`<div class="home-sec">
+    <div class="hs-head"><b>⏱️ 누적 독서시간 랭킹</b><span class="hs-count">함께 읽은 시간</span></div>
+    <div class="card">
+      ${tmRows.length?tmRows.map(r=>rankRow(r,tmMax,'',r.m.id===S.meId?'me':'',fmtDur(r.v))).join('')
+        :`<div class="home-empty">아직 함께 읽은 시간이 없어요<br>디스코드 음성방에서 같이 읽어보세요 📖</div>`}
+    </div>
+  </div>`;
+
   // 4) 올해 완독 랭킹
   const dnRows=withRanks(members.map(m=>({m,v:yearDone(m,year)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
   const dnMax=Math.max(1,...dnRows.map(r=>r.v));
@@ -2075,7 +2086,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+doneHTML+feedHTML;
+  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+timeHTML+doneHTML+feedHTML;
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -2150,7 +2161,10 @@ function openBookView({m,b}){
   $('#bvClose').onclick=closeOv;
   $('#bvWish')&&($('#bvWish').onclick=()=>addToWishlist(b));
 }
-function rankRow(r,max,unit,cls){
+/* 누적 분 → "N시간 M분" (봇이 참가자 문서에 쌓아둔 totalMinutes 사용) */
+function minTotal(m){var n=Number(m&&m.totalMinutes);return isFinite(n)&&n>0?Math.floor(n):0;}
+function fmtDur(min){min=Math.floor(min);var h=Math.floor(min/60),mm=min%60;return h>0?(mm>0?h+'시간 '+mm+'분':h+'시간'):mm+'분';}
+function rankRow(r,max,unit,cls,disp){
   const m=r.m;
   return `<div class="rk-row ${r.rank<=1?'top':''} ${cls||''}">
     <div class="rk-rank">${r.rank}</div>
@@ -2159,7 +2173,7 @@ function rankRow(r,max,unit,cls){
       <div class="rk-nm">${escT(m.name)}<span class="rk-age">${age(m)}살</span></div>
       <div class="rk-track"><i style="width:${(r.v/max*100).toFixed(0)}%"></i></div>
     </div>
-    <div class="rk-val">${r.v}${unit}</div>
+    <div class="rk-val">${disp!=null?disp:r.v+unit}</div>
   </div>`;
 }
 function openReadingAll(reads){
