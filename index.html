@@ -363,6 +363,8 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .fd-edit{border:none;background:none;color:var(--soft);font-size:14px;cursor:pointer;padding:4px}
 .fd-quote.editable{cursor:pointer}
 .fd-quote.editable:active{background:#FBF1E2}
+.fd-recmsg.editable{cursor:pointer;border-radius:10px}
+.fd-recmsg.editable:active{background:#FBF1E2}
 .fd-booktag{display:inline-block;background:var(--moss-s);color:#2f6b4d;font-size:13px;font-weight:700;padding:5px 11px;border-radius:30px;margin-bottom:10px}
 .fd-booktag span{font-weight:500;color:#4f8a6c}
 .fd-quote{background:#FCF7EF;border-left:4px solid var(--honey);border-radius:10px;padding:13px 15px;font-size:14.5px;line-height:1.7;color:#3a3733;white-space:pre-wrap;word-break:break-word}
@@ -1524,7 +1526,7 @@ function feedCard(p){
   const rt=replyTarget[p.id]; // 지금 이 글의 댓글창이 답글 모드인지
   const isRec=p.type==='rec';
   const canDel=p.authorId===S.meId||isOwner();
-  const canEdit=p.authorId===S.meId&&!isRec;
+  const canEdit=p.authorId===S.meId;   // 추천글도 '추천 한마디'는 수정 가능
   const showWish=isRec&&p.authorId!==S.meId;   // 남의 추천글이면 '저장' 자리를 '담기'로
   const haveBook=showWish&&me().books.some(b=>(b.title||'').trim()===(p.bookTitle||'').trim()&&(b.author||'').trim()===(p.bookAuthor||'').trim());
   const mid=isRec
@@ -1538,7 +1540,7 @@ function feedCard(p){
             ${p.bookRating?`<div class="stars" style="margin-top:4px">${[1,2,3,4,5].map(n=>`<span class="star static ${n<=p.bookRating?'on':''}" style="font-size:15px">★</span>`).join('')}</div>`:''}
           </div>
         </div>
-        ${p.text?`<div class="fd-recmsg">${escT(p.text)}</div>`:''}
+        ${p.text?`<div class="fd-recmsg${canEdit?' editable':''}"${canEdit?` data-recedit="${p.id}"`:''}>${escT(p.text)}</div>`:''}
       </div>`
     : `${p.bookTitle?`<div class="fd-booktag">📖 ${escT(p.bookTitle)}${p.bookAuthor?` <span>· ${escT(p.bookAuthor)}</span>`:''}</div>`:''}
       <div class="fd-quote${canEdit?' editable':''}"${canEdit?` data-edit="${p.id}"`:''}>${escT(p.text)}</div>`;
@@ -1601,8 +1603,9 @@ function bindFeed(){
   L.querySelectorAll('.fd-save').forEach(b=>b.onclick=()=>toggleSave(b.dataset.id));
   L.querySelectorAll('.fd-cmt').forEach(b=>b.onclick=()=>{const id=b.dataset.id;feedExpanded.has(id)?feedExpanded.delete(id):feedExpanded.add(id);renderFeed();});
   L.querySelectorAll('.fd-del').forEach(b=>b.onclick=()=>removePost(b.dataset.id));
-  L.querySelectorAll('.fd-edit').forEach(b=>b.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===b.dataset.id);if(p)openComposeSheet(p);});
+  L.querySelectorAll('.fd-edit').forEach(b=>b.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===b.dataset.id);if(p)(p.type==='rec'?openRecEditSheet:openComposeSheet)(p);});
   L.querySelectorAll('.fd-quote[data-edit]').forEach(q=>q.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===q.dataset.edit);if(p)openComposeSheet(p);});
+  L.querySelectorAll('.fd-recmsg[data-recedit]').forEach(q=>q.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===q.dataset.recedit);if(p)openRecEditSheet(p);});
   L.querySelectorAll('.fd-wish').forEach(b=>b.onclick=()=>{const p=(S.posts||[]).find(x=>x.id===b.dataset.id);if(p)wishlistFromRec(p);});
   L.querySelectorAll('.fd-csend').forEach(b=>b.onclick=()=>{const inp=L.querySelector('.fd-cinp[data-id="'+b.dataset.id+'"]');const rt=replyTarget[b.dataset.id];submitComment(b.dataset.id,inp?inp.value:'',rt?rt.cid:null);});
   L.querySelectorAll('.fd-cinp').forEach(inp=>inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const rt=replyTarget[inp.dataset.id];submitComment(inp.dataset.id,inp.value,rt?rt.cid:null);}});
@@ -1746,6 +1749,38 @@ async function submitRec(){
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
   _recBookId=null; closeOv(); toast('책을 추천했어요 📚');
   feedSavedOnly=false; feedSort='recent'; renderFeed();
+}
+// 추천글 수정 — 책·별점은 원본 그대로 두고 '추천 한마디'만 고침
+function openRecEditSheet(p){
+  if(p.authorId!==S.meId){toast('내 글만 수정할 수 있어요');return;}
+  $('#sheet').innerHTML=`<h3>추천 한마디 수정</h3>
+    <div class="rec-pick">
+      <div class="rec-cv" style="${p.bookCover?`background-image:url(${cleanCov(p.bookCover)})`:''}">${p.bookCover?'':'📕'}</div>
+      <div class="rec-pi">
+        <b>${escT(p.bookTitle||'')}</b>
+        <div class="au">${escT(p.bookAuthor||'저자 미상')}</div>
+        <div class="stars" style="margin-top:5px">${[1,2,3,4,5].map(n=>`<span class="star static ${n<=(p.bookRating||0)?'on':''}" style="font-size:19px">★</span>`).join('')}</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>추천 한마디 <span style="font-weight:400">(선택)</span></label>
+      <textarea id="recEditMsg" rows="3" maxlength="300" placeholder="이 책을 왜 추천하나요?"
+        style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${esc2(p.text||'')}</textarea>
+      <div class="hint">책과 별점은 책장의 기록을 따라가요 · 바꾸려면 책장에서 수정해주세요</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" id="recECancel">취소</button>
+      <button class="btn" id="recESave">수정 완료</button>
+    </div>`;
+  openOv();
+  $('#recECancel').onclick=closeOv;
+  $('#recESave').onclick=async()=>{
+    const msg=$('#recEditMsg').value.trim();
+    closeOv();
+    await _mutatePost(p.id,x=>{x.text=msg;x.editedAt=Date.now();});
+    toast('추천 한마디를 수정했어요 ✏️');
+  };
+  setTimeout(()=>$('#recEditMsg').focus(),250);
 }
 function openComposeSheet(editing){
   _editPostId = editing&&editing.id ? editing.id : null;
