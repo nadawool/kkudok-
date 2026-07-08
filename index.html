@@ -567,10 +567,15 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .rk-nm .rk-age{font-size:11px;font-weight:700;color:var(--soft)}
 .rk-track{height:13px;background:#F2EDE4;border-radius:30px;overflow:hidden;margin-top:5px}
 .rk-track i{display:block;height:100%;border-radius:30px;min-width:6px;background:linear-gradient(90deg,var(--honey),#F7B36A);transition:width .5s}
-.rk-row.me .rk-track i{background:linear-gradient(90deg,var(--moss),#88c4a4)}
+/* 랭킹별 막대 색 (연속=주황 · 누적시간=보라 · 완독=초록) · 개인 강조 없음 */
+.rk-row.streak .rk-track i{background:linear-gradient(90deg,var(--honey),#F7B36A)}
+.rk-row.time .rk-track i{background:linear-gradient(90deg,#7E8BD9,#A6B2ED)}
 .rk-row.done .rk-track i{background:linear-gradient(90deg,var(--moss),#88c4a4)}
 .rk-val{flex:none;text-align:right;font-size:14px;font-weight:900;color:var(--honey-d);min-width:38px}
+.rk-row.time .rk-val{color:#4E5DB0}
 .rk-row.done .rk-val{color:#3a7a59}
+.rk-row.top.time .rk-rank{color:#4E5DB0}
+.rk-row.top.done .rk-rank{color:#3a7a59}
 .rk-div{height:1px;background:var(--line);margin:1px 4px}
 /* 최근 피드 */
 .rf-card{padding:6px 4px}
@@ -2040,7 +2045,7 @@ function renderHome(){
   const streakHTML=`<div class="home-sec">
     <div class="hs-head"><b>🔥 연속 독서 랭킹</b></div>
     <div class="card">
-      ${stRows.length?stRows.map(r=>rankRow(r,stMax,'일',r.m.id===S.meId?'me':'')).join('')
+      ${stRows.length?stRows.map(r=>rankRow(r,stMax,'일','streak')).join('')
         :`<div class="home-empty">아직 연속 독서 중인 멤버가 없어요<br>오늘 출첵으로 첫 불씨를 켜보세요 🔥</div>`}
     </div>
   </div>`;
@@ -2051,7 +2056,7 @@ function renderHome(){
   const timeHTML=`<div class="home-sec">
     <div class="hs-head"><b>⏱️ 누적 독서시간 랭킹</b><span class="hs-count">함께 읽은 시간</span></div>
     <div class="card">
-      ${tmRows.length?tmRows.map(r=>rankRow(r,tmMax,'',r.m.id===S.meId?'me':'',fmtDur(r.v))).join('')
+      ${tmRows.length?tmRows.map(r=>rankRow(r,tmMax,'','time',fmtDur(r.v))).join('')
         :`<div class="home-empty">아직 함께 읽은 시간이 없어요<br>디스코드 음성방에서 같이 읽어보세요 📖</div>`}
     </div>
   </div>`;
