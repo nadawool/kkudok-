@@ -2275,17 +2275,6 @@ function renderHome(){
     </div>
   </div>`;
 
-  // 3.2) 누적 독서일 랭킹 (지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
-  const rdRows=withRanks(members.map(m=>({m,v:readDays(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
-  const rdMax=Math.max(1,...rdRows.map(r=>r.v));
-  const daysHTML=`<div class="home-sec">
-    <div class="hs-head"><b>📅 누적 독서일 랭킹</b><span class="hs-count">지금까지 읽은 날</span></div>
-    <div class="card">
-      ${rdRows.length?rdRows.map(r=>rankRow(r,rdMax,'일','days')).join('')
-        :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
-    </div>
-  </div>`;
-
   // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 함께 읽은 누적 시간 · totalMinutes>0만)
   const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
   const tmMax=Math.max(1,...tmRows.map(r=>r.v));
@@ -2308,6 +2297,18 @@ function renderHome(){
     </div>
   </div>`;
 
+    // 3.2) 누적 독서일 랭킹 (지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
+  const rdRows=withRanks(members.map(m=>({m,v:readDays(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const rdMax=Math.max(1,...rdRows.map(r=>r.v));
+  const daysHTML=`<div class="home-sec">
+    <div class="hs-head"><b>📅 누적 독서일 랭킹</b><span class="hs-count">지금까지 읽은 날</span></div>
+    <div class="card">
+      ${rdRows.length?rdRows.map(r=>rankRow(r,rdMax,'일','days')).join('')
+        :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
+    </div>
+  </div>`;
+
+  
   // 5) 최근 피드
   const posts=(S.posts||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,2);
   const feedHTML=`<div class="home-sec">
