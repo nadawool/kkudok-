@@ -1044,7 +1044,7 @@ function itemById(id){return CATALOG.find(i=>i.id===id);}
 const CHARP='char/';                 // 레포 char/ 폴더 (Vercel 루트 기준)
 const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
 const AV_AR=0.7;                     // 700x1000
-const LAYER_ORDER=['cloth_bottom','shoes','cloth_top','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 가방은 상의 위, 악세사리는 맨 위)
+const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 가방은 상의 위, 악세사리는 맨 위)
 const ITEMS={
   eyes:[
     {id:'eyes_basic',name:'기본',img:CHARP+'eyes/base_eyes_01.png'},
