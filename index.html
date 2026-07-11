@@ -341,6 +341,12 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .fd-cinput{flex:1;color:var(--soft);font-size:13.5px;padding:4px 2px;cursor:text}
 .fd-plus{width:40px;height:40px;border-radius:50%;background:var(--honey);color:#fff;border:none;font-size:24px;line-height:1;flex:none;cursor:pointer;box-shadow:0 3px 8px rgba(242,153,74,.4)}
 .fd-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+/* 피드 검색창 */
+.fd-search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:30px;padding:9px 13px;margin-bottom:12px;box-shadow:var(--shadow)}
+.fd-search-ic{font-size:15px;flex:none;opacity:.55}
+.fd-search-inp{flex:1;border:none;outline:none;background:none;font-size:14px;color:var(--ink);min-width:0;padding:2px 0}
+.fd-search-inp::placeholder{color:var(--soft)}
+.fd-search-clr{flex:none;width:22px;height:22px;border:none;border-radius:50%;background:#F0EADF;color:var(--soft);font-size:12px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
 /* 피드 캐시 적립 안내 배너 */
 .fd-cashtip{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
   background:var(--honey-s);color:var(--honey-d);font-size:12px;font-weight:700;line-height:1.4;
@@ -1591,6 +1597,7 @@ function timeAgo(ts){
 }
 /* ---------- FEED (문장 공유) ---------- */
 let feedSort='recent', feedSavedOnly=false, feedMineOnly=false; // feedMineOnly: '내 글'만 보기 모드
+let feedSearch='';   // 피드 검색어 (작성자·글 내용·책 제목/저자)
 const feedExpanded=new Set();
 let _feedFocusPid=null; // 알림 클릭 등으로 특정 글로 스크롤 이동해야 할 때 그 글의 id
 const replyTarget={}; // { [postId]: {cid, name} } 답글 작성 대상. 있으면 공용 입력창이 답글모드로 동작
@@ -1598,6 +1605,42 @@ let _composeCover='',_composeBookT='',_composeBookA='',_editPostId=null;
 let _recBookId=null;
 function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
 function ribbonIcon(filled){return `<svg class="ribbon" viewBox="0 0 24 24" width="15" height="15" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>`;}
+// 피드 목록 필터+정렬 (내글/저장/검색어 반영) — renderFeed와 검색 즉시반영에서 공용
+function feedFilteredList(){
+  let list=(S.posts||[]).slice();
+  if(feedMineOnly)list=list.filter(p=>p.authorId===S.meId);   // 내 글(일반글+추천글)만
+  if(feedSavedOnly)list=list.filter(p=>(p.saves||[]).includes(S.meId));
+  const q=(feedSearch||'').trim().toLowerCase();
+  if(q)list=list.filter(p=>{
+    const au=S.members[p.authorId];
+    // 작성자 이름 · 글 내용 · 책 제목 · 책 저자를 한데 모아 검색
+    return [au?au.name:'', p.text||'', p.bookTitle||'', p.bookAuthor||'']
+             .join(' ').toLowerCase().includes(q);
+  });
+  list.sort(feedSort==='popular'
+    ? (a,b)=>feedScore(b)-feedScore(a)||(b.createdAt||0)-(a.createdAt||0)
+    : (a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  return list;
+}
+// 목록 HTML (비었을 때 안내 문구는 상황별로)
+function feedListHTML(list){
+  const empty=`<div class="shelf-empty">${
+    feedSearch.trim()
+    ?'검색 결과가 없어요 🔍<br>작성자·글·책 제목으로 찾아보세요'
+    :feedMineOnly
+    ?'아직 쓴 글이 없어요 ✍️<br>문장을 공유하거나 책을 추천해보세요'
+    :feedSavedOnly
+    ?'아직 저장한 문장이 없어요 🔖<br>마음에 드는 문장에 책갈피를 눌러보세요'
+    :'아직 공유된 문장이 없어요 ✨<br>첫 문장을 공유해보세요'}</div>`;
+  return list.length?list.map(feedCard).join(''):empty;
+}
+// 검색어 입력 즉시반영 — 검색창은 그대로 두고 목록(#fdList)만 다시 그림 (포커스 유지)
+function applyFeedSearch(v){
+  feedSearch=v;
+  const L=$('#fdList'); if(L)L.innerHTML=feedListHTML(feedFilteredList());
+  const clr=$('#fdSearchClr'); if(clr)clr.style.display=feedSearch.trim()?'grid':'none';
+  bindFeed();
+}
 function renderFeed(){
   // 쓰던 댓글(인라인 입력창) 백업 → 리렌더로 입력창이 날아가도 복원
   const _ae=document.activeElement; let _keep=null;
@@ -1605,18 +1648,7 @@ function renderFeed(){
     _keep={id:_ae.dataset.id, v:_ae.value, s:_ae.selectionStart, e:_ae.selectionEnd};
   refreshHeader();
   const meM=me();
-  let list=(S.posts||[]).slice();
-  if(feedMineOnly)list=list.filter(p=>p.authorId===S.meId);   // 내 글(일반글+추천글)만
-  if(feedSavedOnly)list=list.filter(p=>(p.saves||[]).includes(S.meId));
-  list.sort(feedSort==='popular'
-    ? (a,b)=>feedScore(b)-feedScore(a)||(b.createdAt||0)-(a.createdAt||0)
-    : (a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const empty=`<div class="shelf-empty">${
-    feedMineOnly
-    ?'아직 쓴 글이 없어요 ✍️<br>문장을 공유하거나 책을 추천해보세요'
-    :feedSavedOnly
-    ?'아직 저장한 문장이 없어요 🔖<br>마음에 드는 문장에 책갈피를 눌러보세요'
-    :'아직 공유된 문장이 없어요 ✨<br>첫 문장을 공유해보세요'}</div>`;
+  let list=feedFilteredList();
   $('#s-feed').innerHTML=`
   ${feedMineOnly?`<div class="fd-minebar">
     <b>✍️ 내 글 모아보기</b>
@@ -1629,6 +1661,11 @@ function renderFeed(){
   </div>
   <!-- 캐시 적립 안내: 문장 공유·댓글·좋아요는 각각 하루 1번 +1캐시 -->
   <div class="fd-cashtip">🎁 매일 출첵·글·댓글·좋아요로 최대 +4캐시 💰</div>
+  <div class="fd-search">
+    <span class="fd-search-ic">🔍</span>
+    <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
+    <button id="fdSearchClr" class="fd-search-clr" title="검색어 지우기" style="display:${feedSearch.trim()?'grid':'none'}">✕</button>
+  </div>
   <div class="fd-bar">
     <div class="fd-sorts">
       <div class="chip ${!feedSavedOnly&&feedSort==='recent'?'on':''}" data-sort="recent">최신순</div>
@@ -1636,7 +1673,7 @@ function renderFeed(){
     </div>
     <button class="fd-bm ${feedSavedOnly?'on':''}" id="fdBm" title="저장한 글">${feedSavedOnly?ribbonIcon(true)+' 저장한 글':ribbonIcon(false)}</button>
   </div>
-  <div id="fdList">${list.length?list.map(feedCard).join(''):empty}</div>`;
+  <div id="fdList">${feedListHTML(list)}</div>`;
   bindFeed();
   // 백업해둔 댓글 입력값·커서·포커스 복원
   if(_keep){
@@ -1733,6 +1770,9 @@ function feedCommentBlock(c,p){
   return feedComment(c,p,false)+repliesHtml;
 }
 function bindFeed(){
+  const sb=$('#fdSearch');
+  if(sb)sb.oninput=()=>applyFeedSearch(sb.value);
+  $('#fdSearchClr')&&($('#fdSearchClr').onclick=()=>{feedSearch='';renderFeed();const s=$('#fdSearch');if(s)s.focus();});
   $('#fdPlus')&&($('#fdPlus').onclick=openComposeChooser);
   $('#fdCompose')&&($('#fdCompose').onclick=openComposeChooser);
   $('#fdMineExit')&&($('#fdMineExit').onclick=()=>{feedMineOnly=false;renderFeed();});
@@ -2104,26 +2144,33 @@ function renderCheckin(){
   }
   $('#ciSave')&&($('#ciSave').onclick=async()=>{
     const b=me().books.find(x=>x.id===checkinBookId);
-    let justDone=false;
+    let justDone=false, gained=0;
     if(b&&pin){
+      const prevCur=b.cur||0;                 // 저장 전 진도 (2p 이상 늘었는지 판정용)
       b.cur=clamp(pin.value);
+      gained=b.cur-prevCur;                    // 이번에 늘린 페이지(전자책은 %)
       b.lastTs=Date.now(); // 홈탭 '읽고 있는 책' 최신순 정렬용
       const complete=ebook?(b.cur>=100):(b.pages&&b.cur>=b.pages);
       if(complete&&!b.end){b.end=todayISO();justDone=true;}
     }
     const t=todayISO();
     const alreadyIn=me().reads.includes(t);
-    // 출첵 조건 판정: 주말=페이지만 / 평일=디스코드 10분+페이지
+    // 출첵 조건 판정: 주말=2p 이상 읽거나 완독 / 평일=디스코드 10분
     const weekend=isWeekendToday();
+    const progressOK=gained>=2||justDone;      // 2페이지 이상 진도 or 완독
     let discordMin=0;
     if(!weekend && !alreadyIn){ discordMin=await getTodayDiscordMinutes(); }
-    const condOK = weekend || alreadyIn || discordMin>=DISCORD_GOAL;
+    const condOK = alreadyIn || (weekend ? progressOK : discordMin>=DISCORD_GOAL);
 
     if(!condOK){
-      // 평일 디스코드 미달 → 페이지 진도만 저장하고 출석은 보류
+      // 조건 미달 → 진도만 저장하고 출석은 보류
       await save();
       renderCheckin();
-      toast(`📖 페이지 저장 완료! 디스코드 ${DISCORD_GOAL}분을 채우면 출석 완료돼요 (현재 ${discordMin}분)`);
+      if(weekend){
+        toast(`📖 진도 저장 완료! 2페이지 이상 읽거나 완독하면 출석 완료돼요 (이번 +${Math.max(0,gained)})`);
+      }else{
+        toast(`📖 페이지 저장 완료! 디스코드 ${DISCORD_GOAL}분을 채우면 출석 완료돼요 (현재 ${discordMin}분)`);
+      }
       return;
     }
 
@@ -2143,7 +2190,7 @@ function renderCheckin(){
   // 출첵 조건 안내 (평일: 디스코드+페이지 / 주말: 페이지만)
   if($('#ciCond')&&!readToday){
     if(isWeekendToday()){
-      $('#ciCond').innerHTML='📖 주말은 페이지만 저장하면 출석 완료예요';
+      $('#ciCond').innerHTML='📖 주말은 2페이지 이상 읽거나 완독하면 출석 완료예요';
     }else{
       getTodayDiscordMinutes().then(min=>{
         const el=$('#ciCond'); if(!el)return;
@@ -2409,7 +2456,7 @@ function drawCal(){
   let h='';for(let i=0;i<first;i++)h+='<div class="cell pad"></div>';
   for(let d=1;d<=dim;d++){const iso=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     // r: 사과(읽음) 표시 — 과거 기록 그대로 보임 / tap: 클릭(출첵) 가능 — 이제 '오늘'만 가능
-const r=set.has(iso)&&iso<=today,t=iso===today,tap=isMe()&&iso===today;
+const r=set.has(iso)&&iso<=today,t=iso===today,tap=false; // 캘린더 클릭 출첵 비활성화 — 출첵은 '저장하고 출석체크' 버튼으로만
     h+=`<div class="cell ${r?'read':''} ${t?'today':''} ${tap?'tap':''}" data-d="${iso}"><span>${d}</span></div>`;}
   $('#grid').innerHTML=h;
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
