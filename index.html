@@ -2275,6 +2275,17 @@ function renderHome(){
     </div>
   </div>`;
 
+  // 3.2) 누적 독서일 랭킹 (지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
+  const rdRows=withRanks(members.map(m=>({m,v:readDays(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const rdMax=Math.max(1,...rdRows.map(r=>r.v));
+  const daysHTML=`<div class="home-sec">
+    <div class="hs-head"><b>📅 누적 독서일 랭킹</b><span class="hs-count">지금까지 읽은 날</span></div>
+    <div class="card">
+      ${rdRows.length?rdRows.map(r=>rankRow(r,rdMax,'일','days')).join('')
+        :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
+    </div>
+  </div>`;
+
   // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 함께 읽은 누적 시간 · totalMinutes>0만)
   const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
   const tmMax=Math.max(1,...tmRows.map(r=>r.v));
@@ -2297,18 +2308,6 @@ function renderHome(){
     </div>
   </div>`;
 
-    // 3.2) 누적 독서일 랭킹 (지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
-  const rdRows=withRanks(members.map(m=>({m,v:readDays(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
-  const rdMax=Math.max(1,...rdRows.map(r=>r.v));
-  const daysHTML=`<div class="home-sec">
-    <div class="hs-head"><b>📅 누적 독서일 랭킹</b><span class="hs-count">지금까지 읽은 날</span></div>
-    <div class="card">
-      ${rdRows.length?rdRows.map(r=>rankRow(r,rdMax,'일','days')).join('')
-        :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
-    </div>
-  </div>`;
-
-  
   // 5) 최근 피드
   const posts=(S.posts||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,2);
   const feedHTML=`<div class="home-sec">
@@ -2790,6 +2789,10 @@ function _scoreBook(v,q){
   if(a.includes(qq))return 30;
   return 0;
 }
+// 저자 문자열 정리: "정해연 (지은이), 이수지 (그림)" → "정해연, 이수지"
+function _aladinAuthor(s){
+  return (s||'').replace(/\s*\([^)]*\)/g,'').replace(/\s*,\s*/g,', ').replace(/(?:,\s*)+$/,'').trim();
+}
 async function searchBooks(q,opts){
   opts=opts||{};
   const boxSel=opts.boxSel||'#sres';
@@ -2801,43 +2804,34 @@ async function searchBooks(q,opts){
   });
   const box=$(boxSel);box.style.display='block';
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
-  const BOOKS_KEY='AIzaSyC-AC06dno9BRvOCtnKaW7a9TXnFeZhfJI';
-  const base=`https://www.googleapis.com/books/v1/volumes?maxResults=20&printType=books&country=KR&key=${BOOKS_KEY}`;
   try{
-    let items=[];
-    // 1차: 제목 한정(intitle) — 본문에만 단어가 든 엉뚱한 책 배제
-    const r1=await fetch(`${base}&langRestrict=ko&q=${encodeURIComponent('intitle:'+q)}`);
-    if(r1.ok)items=((await r1.json()).items||[]);
-    // 2차: 제목 검색 결과 없으면 일반 검색(한국어)
-    if(!items.length){
-      const r2=await fetch(`${base}&langRestrict=ko&q=${encodeURIComponent(q)}`);
-      if(r2.ok)items=((await r2.json()).items||[]);
-    }
-    // 3차: 그래도 없으면 언어 제한 풀고 검색
-    if(!items.length){
-      const r3=await fetch(`${base}&q=${encodeURIComponent(q)}`);
-      if(r3.ok)items=((await r3.json()).items||[]);
-    }
+    // 알라딘 직결은 막혀(HTTPS/CORS 미지원) Vercel 서버리스 함수(/api/aladin) 경유
+    const r=await fetch('/api/aladin?q='+encodeURIComponent(q));
+    const data=await r.json();
+    if(data&&(data.error||data.errorCode)){throw new Error(data.error||data.errorMessage||('errorCode '+data.errorCode));}
+    // 알라딘 응답 → 기존 구글(volumeInfo) 형태로 매핑해서 호출부/커버 처리 그대로 재사용
+    const items=((data&&data.item)||[]).map(it=>({
+      title:it.title||'',
+      authors:[_aladinAuthor(it.author)],
+      pageCount:(it.subInfo&&it.subInfo.itemPage)||0,
+      publishedDate:it.pubDate||'',
+      publisher:it.publisher||'',
+      isbn13:it.isbn13||'',
+      imageLinks:{thumbnail:it.cover||''}
+    })).slice(0,8);
     if(!items.length){box.innerHTML=`<div class="sr-state">검색 결과가 없어요. 제목·저자를 직접 입력해 기록해도 돼요.</div>`;return;}
-    // 제목 일치도 순 정렬 + 본문에만 걸린 무관 결과 제거
-    items=items.map(it=>({it,s:_scoreBook(it.volumeInfo||{},q)}))
-               .filter(x=>x.s>0).sort((a,b)=>b.s-a.s)
-               .map(x=>x.it).slice(0,8);
-    if(!items.length){box.innerHTML=`<div class="sr-state">제목에 '${esc(q)}'가 들어간 책을 못 찾았어요. 직접 입력해 기록해도 돼요.</div>`;return;}
-    box.innerHTML=items.map((it,i)=>{
-      const v=it.volumeInfo||{},img=_coverUrl(v);
-      const au=(v.authors||[]).join(', ');
+    box.innerHTML=items.map((v,i)=>{
+      const img=_coverUrl(v),au=(v.authors||[]).join(', ');
       return `<div class="sr" data-i="${i}">
         ${img?`<img src="${img}">`:'<div class="ph"></div>'}
         <div><b>${esc(v.title||'')||v.title}</b><small>${au||'저자 미상'}${v.publishedDate?' · '+v.publishedDate.slice(0,4):''}</small></div></div>`;
     }).join('');
     box.querySelectorAll('.sr').forEach(r=>r.onclick=()=>{
-      const v=items[+r.dataset.i].volumeInfo||{};
-      onPick(v);
+      onPick(items[+r.dataset.i]);
       box.style.display='none';
     });
   }catch(e){
-    box.innerHTML=`<div class="sr-state">지금은 자동 검색을 쓸 수 없어요. 제목·저자를 직접 입력해 기록하면 됩니다.<br><span style="color:#bbb">(배포 환경에서는 자동 검색이 동작해요)</span></div>`;
+    box.innerHTML=`<div class="sr-state">지금은 자동 검색을 쓸 수 없어요. 제목·저자를 직접 입력해 기록하면 됩니다.<br><span style="color:#bbb">(${esc(String((e&&e.message)||e))})</span></div>`;
   }
 }
 async function saveBook(){
