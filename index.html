@@ -219,6 +219,9 @@ input{font-family:inherit}
 .tag.done{background:var(--moss-s);color:#3a7a59}
 .tag.want{background:#ECEAF6;color:#6B5BA6}
 .tag.ttag{background:#EEE9F4;color:#7A5EA8;margin-left:5px}
+/* 소장 여부 뱃지 */
+.tag.otag{background:#E7F0E9;color:#3F7A55;margin-left:5px}
+.tag.otag.no{background:#F2F0EC;color:#9A9287}
 .bl .dt{font-size:11px;color:var(--soft);margin-top:5px}
 .bl .acts{margin-left:auto;align-self:flex-start;display:flex;gap:4px}
 .bl .edit,.bl .del{color:#cabfae;font-size:17px;padding:2px 4px;line-height:1}
@@ -588,9 +591,9 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .rk-row.days .rk-val{color:#2F72B8}
 .rk-row.top.days .rk-rank{color:#2F72B8}
 /* 누적 읽은 책 = 갈색(책등 느낌) */
-.rk-row.books .rk-track i{background:linear-gradient(90deg,#B5764A,#D9A579)}
-.rk-row.books .rk-val{color:#96603A}
-.rk-row.top.books .rk-rank{color:#96603A}
+.rk-row.bookcnt .rk-track i{background:linear-gradient(90deg,#B5764A,#D9A579)}
+.rk-row.bookcnt .rk-val{color:#96603A}
+.rk-row.top.bookcnt .rk-rank{color:#96603A}
 .rk-div{height:1px;background:var(--line);margin:1px 4px}
 /* 최근 피드 */
 .rf-card{padding:6px 4px}
@@ -2296,7 +2299,7 @@ function renderHome(){
   const allBooksHTML=`<div class="home-sec">
     <div class="hs-head"><b>📚 누적 읽은 책 랭킹</b><span class="hs-count">지금까지 완독</span></div>
     <div class="card">
-      ${abRows.length?abRows.map(r=>rankRow(r,abMax,'권','books')).join('')
+      ${abRows.length?abRows.map(r=>rankRow(r,abMax,'권','bookcnt')).join('')
         :`<div class="home-empty">아직 완독한 책이 없어요<br>책장에 첫 책을 꽂아보세요 📚</div>`}
     </div>
   </div>`;
@@ -2517,7 +2520,7 @@ async function toggleRead(iso){
 }
 
 /* ---------- SHELF ---------- */
-let shelfFilter='all', shelfYear='all', shelfType='all', shelfSort='recent', shelfView='list', shelfExpanded=false;
+let shelfFilter='all', shelfYear='all', shelfType='all', shelfOwn='all', shelfSort='recent', shelfView='list', shelfExpanded=false;
 function bookYear(b){ const iso=b.end||b.start; if(!iso)return null; return D(iso).getFullYear(); }
 function shelfYears(m){ const ys=new Set(); m.books.forEach(b=>{const y=bookYear(b);if(y)ys.add(y);}); return Array.from(ys).sort((a,b)=>b-a); }
 function renderShelf(){
@@ -2540,6 +2543,9 @@ function renderShelf(){
     <span class="fdiv"></span>
     <div class="chip ${shelfType==='paper'?'on':''}" data-t="paper">종이책</div>
     <div class="chip ${shelfType==='ebook'?'on':''}" data-t="ebook">전자책</div>
+    <span class="fdiv"></span>
+    <div class="chip ${shelfOwn==='own'?'on':''}" data-o="own">📗 소장</div>
+    <div class="chip ${shelfOwn==='no'?'on':''}" data-o="no">🔖 미소장</div>
   </div>
   ${years.length?`<div class="yearflt" id="yflt">
     <div class="chip ${shelfYear==='all'?'on':''}" data-y="all">전체 연도</div>
@@ -2561,6 +2567,7 @@ function renderShelf(){
   $('#viewMembers').onclick=openMemberPicker;
   $('#flt').querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
   $('#flt').querySelectorAll('[data-t]').forEach(c=>c.onclick=()=>{shelfType=(shelfType===c.dataset.t?'all':c.dataset.t);renderShelf();});
+  $('#flt').querySelectorAll('[data-o]').forEach(c=>c.onclick=()=>{shelfOwn=(shelfOwn===c.dataset.o?'all':c.dataset.o);renderShelf();});
   $('#yflt')&&$('#yflt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfYear=c.dataset.y==='all'?'all':+c.dataset.y;renderShelf();});
   $('#sortSel').onchange=e=>{shelfSort=e.target.value;drawBookList();};
   $('#vtog').querySelectorAll('.vt').forEach(b=>b.onclick=()=>{shelfView=b.dataset.v;renderShelf();});
@@ -2622,6 +2629,9 @@ function bookPct(b){
   const pg=b.pages||0;return pg?Math.min(100,Math.round((b.cur||0)/pg*100)):0;
 }
 function typeBadge(b){return isEbook(b)?'📱 전자책':'📖 종이책';}
+/* ---- 소장 여부 헬퍼 (b.own===true 일 때만 소장) ---- */
+function isOwned(b){return !!(b&&b.own===true);}
+function ownBadge(b){return isOwned(b)?'<span class="tag otag">📗 소장</span>':'<span class="tag otag no">🔖 미소장</span>';}
 function sortBooks(list){
   const ord=new Map(view().books.map((b,i)=>[b.id,i]));   // 등록 순서(작을수록 오래됨)
   const sgn=shelfSort==='old'?1:-1;                         // 최신순=내림차순, 오래된순=오름차순
@@ -2639,9 +2649,11 @@ function drawBookList(){
   if(shelfFilter==='done')list=list.filter(b=>b.end);
   if(shelfType==='paper')list=list.filter(b=>!isEbook(b));
   if(shelfType==='ebook')list=list.filter(b=>isEbook(b));
+  if(shelfOwn==='own')list=list.filter(b=>isOwned(b));
+  if(shelfOwn==='no')list=list.filter(b=>!isOwned(b));
   if(shelfYear!=='all')list=list.filter(b=>bookYear(b)===shelfYear);
   list=sortBooks(list);
-  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfType==='ebook'?'전자책 기록이 없어요':shelfType==='paper'?'종이책 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='want'?'담아둔 책이 없어요 📌<br>친구들 책장에서 마음에 드는 책을 담아보세요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
+  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfOwn==='own'?'소장 중인 책이 없어요 📗':shelfOwn==='no'?'미소장 책이 없어요':shelfType==='ebook'?'전자책 기록이 없어요':shelfType==='paper'?'종이책 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='want'?'담아둔 책이 없어요 📌<br>친구들 책장에서 마음에 드는 책을 담아보세요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
   if(shelfView==='gallery')return drawGallery(list,m);
   $('#blist').innerHTML=list.map(b=>`
     <div class="bl" data-id="${b.id}">
@@ -2650,6 +2662,7 @@ function drawBookList(){
         <b>${b.title}</b><div class="au">${b.author||'저자 미상'}</div>
         ${isWant(b)?'<span class="tag want">📌 읽고 싶음</span>':`<span class="tag ${b.end?'done':'read'}">${b.end?'완독':'읽는 중'}</span>`}
         <span class="tag ttag">${typeBadge(b)}</span>
+        ${ownBadge(b)}
         <div class="dt">${b.start?'시작 '+fmt(b.start):''}${b.end?' · 완독 '+fmt(b.end):''}</div>
         ${b.end&&b.rating?`<div class="starline">${'★'.repeat(b.rating)}${'☆'.repeat(5-b.rating)}</div>`:''}
         ${b.review?`<div class="review">${esc2(b.review)}</div>`:''}
@@ -2693,10 +2706,11 @@ function drawGallery(list,m){
 }
 
 /* ---------- book sheet + search ---------- */
-let _editId=null,_cover='',_searchT=null,_bookType='paper',_rating=0,_status='reading';
+let _editId=null,_cover='',_searchT=null,_bookType='paper',_rating=0,_status='reading',_bookOwn=false;
 function openBookSheet(book){
   _editId=book?book.id:null;_cover=book?book.cover||'':'';
   _bookType=(book&&book.type)?book.type:'paper';
+  _bookOwn=book?isOwned(book):false;
   _rating=book?book.rating||0:0;
   _status=book?(book.end?'done':(isWant(book)?'want':'reading')):'reading';
   $('#sheet').innerHTML=`
@@ -2726,6 +2740,11 @@ function openBookSheet(book){
       <div class="gp" data-t="paper">📖 종이책</div>
       <div class="gp" data-t="ebook">📱 전자책</div>
     </div>
+    <label style="font-size:12px;font-weight:700;color:var(--soft);display:block;margin:6px 4px 2px">소장 여부</label>
+    <div class="gpick" id="bown">
+      <div class="gp" data-o="1">📗 소장</div>
+      <div class="gp" data-o="0">🔖 미소장</div>
+    </div>
     <div class="field" id="pagesField">
       <label>전체 페이지 <span style="font-weight:400">(검색하면 자동 입력 · 직접 수정 가능)</span></label>
       <input id="bPages" type="number" inputmode="numeric" placeholder="예: 312" value="${book&&book.pages?book.pages:''}">
@@ -2747,7 +2766,7 @@ function openBookSheet(book){
   openOv();
   $('#bCancel').onclick=closeOv;
   $('#bSave').onclick=saveBook;
-  renderBtype();renderBstatus();renderStars();
+  renderBtype();renderBown();renderBstatus();renderStars();
   if(book)bindDelete();
   const ti=$('#bTitle');
   ti.oninput=()=>{clearTimeout(_searchT);const q=ti.value.trim();
@@ -2782,6 +2801,13 @@ function bindDelete(){
     const m=me();m.books=m.books.filter(x=>x.id!==_editId);await save();closeOv();toast('책을 삭제했어요 🗑');
     ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
   };
+}
+function renderBown(){
+  const el=$('#bown');if(!el)return;
+  el.querySelectorAll('.gp').forEach(g=>{
+    g.classList.toggle('on',(g.dataset.o==='1')===_bookOwn);
+    g.onclick=()=>{_bookOwn=(g.dataset.o==='1');renderBown();};
+  });
 }
 function renderBtype(){
   const el=$('#btype');if(!el)return;
@@ -2863,15 +2889,48 @@ async function saveBook(){
   const review=($('#reviewTxt')?$('#reviewTxt').value.trim():'');
   const status=(_status==='want')?'want':'';
   const endVal=(status==='want')?'':end;
-  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end:endVal,cover:_cover,pages,type,rating,review,status});}
-  else m.books.push({id:'b'+Date.now(),title,author,start,end:endVal,cover:_cover,pages,type,cur:0,rating,review,status});
+  const own=!!_bookOwn;
+  // 중복 등록 방지 — 새 책이든 제목 수정이든, 책장에 같은 책이 이미 있으면 막고 그 책으로 안내
+  const dup=findSameBook(m.books,title,author,_editId);
+  if(dup){ openDupSheet(dup); return; }
+  if(_editId){const b=m.books.find(x=>x.id===_editId);Object.assign(b,{title,author,start,end:endVal,cover:_cover,pages,type,rating,review,status,own});}
+  else m.books.push({id:'b'+Date.now(),title,author,start,end:endVal,cover:_cover,pages,type,cur:0,rating,review,status,own});
   // (변경) 책 시작일/완독일은 더 이상 자동 출첵하지 않음 — 사과는 '저장하고 출석체크'로만 찍힘
   await save();closeOv();toast(status==='want'?'읽고 싶은 책에 담았어요 📌':endVal?'완독 책이 책장에 꽂혔어요 📚':'기록했어요');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
-function myBookMatch(title,author){
-  const nt=(title||'').trim(), na=(author||'').trim();
-  return me().books.find(b=>(b.title||'').trim()===nt&&(b.author||'').trim()===na);
+/* 제목/저자 정규화: 공백·대소문자·괄호 안 부제 차이를 무시하고 같은 책으로 본다 */
+function normBk(s){return (s||'').trim().toLowerCase().replace(/[\s·:\-–—_()\[\]]/g,'');}
+/* 같은 책 찾기 — 제목이 같으면 같은 책으로 보되,
+   양쪽 다 저자가 적혀 있고 서로 다르면 '동명이서'로 보고 다른 책 취급 */
+function findSameBook(list,title,author,exceptId){
+  const nt=normBk(title), na=normBk(author);
+  if(!nt)return null;
+  return list.find(b=>{
+    if(exceptId&&b.id===exceptId)return false;
+    if(normBk(b.title)!==nt)return false;
+    const ba=normBk(b.author);
+    if(na&&ba&&na!==ba)return false;
+    return true;
+  })||null;
+}
+function myBookMatch(title,author){ return findSameBook(me().books,title,author,null); }
+/* 중복 안내 시트 — 이미 있는 책이면 그 책으로 바로 넘어갈 수 있게 */
+function openDupSheet(b){
+  const st=b.end?'✅ 완독':(isWant(b)?'📌 읽고 싶음':'📖 읽는 중');
+  $('#sheet').innerHTML=`
+    <h3 style="text-align:center">이미 책장에 있는 책이에요 📚</h3>
+    <div style="text-align:center;color:var(--soft);font-size:13px;line-height:1.6;margin:8px 0 18px">
+      「${escT(b.title)}」<br>${escT(b.author||'저자 미상')} · ${st}<br>
+      <span style="font-size:12px">같은 책을 또 등록하는 대신, 있던 기록을 수정해보세요</span>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" id="dupBack">돌아가기</button>
+      <button class="btn" id="dupEdit">그 책 수정하기</button>
+    </div>`;
+  openOv();
+  $('#dupBack').onclick=closeOv;
+  $('#dupEdit').onclick=()=>{const bk=me().books.find(x=>x.id===b.id);if(bk)openBookSheet(bk);};
 }
 async function addToWishlist(src){
   const existing=myBookMatch(src.title,src.author);
@@ -2885,7 +2944,7 @@ async function addToWishlist(src){
     ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
     return;
   }
-  me().books.push({id:'b'+Date.now(),title:src.title||'',author:src.author||'',start:'',end:'',cover:src.cover||'',pages:src.pages||0,type:src.type||'paper',cur:0,rating:0,review:'',status:'want'});
+  me().books.push({id:'b'+Date.now(),title:src.title||'',author:src.author||'',start:'',end:'',cover:src.cover||'',pages:src.pages||0,type:src.type||'paper',cur:0,rating:0,review:'',status:'want',own:false});
   await save(); closeOv(); toast('읽고 싶은 책에 담았어요 📌');
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
 }
