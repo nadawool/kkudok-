@@ -587,6 +587,10 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .rk-row.days .rk-track i{background:linear-gradient(90deg,#4A90D9,#7FB3E8)}
 .rk-row.days .rk-val{color:#2F72B8}
 .rk-row.top.days .rk-rank{color:#2F72B8}
+/* 누적 읽은 책 = 갈색(책등 느낌) */
+.rk-row.books .rk-track i{background:linear-gradient(90deg,#B5764A,#D9A579)}
+.rk-row.books .rk-val{color:#96603A}
+.rk-row.top.books .rk-rank{color:#96603A}
 .rk-div{height:1px;background:var(--line);margin:1px 4px}
 /* 최근 피드 */
 .rf-card{padding:6px 4px}
@@ -2286,6 +2290,17 @@ function renderHome(){
     </div>
   </div>`;
 
+  // 3.3) 누적 읽은 책 랭킹 (연도 무관 · 지금까지 완독한 총 권수)
+  const abRows=withRanks(members.map(m=>({m,v:doneBooks(m).length})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  const abMax=Math.max(1,...abRows.map(r=>r.v));
+  const allBooksHTML=`<div class="home-sec">
+    <div class="hs-head"><b>📚 누적 읽은 책 랭킹</b><span class="hs-count">지금까지 완독</span></div>
+    <div class="card">
+      ${abRows.length?abRows.map(r=>rankRow(r,abMax,'권','books')).join('')
+        :`<div class="home-empty">아직 완독한 책이 없어요<br>책장에 첫 책을 꽂아보세요 📚</div>`}
+    </div>
+  </div>`;
+
   // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 함께 읽은 누적 시간 · totalMinutes>0만)
   const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
   const tmMax=Math.max(1,...tmRows.map(r=>r.v));
@@ -2327,7 +2342,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+timeHTML+doneHTML+daysHTML+feedHTML;
+  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+timeHTML+doneHTML+daysHTML+allBooksHTML+feedHTML;
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -2571,7 +2586,11 @@ function drawShelf(done){
   if(!done.length){wrap.innerHTML=`<div class="shelf-empty">완독한 책이 책장에 콕콕 꽂혀요 📖<br>첫 책을 기록해보세요</div>
   <div class="board"></div>`;return;}
   const W=wrap.clientWidth||320, per=Math.max(4,Math.floor((W-12)/(34+4)));
-  const ordered=done.slice().reverse();          // 최신 완독을 책장 앞쪽으로
+  // 완독 '날짜' 최신순 (예전엔 등록순 reverse라, 2년 전 읽은 책도 방금 등록하면 맨 앞에 꽂혔음)
+  // 날짜가 같으면 등록 순서가 나중인 쪽을 앞으로.
+  const regOrd=new Map(view().books.map((b,i)=>[b.id,i]));
+  const ordered=done.slice().sort((a,b)=>
+    (b.end||'').localeCompare(a.end||'') || ((regOrd.get(b.id)||0)-(regOrd.get(a.id)||0)));
   const cap=per*3, over=ordered.length-cap;
   const show=shelfExpanded?ordered:ordered.slice(0,cap);
   let h='';
