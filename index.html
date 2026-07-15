@@ -193,6 +193,8 @@ input{font-family:inherit}
   appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8173' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
   background-repeat:no-repeat;background-position:right 10px center}
+.selgrp{display:flex;gap:6px;min-width:0}
+.sortsel.on{background:var(--honey-s);color:var(--honey-d)}
 .viewtog{display:flex;background:#F4EFE6;border-radius:10px;padding:2px;gap:2px;flex:none}
 .viewtog .vt{border:none;background:none;font-size:15px;line-height:1;padding:5px 10px;border-radius:8px;color:var(--soft);cursor:pointer}
 .viewtog .vt.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
@@ -2547,16 +2549,18 @@ function renderShelf(){
     <div class="chip ${shelfOwn==='own'?'on':''}" data-o="own">📗 소장</div>
     <div class="chip ${shelfOwn==='no'?'on':''}" data-o="no">🔖 미소장</div>
   </div>
-  ${years.length?`<div class="yearflt" id="yflt">
-    <div class="chip ${shelfYear==='all'?'on':''}" data-y="all">전체 연도</div>
-    ${years.map(y=>`<div class="chip ${shelfYear===y?'on':''}" data-y="${y}">${y}년</div>`).join('')}
-  </div>`:''}
   <div class="shelf-bar">
-    <select class="sortsel" id="sortSel">
-      <option value="recent"${shelfSort==='recent'?' selected':''}>최신순</option>
-      <option value="old"${shelfSort==='old'?' selected':''}>오래된순</option>
-      <option value="title"${shelfSort==='title'?' selected':''}>이름순</option>
-    </select>
+    <div class="selgrp">
+      <select class="sortsel" id="sortSel">
+        <option value="recent"${shelfSort==='recent'?' selected':''}>최신순</option>
+        <option value="old"${shelfSort==='old'?' selected':''}>오래된순</option>
+        <option value="title"${shelfSort==='title'?' selected':''}>이름순</option>
+      </select>
+      ${years.length?`<select class="sortsel ${shelfYear==='all'?'':'on'}" id="yearSel">
+        <option value="all"${shelfYear==='all'?' selected':''}>전체 연도</option>
+        ${years.map(y=>`<option value="${y}"${shelfYear===y?' selected':''}>${y}년</option>`).join('')}
+      </select>`:''}
+    </div>
     <div class="viewtog" id="vtog">
       <button class="vt ${shelfView==='list'?'on':''}" data-v="list" title="목록">☰</button>
       <button class="vt ${shelfView==='gallery'?'on':''}" data-v="gallery" title="갤러리">▦</button>
@@ -2568,7 +2572,7 @@ function renderShelf(){
   $('#flt').querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
   $('#flt').querySelectorAll('[data-t]').forEach(c=>c.onclick=()=>{shelfType=(shelfType===c.dataset.t?'all':c.dataset.t);renderShelf();});
   $('#flt').querySelectorAll('[data-o]').forEach(c=>c.onclick=()=>{shelfOwn=(shelfOwn===c.dataset.o?'all':c.dataset.o);renderShelf();});
-  $('#yflt')&&$('#yflt').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{shelfYear=c.dataset.y==='all'?'all':+c.dataset.y;renderShelf();});
+  $('#yearSel')&&($('#yearSel').onchange=e=>{shelfYear=e.target.value==='all'?'all':+e.target.value;renderShelf();});
   $('#sortSel').onchange=e=>{shelfSort=e.target.value;drawBookList();};
   $('#vtog').querySelectorAll('.vt').forEach(b=>b.onclick=()=>{shelfView=b.dataset.v;renderShelf();});
   drawShelf(done);drawBookList();
@@ -2632,12 +2636,20 @@ function typeBadge(b){return isEbook(b)?'📱 전자책':'📖 종이책';}
 /* ---- 소장 여부 헬퍼 (b.own===true 일 때만 소장) ---- */
 function isOwned(b){return !!(b&&b.own===true);}
 function ownBadge(b){return isOwned(b)?'<span class="tag otag">📗 소장</span>':'<span class="tag otag no">🔖 미소장</span>';}
+/* 정렬 기준 시각 — 완독책은 '완독일', 읽는 중은 '시작일',
+   날짜가 아예 없으면(담아만 둔 책 등) 마지막 출첵/등록 시각으로 폴백.
+   (예전엔 등록 순서로만 정렬해서, 2026년에 읽은 책이 아래에 박히는 문제가 있었음) */
+function bkSortTs(b){
+  const iso=(b&&(b.end||b.start))||'';
+  if(iso){ const t=D(iso).getTime(); if(isFinite(t))return t; }
+  return bkTs(b);
+}
 function sortBooks(list){
-  const ord=new Map(view().books.map((b,i)=>[b.id,i]));   // 등록 순서(작을수록 오래됨)
+  const ord=new Map(view().books.map((b,i)=>[b.id,i]));   // 등록 순서(동점일 때 타이브레이커)
   const sgn=shelfSort==='old'?1:-1;                         // 최신순=내림차순, 오래된순=오름차순
   const within=(a,b)=> shelfSort==='title'
     ? (a.title||'').localeCompare(b.title||'','ko')
-    : ((ord.get(a.id)||0)-(ord.get(b.id)||0))*sgn;
+    : ((bkSortTs(a)-bkSortTs(b))*sgn) || (((ord.get(a.id)||0)-(ord.get(b.id)||0))*sgn);
   // 1순위: 읽는 중 → 읽고 싶은 → 완독 → 2순위: 선택한 정렬
   const grp=b=>b.end?2:(isWant(b)?1:0);
   return list.slice().sort((a,b)=>(grp(a)-grp(b))||within(a,b));
