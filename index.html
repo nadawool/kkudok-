@@ -185,6 +185,23 @@ input{font-family:inherit}
 .yearflt{display:flex;gap:8px;overflow-x:auto;margin-bottom:12px;scrollbar-width:none;-ms-overflow-style:none}
 .yearflt::-webkit-scrollbar{display:none}
 .yearflt .chip{white-space:nowrap;flex:none}
+/* ---- 상태 세그먼트 (전체/읽는 중/읽고 싶은/완독) ---- */
+.seg{display:flex;background:#F4EFE6;border-radius:12px;padding:3px;gap:2px;margin-bottom:10px}
+.seg button{flex:1;min-width:0;border:none;background:none;font-family:inherit;font-size:12.5px;font-weight:800;
+  color:var(--soft);padding:8px 2px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+/* ---- 필터 버튼 + 배지 ---- */
+.fbtn{border:none;background:#F4EFE6;color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:700;
+  padding:7px 12px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;flex:none}
+.fbtn.on{background:var(--honey-s);color:var(--honey-d)}
+.fbtn .fcnt{background:var(--honey-d);color:#fff;font-size:10px;font-weight:900;min-width:16px;height:16px;
+  border-radius:8px;display:grid;place-items:center;padding:0 4px}
+/* ---- 필터 시트 ---- */
+.flab{font-size:12px;font-weight:700;color:var(--soft);display:block;margin:14px 4px 2px}
+.gpick.tri{grid-template-columns:repeat(3,1fr)}
+.gpick.tri .gp{padding:11px 4px;font-size:13px;border-radius:13px}
+.gpick.yrs{display:flex;flex-wrap:wrap;gap:8px}
+.gpick.yrs .gp{padding:9px 14px;font-size:13px;border-radius:13px;flex:none}
 .chip{padding:6px 12px;border-radius:30px;background:#F4EFE6;font-size:12px;font-weight:700;color:var(--soft);white-space:nowrap;flex:none;cursor:pointer}
 .chip.on{background:var(--ink);color:#fff}
 /* ---- 책장 툴바: 정렬 + 보기 토글 ---- */
@@ -2530,6 +2547,7 @@ function renderShelf(){
   const m=view(),done=doneBooks(m);
   const years=shelfYears(m);
   if(shelfYear!=='all'&&!years.includes(shelfYear))shelfYear='all';
+  const fcnt=filterCount();
   $('#s-shelf').innerHTML=`
   <div class="card">
     <div class="sec-t">📚 ${m.name}님의 책장 · 완독 ${done.length}권</div>
@@ -2537,17 +2555,11 @@ function renderShelf(){
   </div>
   ${isMe()?`<button class="btn" id="addBook" style="margin-bottom:10px">+ 책 기록하기</button>`:''}
   <button class="btn ghost" id="viewMembers" style="margin-bottom:14px">👥 멤버 책장 보기</button>
-  <div class="filters" id="flt">
-    <div class="chip ${shelfFilter==='all'?'on':''}" data-f="all">전체</div>
-    <div class="chip ${shelfFilter==='reading'?'on':''}" data-f="reading">읽는 중</div>
-    <div class="chip ${shelfFilter==='want'?'on':''}" data-f="want">읽고 싶은</div>
-    <div class="chip ${shelfFilter==='done'?'on':''}" data-f="done">완독</div>
-    <span class="fdiv"></span>
-    <div class="chip ${shelfType==='paper'?'on':''}" data-t="paper">종이책</div>
-    <div class="chip ${shelfType==='ebook'?'on':''}" data-t="ebook">전자책</div>
-    <span class="fdiv"></span>
-    <div class="chip ${shelfOwn==='own'?'on':''}" data-o="own">📗 소장</div>
-    <div class="chip ${shelfOwn==='no'?'on':''}" data-o="no">🔖 미소장</div>
+  <div class="seg" id="seg">
+    <button class="${shelfFilter==='all'?'on':''}" data-f="all">전체</button>
+    <button class="${shelfFilter==='reading'?'on':''}" data-f="reading">읽는 중</button>
+    <button class="${shelfFilter==='want'?'on':''}" data-f="want">읽고 싶은</button>
+    <button class="${shelfFilter==='done'?'on':''}" data-f="done">완독</button>
   </div>
   <div class="shelf-bar">
     <div class="selgrp">
@@ -2556,10 +2568,7 @@ function renderShelf(){
         <option value="old"${shelfSort==='old'?' selected':''}>오래된순</option>
         <option value="title"${shelfSort==='title'?' selected':''}>이름순</option>
       </select>
-      ${years.length?`<select class="sortsel ${shelfYear==='all'?'':'on'}" id="yearSel">
-        <option value="all"${shelfYear==='all'?' selected':''}>전체 연도</option>
-        ${years.map(y=>`<option value="${y}"${shelfYear===y?' selected':''}>${y}년</option>`).join('')}
-      </select>`:''}
+      <button class="fbtn ${fcnt?'on':''}" id="fltBtn">⚙️ 필터${fcnt?`<span class="fcnt">${fcnt}</span>`:''}</button>
     </div>
     <div class="viewtog" id="vtog">
       <button class="vt ${shelfView==='list'?'on':''}" data-v="list" title="목록">☰</button>
@@ -2569,13 +2578,56 @@ function renderShelf(){
   <div id="blist"></div>`;
   if(isMe())$('#addBook').onclick=()=>openBookSheet();
   $('#viewMembers').onclick=openMemberPicker;
-  $('#flt').querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
-  $('#flt').querySelectorAll('[data-t]').forEach(c=>c.onclick=()=>{shelfType=(shelfType===c.dataset.t?'all':c.dataset.t);renderShelf();});
-  $('#flt').querySelectorAll('[data-o]').forEach(c=>c.onclick=()=>{shelfOwn=(shelfOwn===c.dataset.o?'all':c.dataset.o);renderShelf();});
-  $('#yearSel')&&($('#yearSel').onchange=e=>{shelfYear=e.target.value==='all'?'all':+e.target.value;renderShelf();});
+  $('#seg').querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{shelfFilter=c.dataset.f;renderShelf();});
+  $('#fltBtn').onclick=openFilterSheet;
   $('#sortSel').onchange=e=>{shelfSort=e.target.value;drawBookList();};
   $('#vtog').querySelectorAll('.vt').forEach(b=>b.onclick=()=>{shelfView=b.dataset.v;renderShelf();});
   drawShelf(done);drawBookList();
+}
+/* 걸려 있는 상세 필터 개수 (상태 세그먼트는 항상 보이므로 제외) */
+function filterCount(){
+  return (shelfType!=='all'?1:0)+(shelfOwn!=='all'?1:0)+(shelfYear!=='all'?1:0);
+}
+/* 상세 필터 시트 — 종류·소장·연도. 초안(_f*)으로 고르고 '적용'을 눌러야 반영됨 */
+let _fType='all',_fOwn='all',_fYear='all';
+function openFilterSheet(){
+  _fType=shelfType;_fOwn=shelfOwn;_fYear=shelfYear;
+  const years=shelfYears(view());
+  $('#sheet').innerHTML=`
+    <h3 style="text-align:center">필터</h3>
+    <label class="flab">책 종류</label>
+    <div class="gpick tri" id="fType">
+      <div class="gp" data-v="all">전체</div>
+      <div class="gp" data-v="paper">📖 종이책</div>
+      <div class="gp" data-v="ebook">📱 전자책</div>
+    </div>
+    <label class="flab">소장 여부</label>
+    <div class="gpick tri" id="fOwn">
+      <div class="gp" data-v="all">전체</div>
+      <div class="gp" data-v="own">📗 소장</div>
+      <div class="gp" data-v="no">🔖 미소장</div>
+    </div>
+    ${years.length?`<label class="flab">읽은 연도</label>
+    <div class="gpick yrs" id="fYear">
+      <div class="gp" data-v="all">전체</div>
+      ${years.map(y=>`<div class="gp" data-v="${y}">${y}년</div>`).join('')}
+    </div>`:''}
+    <div class="btnrow" style="margin-top:18px">
+      <button class="btn ghost" id="fReset">초기화</button>
+      <button class="btn" id="fApply">적용</button>
+    </div>`;
+  openOv();
+  const paint=()=>{
+    $('#fType').querySelectorAll('.gp').forEach(g=>g.classList.toggle('on',g.dataset.v===_fType));
+    $('#fOwn').querySelectorAll('.gp').forEach(g=>g.classList.toggle('on',g.dataset.v===_fOwn));
+    $('#fYear')&&$('#fYear').querySelectorAll('.gp').forEach(g=>g.classList.toggle('on',g.dataset.v===String(_fYear)));
+  };
+  $('#fType').querySelectorAll('.gp').forEach(g=>g.onclick=()=>{_fType=g.dataset.v;paint();});
+  $('#fOwn').querySelectorAll('.gp').forEach(g=>g.onclick=()=>{_fOwn=g.dataset.v;paint();});
+  $('#fYear')&&$('#fYear').querySelectorAll('.gp').forEach(g=>g.onclick=()=>{_fYear=g.dataset.v==='all'?'all':+g.dataset.v;paint();});
+  $('#fReset').onclick=()=>{_fType='all';_fOwn='all';_fYear='all';paint();};
+  $('#fApply').onclick=()=>{shelfType=_fType;shelfOwn=_fOwn;shelfYear=_fYear;closeOv();renderShelf();};
+  paint();
 }
 function openMemberPicker(){
   $('#sheet').innerHTML=`<h3>누구의 책장을 볼까요?</h3>
