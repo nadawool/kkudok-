@@ -2539,7 +2539,7 @@ async function toggleRead(iso){
 }
 
 /* ---------- SHELF ---------- */
-let shelfFilter='all', shelfYear='all', shelfType='all', shelfOwn='all', shelfSort='recent', shelfView='list', shelfExpanded=false;
+let shelfFilter='all', shelfYear='all', shelfType='all', shelfOwn='all', shelfSort='recent', shelfView='list', shelfExpanded=false, shelfQuery='';
 function bookYear(b){ const iso=b.end||b.start; if(!iso)return null; return D(iso).getFullYear(); }
 function shelfYears(m){ const ys=new Set(); m.books.forEach(b=>{const y=bookYear(b);if(y)ys.add(y);}); return Array.from(ys).sort((a,b)=>b-a); }
 function renderShelf(){
@@ -2560,6 +2560,11 @@ function renderShelf(){
     <button class="${shelfFilter==='reading'?'on':''}" data-f="reading">읽는 중</button>
     <button class="${shelfFilter==='want'?'on':''}" data-f="want">읽고 싶은</button>
     <button class="${shelfFilter==='done'?'on':''}" data-f="done">완독</button>
+  </div>
+  <div class="fd-search" style="margin-top:12px">
+    <span class="fd-search-ic">🔍</span>
+    <input id="shSearch" class="fd-search-inp" type="text" placeholder="책 제목·저자 검색" value="${escT(shelfQuery).replace(/"/g,'&quot;')}" autocomplete="off">
+    <button id="shSearchClr" class="fd-search-clr" title="검색어 지우기" style="display:${shelfQuery.trim()?'grid':'none'}">✕</button>
   </div>
   <div class="shelf-bar">
     <div class="selgrp">
@@ -2582,7 +2587,15 @@ function renderShelf(){
   $('#fltBtn').onclick=openFilterSheet;
   $('#sortSel').onchange=e=>{shelfSort=e.target.value;drawBookList();};
   $('#vtog').querySelectorAll('.vt').forEach(b=>b.onclick=()=>{shelfView=b.dataset.v;renderShelf();});
+  const shSb=$('#shSearch'); if(shSb)shSb.oninput=()=>applyShelfSearch(shSb.value);
+  $('#shSearchClr')&&($('#shSearchClr').onclick=()=>{shelfQuery='';renderShelf();const s=$('#shSearch');if(s)s.focus();});
   drawShelf(done);drawBookList();
+}
+// 검색어 입력 즉시반영 — 검색창은 그대로 두고 목록(#blist)만 다시 그림 (포커스 유지)
+function applyShelfSearch(v){
+  shelfQuery=v;
+  const clr=$('#shSearchClr'); if(clr)clr.style.display=shelfQuery.trim()?'grid':'none';
+  drawBookList();
 }
 /* 걸려 있는 상세 필터 개수 (상태 세그먼트는 항상 보이므로 제외) */
 function filterCount(){
@@ -2716,8 +2729,10 @@ function drawBookList(){
   if(shelfOwn==='own')list=list.filter(b=>isOwned(b));
   if(shelfOwn==='no')list=list.filter(b=>!isOwned(b));
   if(shelfYear!=='all')list=list.filter(b=>bookYear(b)===shelfYear);
+  const q=(shelfQuery||'').trim().toLowerCase();
+  if(q)list=list.filter(b=>[b.title||'',b.author||''].join(' ').toLowerCase().includes(q));
   list=sortBooks(list);
-  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfOwn==='own'?'소장 중인 책이 없어요 📗':shelfOwn==='no'?'미소장 책이 없어요':shelfType==='ebook'?'전자책 기록이 없어요':shelfType==='paper'?'종이책 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='want'?'담아둔 책이 없어요 📌<br>친구들 책장에서 마음에 드는 책을 담아보세요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
+  if(!list.length){$('#blist').innerHTML=`<div class="shelf-empty">${shelfQuery.trim()?`'${escT(shelfQuery)}' 검색 결과가 없어요 🔍<br>제목·저자로 찾아보세요`:shelfYear!=='all'?shelfYear+'년 기록이 없어요':shelfOwn==='own'?'소장 중인 책이 없어요 📗':shelfOwn==='no'?'미소장 책이 없어요':shelfType==='ebook'?'전자책 기록이 없어요':shelfType==='paper'?'종이책 기록이 없어요':shelfFilter==='reading'?'읽는 중인 책이 없어요':shelfFilter==='want'?'담아둔 책이 없어요 📌<br>친구들 책장에서 마음에 드는 책을 담아보세요':shelfFilter==='done'?'완독한 책이 없어요':'아직 기록한 책이 없어요'}</div>`;return;}
   if(shelfView==='gallery')return drawGallery(list,m);
   $('#blist').innerHTML=list.map(b=>`
     <div class="bl" data-id="${b.id}">
