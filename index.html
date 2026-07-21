@@ -3607,7 +3607,7 @@ document.querySelector('.hd .t').onclick=()=>{if(S)go('home');};
 
 /* ---------- profile (이름 변경) ---------- */
 async function claimOwner(){
-  if(S.ownerId&&S.members[S.ownerId]){toast('이미 모임장이 있어요');return;}
+  if(S.ownerId){toast('이미 모임장이 있어요');return;}
   if(!confirm('이 모임의 모임장이 될까요?'))return;
   const id=S.meId;
   try{await window.storage.set('owner',id,true);}catch(e){console.warn('claim owner',e);}
@@ -3689,7 +3689,7 @@ function openProfileSheet(){
       <button class="btn ghost" id="pfHome">내 글 보기</button>
       <button class="btn" id="pfSave">저장</button>
     </div>
-    ${!(S.ownerId&&S.members[S.ownerId])?`<button class="btn" id="pfClaim" style="margin-top:10px;background:var(--honey-d)">👑 모임장 권한 가져오기</button>`:''}
+    ${!S.ownerId?`<button class="btn" id="pfClaim" style="margin-top:10px;background:var(--honey-d)">👑 모임장 권한 가져오기</button>`:''}
     ${isOwner()?`<button class="btn ghost" id="pfManage" style="margin-top:10px">⚙️ 멤버 관리 (내보내기)</button>`:''}
     ${isOwner()?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
       <div class="hint" style="margin-bottom:7px">🔐 운영자 전용 · 데이터 백업</div>
