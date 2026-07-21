@@ -3689,7 +3689,6 @@ function openProfileSheet(){
       <button class="btn ghost" id="pfHome">내 글 보기</button>
       <button class="btn" id="pfSave">저장</button>
     </div>
-    ${!S.ownerId?`<button class="btn" id="pfClaim" style="margin-top:10px;background:var(--honey-d)">👑 모임장 권한 가져오기</button>`:''}
     ${isOwner()?`<button class="btn ghost" id="pfManage" style="margin-top:10px">⚙️ 멤버 관리 (내보내기)</button>`:''}
     ${isOwner()?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
       <div class="hint" style="margin-bottom:7px">🔐 운영자 전용 · 데이터 백업</div>
@@ -3709,7 +3708,6 @@ function openProfileSheet(){
     $('#pfRestore').onclick=()=>$('#pfRestoreFile').click();
     $('#pfRestoreFile').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';restoreBackup(f);};
   }
-  $('#pfClaim')&&($('#pfClaim').onclick=claimOwner);
   $('#pfSave').onclick=async()=>{
     const nm=$('#pfName').value.trim();
     if(!nm){toast('이름을 입력해주세요');return;}
