@@ -2859,8 +2859,10 @@ function openBookSheet(book){
     </div>
     <div class="field">
       <label>한줄 후기 <span style="font-weight:400">(선택)</span></label>
-      <textarea id="reviewTxt" rows="2" maxlength="300" placeholder="어떤 책이었나요? 한 줄로 남겨보세요"
+      <textarea id="reviewTxt" rows="2" maxlength="1000" placeholder="어떤 책이었나요? 한 줄로 남겨보세요"
+        oninput="this.nextElementSibling.textContent=this.value.length+'/1000'"
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${book?esc2(book.review||''):''}</textarea>
+      <div class="rv-count" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px">${book?(book.review||'').length:0}/1000</div>
     </div>
     <div class="btnrow">
       <button class="btn ghost" id="bCancel">취소</button>
@@ -3079,8 +3081,10 @@ function openReviewSheet(book){
     </div>
     <div class="field">
       <label>한줄 후기</label>
-      <textarea id="reviewTxt" rows="3" maxlength="300" placeholder="${editable?'어떤 책이었나요? 한 줄로 남겨보세요':'아직 후기가 없어요'}" ${editable?'':'disabled'}
+      <textarea id="reviewTxt" rows="3" maxlength="1000" placeholder="${editable?'어떤 책이었나요? 한 줄로 남겨보세요':'아직 후기가 없어요'}" ${editable?'':'disabled'}
+        oninput="this.nextElementSibling.textContent=this.value.length+'/1000'"
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${esc2(book.review||'')}</textarea>
+      ${editable?`<div class="rv-count" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px">${(book.review||'').length}/1000</div>`:''}
     </div>
     ${editable?`<div class="btnrow"><button class="btn ghost" id="rvCancel">닫기</button><button class="btn" id="rvSave">저장</button></div>`
               :`<button class="btn ${matched?'ghost':''}" id="rvWish" style="margin-top:2px">${wishLabel}</button>
