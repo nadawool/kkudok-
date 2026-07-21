@@ -1631,7 +1631,21 @@ const feedExpanded=new Set();
 let _feedFocusPid=null; // 알림 클릭 등으로 특정 글로 스크롤 이동해야 할 때 그 글의 id
 const replyTarget={}; // { [postId]: {cid, name} } 답글 작성 대상. 있으면 공용 입력창이 답글모드로 동작
 let _composeCover='',_composeBookT='',_composeBookA='',_editPostId=null;
-let _recBookId=null;
+let _recBookId=null, _recQuery='';
+// 추천 시트 책 목록 HTML (검색 필터 후 목록만 다시 그릴 때도 재사용)
+function _recListHTML(books){
+  if(!books.length)return `<div style="padding:18px 10px;text-align:center;color:var(--muted);font-size:13px">검색 결과가 없어요 🔍</div>`;
+  return books.map(b=>`
+    <div class="rec-row ${b.id===_recBookId?'on':''}" data-id="${b.id}">
+      <div class="rec-rcv" style="${b.cover?`background-image:url(${cleanCov(b.cover)})`:''}">${b.cover?'':'📕'}</div>
+      <div class="rec-rinfo"><b>${escT(b.title)}</b><div class="au">${escT(b.author||'저자 미상')}</div>
+        <div class="rec-stars">${'★'.repeat(b.rating)}${'☆'.repeat(5-b.rating)}</div></div>
+      ${b.id===_recBookId?'<div class="rec-chk">✓</div>':''}
+    </div>`).join('');
+}
+function _recBindRows(){
+  $('#sheet').querySelectorAll('.rec-row').forEach(r=>r.onclick=()=>{_recBookId=r.dataset.id;renderRecSheet();});
+}
 function feedScore(p){return ((p.likes||[]).length)+((p.comments||[]).length);}
 function ribbonIcon(filled){return `<svg class="ribbon" viewBox="0 0 24 24" width="15" height="15" fill="${filled?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>`;}
 // 피드 목록 필터+정렬 (내글/저장/검색어 반영) — renderFeed와 검색 즉시반영에서 공용
@@ -1906,17 +1920,20 @@ function openComposeChooser(){
   $('#ccRec').onclick=()=>openRecSheet();
   $('#ccClose').onclick=closeOv;
 }
-function openRecSheet(){ _recBookId=null; renderRecSheet(); openOv(); }
+function openRecSheet(){ _recBookId=null; _recQuery=''; renderRecSheet(); openOv(); }
 function renderRecSheet(){
-  const books=me().books.filter(b=>b.end&&(b.rating||0)>0)
-    .sort((a,b)=>(b.rating-a.rating)||((b.end||'')>(a.end||'')?-1:1));
-  if(!books.length){
+  const all=me().books.filter(b=>b.end&&(b.rating||0)>0)
+    .sort((a,b)=>(b.end||'').localeCompare(a.end||'')||(b.rating-a.rating)); // 최근 완독 순
+  if(!all.length){
     $('#sheet').innerHTML=`<h3>책 추천하기</h3>
       <div class="home-empty" style="padding:22px 10px">완독하고 별점을 준 책이 있어야 추천할 수 있어요 📚<br>책장에서 완독한 책에 별점을 남겨보세요</div>
       <button class="btn ghost" id="recClose">닫기</button>`;
     $('#recClose').onclick=closeOv; return;
   }
-  const sel=books.find(b=>b.id===_recBookId);
+  const showSearch=all.length>6;
+  const q=showSearch?(_recQuery||'').trim().toLowerCase():'';
+  const books=q?all.filter(b=>[b.title||'',b.author||''].join(' ').toLowerCase().includes(q)):all;
+  const sel=all.find(b=>b.id===_recBookId);
   $('#sheet').innerHTML=`<h3>책 추천하기</h3>
     ${sel?`<div class="rec-pick">
         <div class="rec-cv" style="${sel.cover?`background-image:url(${cleanCov(sel.cover)})`:''}">${sel.cover?'':'📕'}</div>
@@ -1931,20 +1948,28 @@ function renderRecSheet(){
         <textarea id="recMsg" rows="3" maxlength="300" placeholder="이 책을 왜 추천하나요?"
           style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${esc2(sel.review||'')}</textarea>
       </div>`
-    :`<div class="hint" style="margin:-2px 4px 12px">추천할 책을 골라주세요 · 완독하고 별점 준 책만 보여요</div>`}
-    <div class="rec-list">${books.map(b=>`
-      <div class="rec-row ${b.id===_recBookId?'on':''}" data-id="${b.id}">
-        <div class="rec-rcv" style="${b.cover?`background-image:url(${cleanCov(b.cover)})`:''}">${b.cover?'':'📕'}</div>
-        <div class="rec-rinfo"><b>${escT(b.title)}</b><div class="au">${escT(b.author||'저자 미상')}</div>
-          <div class="rec-stars">${'★'.repeat(b.rating)}${'☆'.repeat(5-b.rating)}</div></div>
-        ${b.id===_recBookId?'<div class="rec-chk">✓</div>':''}
-      </div>`).join('')}</div>
+    :`<div class="hint" style="margin:-2px 4px 12px">추천할 책을 골라주세요 · 완독하고 별점 준 책만 보여요 · 최근 완독 순</div>`}
+    ${showSearch?`<div class="fd-search" style="margin:0 0 10px">
+      <span class="fd-search-ic">🔍</span>
+      <input id="recSearch" class="fd-search-inp" type="text" placeholder="제목·저자 검색" value="${escT(_recQuery).replace(/"/g,'&quot;')}" autocomplete="off">
+      <button id="recSearchClr" class="fd-search-clr" title="지우기" style="display:${_recQuery.trim()?'grid':'none'}">✕</button>
+    </div>`:''}
+    <div class="rec-list">${_recListHTML(books)}</div>
     <div class="btnrow">
       <button class="btn ghost" id="recCancel">취소</button>
       <button class="btn" id="recShare" ${sel?'':'disabled'}>추천 공유</button>
     </div>`;
   $('#recCancel').onclick=closeOv;
-  $('#sheet').querySelectorAll('.rec-row').forEach(r=>r.onclick=()=>{_recBookId=r.dataset.id;renderRecSheet();});
+  _recBindRows();
+  const rs=$('#recSearch');
+  if(rs)rs.oninput=()=>{
+    _recQuery=rs.value;
+    const clr=$('#recSearchClr'); if(clr)clr.style.display=_recQuery.trim()?'grid':'none';
+    const qq=_recQuery.trim().toLowerCase();
+    const filtered=qq?all.filter(b=>[b.title||'',b.author||''].join(' ').toLowerCase().includes(qq)):all;
+    const lc=$('#sheet').querySelector('.rec-list'); if(lc){lc.innerHTML=_recListHTML(filtered);_recBindRows();}
+  };
+  $('#recSearchClr')&&($('#recSearchClr').onclick=()=>{_recQuery='';renderRecSheet();const s=$('#recSearch');if(s)s.focus();});
   $('#recShare')&&($('#recShare').onclick=submitRec);
 }
 async function submitRec(){
