@@ -614,6 +614,17 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .rk-row.bookcnt .rk-val{color:#96603A}
 .rk-row.top.bookcnt .rk-rank{color:#96603A}
 .rk-div{height:1px;background:var(--line);margin:1px 4px}
+/* 나의 요약 (누적 독서일 · 누적 독서 권수) 2단 */
+.me-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.me-stat{text-align:center;padding:14px 8px;border-radius:16px;background:#F8F4ED}
+.me-stat .me-ic{font-size:20px;line-height:1;margin-bottom:6px}
+.me-stat .me-num{font-size:26px;font-weight:900;line-height:1;letter-spacing:-.5px}
+.me-stat .me-num small{font-size:14px;font-weight:800;margin-left:2px}
+.me-stat .me-lb{font-size:11.5px;font-weight:700;color:var(--soft);margin-top:6px}
+.me-stat.days{background:#EAF3FB}
+.me-stat.days .me-num{color:#2F72B8}
+.me-stat.books{background:#F6EEE6}
+.me-stat.books .me-num{color:#96603A}
 /* 최근 피드 */
 .rf-card{padding:6px 4px}
 .rf-item{display:flex;gap:11px;padding:11px 8px;cursor:pointer;border-radius:14px}
@@ -2326,42 +2337,48 @@ function renderHome(){
     </div>
   </div>`;
 
-  // 3.2) 누적 독서일 (본인 것만 · 지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
+  // 3.2) 나의 기록 (본인 것만 · 누적 독서일 + 누적 완독 권수)
   const meMember=S.members[S.meId];
   const myDays=meMember?readDays(meMember):0;
+  const myBooks=meMember?doneBooks(meMember).length:0;
   const daysHTML=`<div class="home-sec">
-    <div class="hs-head"><b>📅 나의 누적 독서일</b><span class="hs-count">지금까지 읽은 날</span></div>
+    <div class="hs-head"><b>📌 나의 기록</b><span class="hs-count">지금까지</span></div>
     <div class="card">
-      ${meMember?`<div class="rk-row top days">
-        <div class="rk-av">${avatarTiny(meMember)}</div>
-        <div class="rk-mid">
-          <div class="rk-nm">${escT(meMember.name)}<span class="rk-age">${age(meMember)}살</span></div>
+      ${meMember?`<div class="me-grid">
+        <div class="me-stat days">
+          <div class="me-ic">📅</div>
+          <div class="me-num">${myDays}<small>일</small></div>
+          <div class="me-lb">누적 독서일</div>
         </div>
-        <div class="rk-val">${myDays}일</div>
+        <div class="me-stat books">
+          <div class="me-ic">📚</div>
+          <div class="me-num">${myBooks}<small>권</small></div>
+          <div class="me-lb">누적 완독</div>
+        </div>
       </div>`
-        :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
+        :`<div class="home-empty">아직 기록이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
     </div>
   </div>`;
 
-  // 3.3) 누적 읽은 책 랭킹 (연도 무관 · 지금까지 완독한 총 권수)
-  const abRows=withRanks(members.map(m=>({m,v:doneBooks(m).length})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  // 3.3) 누적 읽은 책 랭킹 (연도 무관 · 지금까지 완독한 총 권수 · 2권 이상만)
+  const abRows=withRanks(members.map(m=>({m,v:doneBooks(m).length})).filter(r=>r.v>=2).sort((a,b)=>b.v-a.v));
   const abMax=Math.max(1,...abRows.map(r=>r.v));
   const allBooksHTML=`<div class="home-sec">
-    <div class="hs-head"><b>📚 누적 읽은 책 랭킹</b><span class="hs-count">지금까지 완독</span></div>
+    <div class="hs-head"><b>📚 누적 읽은 책 랭킹</b><span class="hs-count">지금까지 완독 · 2권 이상</span></div>
     <div class="card">
       ${abRows.length?abRows.map(r=>rankRow(r,abMax,'권','bookcnt')).join('')
-        :`<div class="home-empty">아직 완독한 책이 없어요<br>책장에 첫 책을 꽂아보세요 📚</div>`}
+        :`<div class="home-empty">아직 2권 이상 완독한 멤버가 없어요<br>책장에 책을 꽂아보세요 📚</div>`}
     </div>
   </div>`;
 
-  // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 함께 읽은 누적 시간 · totalMinutes>0만)
-  const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  // 3.5) 누적 독서시간 랭킹 (디스코드 음성방에서 읽은 누적 시간 · totalMinutes>0만 · 상위 15명)
+  const tmRows=withRanks(members.map(m=>({m,v:minTotal(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v)).slice(0,15);
   const tmMax=Math.max(1,...tmRows.map(r=>r.v));
   const timeHTML=`<div class="home-sec">
-    <div class="hs-head"><b>⏱️ 누적 독서시간 랭킹</b><span class="hs-count">함께 읽은 시간</span></div>
+    <div class="hs-head"><b>⏱️ 누적 독서시간 랭킹</b><span class="hs-count">지금까지 읽은 시간</span></div>
     <div class="card">
       ${tmRows.length?tmRows.map(r=>rankRow(r,tmMax,'','time',fmtDur(r.v))).join('')
-        :`<div class="home-empty">아직 함께 읽은 시간이 없어요<br>디스코드 음성방에서 같이 읽어보세요 📖</div>`}
+        :`<div class="home-empty">아직 읽은 시간이 없어요<br>디스코드 음성방에서 함께 읽어보세요 📖</div>`}
     </div>
   </div>`;
 
@@ -2369,7 +2386,7 @@ function renderHome(){
   const dnRows=withRanks(members.map(m=>({m,v:yearDone(m,year)})).filter(r=>r.v>=2).sort((a,b)=>b.v-a.v)).slice(0,10);
   const dnMax=Math.max(1,...dnRows.map(r=>r.v));
   const doneHTML=`<div class="home-sec">
-    <div class="hs-head"><b>🏆 올해 완독 랭킹</b><span class="hs-count">${year}년 · 2권 이상</span></div>
+    <div class="hs-head"><b>🏆 올해 완독 랭킹 top10</b><span class="hs-count">${year}년 · 2권 이상</span></div>
     <div class="card">
       ${dnRows.length?dnRows.map(r=>rankRow(r,dnMax,'권','done')).join('')
         :`<div class="home-empty">올해 2권 이상 완독한 멤버가 아직 없어요<br>첫 주인공이 되어보세요 📚</div>`}
