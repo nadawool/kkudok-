@@ -614,15 +614,18 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .rk-row.bookcnt .rk-val{color:#96603A}
 .rk-row.top.bookcnt .rk-rank{color:#96603A}
 .rk-div{height:1px;background:var(--line);margin:1px 4px}
-/* 나의 기록 (누적 독서일 · 누적 독서시간) 좌우 분할 */
-.me-split{display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;padding:6px 0}
-.me-col{text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px}
-.me-col .me-lb{font-size:12px;font-weight:700;color:var(--soft)}
-.me-col .me-num{font-size:30px;font-weight:900;line-height:1;letter-spacing:-.5px}
-.me-col .me-num small{font-size:15px;font-weight:800;color:var(--soft);margin-left:1px}
-.me-col.days .me-num{color:#2F72B8}
-.me-col.time .me-num{color:#534AB7}
-.me-vline{width:1px;height:44px;background:var(--line);justify-self:center}
+/* 나의 기록 (누적 독서일 · 누적 독서시간) 색 배경 필 카드 */
+.me-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.me-stat{border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;gap:10px}
+.me-stat .me-lb{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.me-stat .me-num{font-size:26px;font-weight:900;line-height:1;letter-spacing:-.5px}
+.me-stat .me-num small{font-size:14px;font-weight:800;margin-left:1px}
+.me-stat.days{background:#EAF3FB}
+.me-stat.days .me-lb{color:#0C447C}
+.me-stat.days .me-num{color:#185FA5}
+.me-stat.time{background:#EEEDFE}
+.me-stat.time .me-lb{color:#3C3489}
+.me-stat.time .me-num{color:#534AB7}
 /* 최근 피드 */
 .rf-card{padding:6px 4px}
 .rf-item{display:flex;gap:11px;padding:11px 8px;cursor:pointer;border-radius:14px}
@@ -2345,20 +2348,17 @@ function renderHome(){
     : `${myM}<small>분</small>`;
   const daysHTML=`<div class="home-sec">
     <div class="hs-head"><b>📌 나의 기록</b><span class="hs-count">지금까지</span></div>
-    <div class="card">
-      ${meMember?`<div class="me-split">
-        <div class="me-col days">
-          <div class="me-lb">📅 누적 독서일</div>
-          <div class="me-num">${myDays}<small>일</small></div>
-        </div>
-        <div class="me-vline"></div>
-        <div class="me-col time">
-          <div class="me-lb">⏱️ 누적 독서시간</div>
-          <div class="me-num">${timeNumHTML}</div>
-        </div>
-      </div>`
-        :`<div class="home-empty">아직 기록이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
-    </div>
+    ${meMember?`<div class="me-grid">
+      <div class="me-stat days">
+        <div class="me-lb"><span>📅</span>누적 독서일</div>
+        <div class="me-num">${myDays}<small>일</small></div>
+      </div>
+      <div class="me-stat time">
+        <div class="me-lb"><span>⏱️</span>누적 독서시간</div>
+        <div class="me-num">${timeNumHTML}</div>
+      </div>
+    </div>`
+      :`<div class="card"><div class="home-empty">아직 기록이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div></div>`}
   </div>`;
 
   // 3.3) 누적 읽은 책 랭킹 (연도 무관 · 지금까지 완독한 총 권수 · 2권 이상만)
