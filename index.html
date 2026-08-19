@@ -2326,13 +2326,19 @@ function renderHome(){
     </div>
   </div>`;
 
-  // 3.2) 누적 독서일 랭킹 (지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
-  const rdRows=withRanks(members.map(m=>({m,v:readDays(m)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
-  const rdMax=Math.max(1,...rdRows.map(r=>r.v));
+  // 3.2) 누적 독서일 (본인 것만 · 지금까지 출첵한 총 일수 · 연속과 달리 리셋 없음)
+  const meMember=S.members[S.meId];
+  const myDays=meMember?readDays(meMember):0;
   const daysHTML=`<div class="home-sec">
-    <div class="hs-head"><b>📅 누적 독서일 랭킹</b><span class="hs-count">지금까지 읽은 날</span></div>
+    <div class="hs-head"><b>📅 나의 누적 독서일</b><span class="hs-count">지금까지 읽은 날</span></div>
     <div class="card">
-      ${rdRows.length?rdRows.map(r=>rankRow(r,rdMax,'일','days')).join('')
+      ${meMember?`<div class="rk-row top days">
+        <div class="rk-av">${avatarTiny(meMember)}</div>
+        <div class="rk-mid">
+          <div class="rk-nm">${escT(meMember.name)}<span class="rk-age">${age(meMember)}살</span></div>
+        </div>
+        <div class="rk-val">${myDays}일</div>
+      </div>`
         :`<div class="home-empty">아직 누적 독서일이 없어요<br>출첵으로 첫 사과를 찍어보세요 🍎</div>`}
     </div>
   </div>`;
@@ -2359,14 +2365,14 @@ function renderHome(){
     </div>
   </div>`;
 
-  // 4) 올해 완독 랭킹
-  const dnRows=withRanks(members.map(m=>({m,v:yearDone(m,year)})).filter(r=>r.v>0).sort((a,b)=>b.v-a.v));
+  // 4) 올해 완독 랭킹 (2권 이상만 · 상위 10명만 노출)
+  const dnRows=withRanks(members.map(m=>({m,v:yearDone(m,year)})).filter(r=>r.v>=2).sort((a,b)=>b.v-a.v)).slice(0,10);
   const dnMax=Math.max(1,...dnRows.map(r=>r.v));
   const doneHTML=`<div class="home-sec">
-    <div class="hs-head"><b>🏆 올해 완독 랭킹</b><span class="hs-count">${year}년</span></div>
+    <div class="hs-head"><b>🏆 올해 완독 랭킹</b><span class="hs-count">${year}년 · 2권 이상</span></div>
     <div class="card">
       ${dnRows.length?dnRows.map(r=>rankRow(r,dnMax,'권','done')).join('')
-        :`<div class="home-empty">올해 완독한 책이 아직 없어요<br>첫 완독의 주인공이 되어보세요 📚</div>`}
+        :`<div class="home-empty">올해 2권 이상 완독한 멤버가 아직 없어요<br>첫 주인공이 되어보세요 📚</div>`}
     </div>
   </div>`;
 
@@ -2389,7 +2395,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+timeHTML+doneHTML+daysHTML+allBooksHTML+feedHTML;
+  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+daysHTML+timeHTML+doneHTML+allBooksHTML+feedHTML;
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
