@@ -1827,7 +1827,7 @@ function applyFeedSearch(v){
   const clr=$('#fdSearchClr'); if(clr)clr.style.display=feedSearch.trim()?'grid':'none';
   bindFeed();
 }
-/* ---------- 📅 독서모임 일정 & 참석 (피드 상단) ----------
+/* ---------- 📅 독서모임 일정 & 참석 (홈 · 멤버들이 읽는 책 아래) ----------
    rooms/{room}/meetups/{id} = {type, date:'YYYY-MM-DD', time:'HH:MM', bookTitle, bookAuthor, bookCover, note,
                                cap:8, attendees:[uid 순서=신청순], createdBy, createdAt}
    · 일정 등록/수정/삭제: 모임장 + 운영진(rooms/{room}.staff 배열)
@@ -1898,12 +1898,12 @@ function meetCardHTML(){
   </div>`;
 }
 function bindMeetCard(){
-  $('#mtPrev')&&($('#mtPrev').onclick=()=>{meetM--;if(meetM<0){meetM=11;meetY--;}renderFeed();});
-  $('#mtNext')&&($('#mtNext').onclick=()=>{meetM++;if(meetM>11){meetM=0;meetY++;}renderFeed();});
+  $('#mtPrev')&&($('#mtPrev').onclick=()=>{meetM--;if(meetM<0){meetM=11;meetY--;}renderHome();});
+  $('#mtNext')&&($('#mtNext').onclick=()=>{meetM++;if(meetM>11){meetM=0;meetY++;}renderHome();});
   $('#mtAdd')&&($('#mtAdd').onclick=()=>openMeetForm(null));
-  document.querySelectorAll('#s-feed [data-meet]').forEach(el=>el.onclick=()=>openMeetSheet(el.dataset.meet));
-  document.querySelectorAll('#s-feed [data-join]').forEach(el=>el.onclick=e=>{e.stopPropagation();joinMeet(el.dataset.join);});
-  document.querySelectorAll('#s-feed [data-leave]').forEach(el=>el.onclick=e=>{e.stopPropagation();leaveMeet(el.dataset.leave);});
+  document.querySelectorAll('#s-home [data-meet]').forEach(el=>el.onclick=()=>openMeetSheet(el.dataset.meet));
+  document.querySelectorAll('#s-home [data-join]').forEach(el=>el.onclick=e=>{e.stopPropagation();joinMeet(el.dataset.join);});
+  document.querySelectorAll('#s-home [data-leave]').forEach(el=>el.onclick=e=>{e.stopPropagation();leaveMeet(el.dataset.leave);});
 }
 async function joinMeet(id){
   const col=meetCol(); if(!col){toast('지금은 참석 신청을 할 수 없어요');return;}
@@ -2031,7 +2031,6 @@ function renderFeed(){
   const meM=me();
   let list=feedFilteredList();
   $('#s-feed').innerHTML=`
-  ${feedMineOnly?'':meetCardHTML()}
   ${feedMineOnly?`<div class="fd-minebar">
     <b>✍️ 내 글 모아보기</b>
     <button id="fdMineExit">전체 피드 ${chevR()}</button>
@@ -2057,7 +2056,6 @@ function renderFeed(){
   </div>
   <div id="fdList">${feedListHTML(list)}</div>`;
   bindFeed();
-  bindMeetCard();
   // 백업해둔 댓글 입력값·커서·포커스 복원
   if(_keep){
     const inp=$('#fdList .fd-cinp[data-id="'+_keep.id+'"]');
@@ -2810,7 +2808,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=attHTML+readsHTML+`<div class="home-sec">${meetCardHTML()}</div>`+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -2820,6 +2818,7 @@ function renderHome(){
   $('#rfAll')&&($('#rfAll').onclick=()=>go('feed'));
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
   $('#s-home').querySelectorAll('.att-m').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
+  bindMeetCard();
   applyPresenceDots();
 }
 /* 홈 — 얼굴 둘레 월간 출석 링 */
