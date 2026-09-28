@@ -159,16 +159,16 @@ input{font-family:inherit}
 /* 홈: 얼굴 둘레 월간 게이지 + 이번 달 출석 현황 */
 .att-ring{position:absolute;left:-5px;top:-5px;width:64px;height:64px;pointer-events:none;z-index:2}
 .att-cnt{font-size:10.5px;font-weight:800;color:var(--soft);margin-top:1px}
-.att-cnt.done{color:#13b5ea}
-.att-done{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:#13b5ea;color:#fff;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:20px;white-space:nowrap;z-index:4;box-shadow:0 1px 3px rgba(120,70,20,.25)}
+.att-cnt.done{color:var(--honey-d)}
+.att-done{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--honey);color:#fff;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:20px;white-space:nowrap;z-index:4;box-shadow:0 1px 3px rgba(120,70,20,.25)}
 .mqs-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #F4EFE7}
 .mqs-row:last-child{border-bottom:none}
 .mqs-nm{width:52px;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mqs-bar{flex:1;height:8px;background:#F0EADF;border-radius:30px;overflow:hidden}
 .mqs-bar i{display:block;height:100%;border-radius:30px;background:#ea321f}
-.mqs-row.done .mqs-bar i{background:#13b5ea}
+.mqs-row.done .mqs-bar i{background:var(--honey)}
 .mqs-n{width:34px;text-align:right;font-size:13px;font-weight:800}
-.mqs-row.done .mqs-n{color:#13b5ea}
+.mqs-row.done .mqs-n{color:var(--honey-d)}
 /* 15일 달성 축하 시트 */
 .mqw{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:6px 0 4px}
 .mqw-medal{position:relative;width:124px;height:124px;border-radius:50%;background:var(--honey-s);display:grid;place-items:center}
@@ -2230,7 +2230,7 @@ function monthQuota(m){
   }
   return {ym,mon,got,need,left,state,head,sub};
 }
-const MQ_REWARD=50;           // 월 15일 달성 보상 (캐시) — 0으로 두면 지급 안 함
+const MQ_REWARD=30;           // 월 15일 달성 보상 (캐시) — 0으로 두면 지급 안 함
 /* 해당 월(ym='YYYY-MM')의 출석일 수 */
 function monthCount(m,ym){const t=todayISO();return new Set((m.reads||[]).filter(r=>r.slice(0,7)===ym&&r<=t)).size;}
 /* 완주 배지 목록 — 필수 출석 시작 달 이후, 15일 이상 채운 달 (최신순). 출석 기록에서 바로 계산 */
@@ -2573,7 +2573,7 @@ function renderHome(){
 function attRingSVG(m){
   const C=2*Math.PI*29, got=monthCount(m,todayISO().slice(0,7)), done=got>=MONTH_GOAL;
   const len=Math.min(1,got/MONTH_GOAL)*C;
-  return `<svg class="att-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#F0EADF" stroke-width="3.5"/>${got?`<circle cx="32" cy="32" r="29" fill="none" stroke="${done?'#13b5ea':'#ea321f'}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>`:''}</svg>`;
+  return `<svg class="att-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#F0EADF" stroke-width="3.5"/>${got?`<circle cx="32" cy="32" r="29" fill="none" stroke="${done?'#F2994A':'#ea321f'}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>`:''}</svg>`;
 }
 /* 홈 — 이번 달 출석 현황 (많이 온 순) */
 function monthStatusHTML(members){
