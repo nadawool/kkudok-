@@ -606,7 +606,19 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .att-read{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:900;color:#fff;
   background:linear-gradient(135deg,var(--honey,#F5A623),#F7B36A);padding:2px 8px;border-radius:20px;
   line-height:1;white-space:nowrap;box-shadow:0 1px 4px rgba(120,70,20,.28)}
-.att-m.reading .att-av{box-shadow:0 0 0 3px #F5A623,0 0 0 6px rgba(245,166,35,.30);animation:readPulse 1.6s ease-in-out infinite}
+.att-m.reading .att-av{box-shadow:none;animation:none}
+/* 📖 실시간 독서중: 인스타 스토리 같은 그라데이션 링 (월간 링 위에 표시) + 반짝임 */
+.att-m.reading .att-ring{opacity:0}
+.att-m.reading .att-avwrap::before{content:"";position:absolute;inset:-6px;border-radius:50%;z-index:3;pointer-events:none;
+  background:conic-gradient(from 0deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5,#d62976,#fa7e1e,#feda75);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3.5px));
+  animation:storySpin 2.6s linear infinite,storyGlow 1.6s ease-in-out infinite}
+.att-m.reading .att-avwrap::after{content:"✦";position:absolute;left:-7px;top:-6px;z-index:6;pointer-events:none;
+  font-size:13px;line-height:1;color:#FFD54A;text-shadow:0 0 6px rgba(255,200,60,.9);animation:storyTwinkle 1.4s ease-in-out infinite}
+@keyframes storySpin{to{transform:rotate(360deg)}}
+@keyframes storyGlow{0%,100%{filter:brightness(1) drop-shadow(0 0 0 rgba(214,41,118,0))}50%{filter:brightness(1.15) drop-shadow(0 0 5px rgba(214,41,118,.55))}}
+@keyframes storyTwinkle{0%,100%{opacity:.25;transform:scale(.7) rotate(0deg)}50%{opacity:1;transform:scale(1.15) rotate(20deg)}}
 .att-m.reading .att-av,.att-m.reading.gone .att-av{opacity:1;filter:none} /* 독서중이면 회색처리 무시 */
 .att-m.reading.gone .att-nm{color:var(--ink)}
 @keyframes readPulse{0%,100%{box-shadow:0 0 0 3px #F5A623,0 0 0 6px rgba(245,166,35,.30)}50%{box-shadow:0 0 0 3px #F5A623,0 0 0 8px rgba(245,166,35,0)}}
@@ -3509,11 +3521,14 @@ function renderDress(){
       <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일 · 🎁 +10캐시</div>
     </div>
   </div>
+  ${isAdmin()?`<button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 14px"><b>📦 교환 신청 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 모임장만 보여요</small></b><span id="gfAdminN">…</span></button>`:''}
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
   <div class="items" id="items"></div>`;
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
+  $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
+  refreshAdminBadge();
   drawItems();
 }
 /* 아이템 착용/구매 시 화면 전체(renderDress)를 다시 그리면 스크롤이 맨 위(캐릭터 미리보기)로 튀어
@@ -3724,23 +3739,33 @@ async function openGiftAdmin(){
   $('#gaAll')&&($('#gaAll').onclick=()=>confirmDialog({title:'전체 발송 처리',body:`대기 ${wait.length}건을 모두 발송 완료로 표시할까요?<br>멤버 MY 탭에 오늘 날짜로 교환완료가 떠요`,okText:'발송 처리',onOk:()=>markSent(wait.map(o=>o.oid))}));
   $('#sheet').querySelectorAll('[data-send]').forEach(el=>el.onclick=()=>markSent([el.dataset.send]));
 }
-async function refreshAdminBadge(){ // 모임장: 선물 탭 상단 버튼에 대기 건수
+async function refreshAdminBadge(){ // 모임장: 상점 프로필 아래 버튼에 대기 건수
   const el=$('#gfAdminN'), col=giftCol(); if(!el||!col)return;
+  if(Array.isArray(S.giftReq)){el.textContent=`대기 ${S.giftReq.length}건`;return;}
   try{const qs=await col.where('status','==','requested').get(); el.textContent=`대기 ${qs.size}건`;}catch(e){el.textContent='열기';}
+}
+/* 모임장 전용: 교환 신청 실시간 감시 → 알림(🔔)에 표시 */
+let _giftUnsub=null;
+function startGiftWatch(){
+  if(_giftUnsub||!isAdmin())return;
+  const col=giftCol(); if(!col)return;
+  try{
+    _giftUnsub=col.where('status','==','requested').onSnapshot(qs=>{
+      S.giftReq=qs.docs.map(d=>d.data());
+      scanNotifications(); refreshAdminBadge();
+    },e=>console.error('giftOrders 감시 실패(규칙 확인):',e));
+  }catch(e){console.error(e);}
 }
 
 function drawItems(){
   const m=me(); $('#dsub').innerHTML='';
   if(dressSlot==='gift'){
-    $('#items').innerHTML=`${isAdmin()?`<button class="gf-admin" id="gfAdmin"><b>📦 교환 신청 관리</b><span id="gfAdminN">…</span></button>`:''}
-      <div class="gf-wrap">${GIFTS.map(g=>`<div class="gf-card"><div class="gf-ic">${g.icon}</div>
+    $('#items').innerHTML=`<div class="gf-wrap">${GIFTS.map(g=>`<div class="gf-card"><div class="gf-ic">${g.icon}</div>
         <div class="gf-info"><b>${g.name}</b><small>${g.note}</small></div>
         <div class="gf-buy"><div class="ptag"><span class="coin">C</span>${g.cost}</div><button class="gf-btn" data-gift="${g.id}">구매</button></div></div>`).join('')}
       </div>
       <div class="gf-sec" style="font-weight:600;line-height:1.6">구매한 선물은 MY 탭에서 교환 신청할 수 있어요.</div>`;
     $('#items').querySelectorAll('[data-gift]').forEach(el=>el.onclick=()=>buyGift(GIFTS.find(g=>g.id===el.dataset.gift)));
-    $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
-    refreshAdminBadge();
     return;
   }
   if(dressSlot==='bg'){
@@ -4152,6 +4177,11 @@ function notifEvents(){
       });
     }
   });
+  // 4) (모임장만) 멤버의 선물 교환 신청
+  if(isAdmin()&&Array.isArray(S.giftReq)){
+    S.giftReq.forEach(o=>ev.push({id:'g_'+o.oid,type:'gift',name:o.member||'멤버',
+      text:(o.item||'')+(o.memo?` · ${o.memo}`:''),ts:o.reqAt||0}));
+  }
   ev.sort((a,b)=>(b.ts||0)-(a.ts||0)); // 최신순
   return ev.slice(0,50);
 }
@@ -4164,6 +4194,7 @@ function initNotif(){
   if(m && typeof m.notifSeenTs!=='number'){ m.notifSeenTs=Date.now(); save(); }
   const btn=document.getElementById('bellBtn');
   if(btn) btn.onclick=openNotifSheet;
+  startGiftWatch();   // 모임장이면 교환 신청 실시간 감시 시작
   updateBellBadge();
 }
 
@@ -4182,7 +4213,8 @@ function scanNotifications(){
   // 가장 최근 이벤트가 (안읽음이고) 직전에 알린 것보다 새로우면 토스트
   if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
     _notifTopTs=top.ts||0;
-    const msg=top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
+    const msg=top.type==='gift'?`${top.name}님이 «${top.text}» 교환을 신청했어요 🎁`
+             :top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
              :top.type==='comment'?`${top.name}님이 내 글에 댓글을 남겼어요 💬`
                                :`${top.name}님이 «${top.text}» 완독했어요 📚`;
     toast(msg);
@@ -4201,8 +4233,8 @@ function openNotifSheet(){
   const rows=evs.length?evs.map(ev=>{
     const uid=ev.uid||'';
     const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
-    const icon=ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
-    const ttl=ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
+    const icon=ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
+    const ttl=ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
     const subDef=ev.type==='done'?'책장에 꽂혔어요':'피드에서 확인해요';
     return `
     <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}" data-pid="${ev.pid||''}">
@@ -4219,6 +4251,7 @@ function openNotifSheet(){
   $('#ntClose').onclick=closeOv;
   $('#sheet').querySelectorAll('.nti').forEach(el=>el.onclick=()=>{
     closeOv();
+    if(el.dataset.type==='gift'){ openGiftAdmin(); return; }
     if(el.dataset.type==='done'){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
@@ -4298,6 +4331,7 @@ function subscribeRealtime(){
   const u2=roomRef.onSnapshot(snap=>{
     if(!S)return;
     try{ const d=snap.exists?snap.data():null; if(d&&('leader'in d))S.ownerId=d.leader||null; }catch(e){}
+    startGiftWatch();   // 모임장 확인되면 교환 신청 감시 시작 (이미 시작했으면 무시)
     rerender();
   }, e=>console.warn('room snapshot',e));
 
