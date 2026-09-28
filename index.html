@@ -263,6 +263,25 @@ input{font-family:inherit}
 .fee-btn.unpaid{background:#fff;color:#B8321F;border:1.5px solid #ea321f}
 .fee-btn.done{background:#EFEBE4;color:#8A857C}
 .fee-btn.ex{background:#232220;color:#FCEBD8;cursor:default}
+/* ---- 🍀 행운의 뽑기 (dr-) ---- */
+@keyframes drShake{0%{transform:translate(0,0)}25%{transform:translate(9px,-12px)}50%{transform:translate(-11px,7px)}75%{transform:translate(7px,11px)}100%{transform:translate(0,0)}}
+@keyframes drPop{0%{transform:scale(.2);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+.dr-sheet{background:#232220;color:#fff;border-radius:22px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.dr-globe{position:relative;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.28),rgba(255,255,255,.06) 45%,rgba(255,255,255,.02) 70%);box-shadow:inset 0 0 0 3px rgba(255,255,255,.25),0 16px 40px rgba(0,0,0,.35)}
+.dr-ball{position:absolute;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:900;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.35);transition:opacity .4s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-globe.roll .dr-ball{animation:drShake .28s linear infinite}
+.dr-ball.out{opacity:0}
+.dr-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.dr-slot{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#FCEBD8}
+.dr-slot i{font-style:normal;width:68px;height:68px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:900;color:#6B665E;border:2px dashed #6B665E;box-sizing:border-box}
+.dr-slot i.on{color:#fff;border:none;box-shadow:0 0 0 3px #FCEBD8,0 6px 16px rgba(0,0,0,.35);animation:drPop .5s ease-out}
+.dr-home{background:#232220;color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 26px rgba(35,34,32,.22)}
+.dr-wins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.dr-win{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.07);border-radius:16px;padding:12px 4px}
+.dr-win .av{width:52px;height:52px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px #FCEBD8}
+.dr-win .av .tinyav img{margin-top:0}
+.dr-win b{font-size:13.5px}
+.dr-win span{font-size:11px;color:#FCEBD8}
 .streak{display:flex;align-items:center;gap:14px}
 .streak .fire{width:64px;height:64px;border-radius:18px;background:linear-gradient(160deg,#FFE6CB,#FBD2A6);
   display:grid;place-items:center;font-size:34px;flex:none}
@@ -2858,7 +2877,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+`<div class="home-sec">${meetCardHTML()}</div>`+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=drawHomeHTML()+attHTML+readsHTML+`<div class="home-sec">${meetCardHTML()}</div>`+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -3057,6 +3076,82 @@ function startFeeWatch(){
       const n=$('#feeAdminN'); if(n)n.textContent=`확인 ${S.feeReq.length}건`;
     },e=>console.warn('fees(admin)',e));}catch(e){}
   }
+}
+
+/* ---------- 🍀 월말 행운의 뽑기 ----------
+   · 그 달 15일 이상 출석한 멤버 자동 응모 · 3명 추첨 · 모임장이 직접 버튼으로 추첨
+   · rooms/{room}/draws/{YYYY-MM} = {ym, entrants:[uid], winners:[uid], drawnAt, drawnBy} (한 번만 저장)
+   · 당첨 선물: 스타벅스 아이스 아메리카노 → giftOrders 에 '교환 신청' 상태로 자동 등록 → 당첨자 MY탭에 표시 */
+const DRAW_WINNERS=3, DRAW_GIFT='coffee';
+const DRAW_COLORS=['#F2994A','#ea321f','#5FA17E','#4A90D9','#962fbf','#E07B2C','#13b5ea','#d62976','#3F8A63','#B5764A'];
+function drawCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('draws'):null;}
+function drawEntrants(ym){return Object.values(S.members).filter(m=>monthCount(m,ym)>=MONTH_GOAL);}
+function rndInt(n){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n;}catch(e){return Math.floor(Math.random()*n);}}
+let drawYm=null, _drState=null;
+function defaultDrawYm(){const t=todayISO();return +t.slice(8,10)>=25?t.slice(0,7):ymAdd(t.slice(0,7),-1);}
+function openDrawSheet(){
+  if(!isStaff())return;   // 모임장 + 운영진
+  if(!drawYm)drawYm=defaultDrawYm();
+  const ym=drawYm, mon=+ym.slice(5,7);
+  const done=(S.draws||[]).find(d=>d.ym===ym);
+  const ents=done?done.entrants.map(id=>S.members[id]).filter(Boolean):drawEntrants(ym);
+  if(!_drState||_drState.ym!==ym)_drState={ym,winners:done?done.winners.slice():[],rolling:false};
+  const st=_drState, need=Math.min(DRAW_WINNERS,ents.length);
+  const pos=ents.map((m,i)=>{const a=i/Math.max(1,ents.length)*Math.PI*2+.4, r=ents.length<5?50:54+(i%3)*24;return {x:130+Math.cos(a)*r-25,y:138+Math.sin(a)*r-25};});
+  const balls=ents.map((m,i)=>`<div class="dr-ball ${st.winners.includes(m.id)?'out':''}" style="left:${pos[i].x}px;top:${pos[i].y}px;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.55),${DRAW_COLORS[i%DRAW_COLORS.length]} 45%);animation-delay:-${i*0.05}s">${escT(m.name)}</div>`).join('');
+  const slots=[0,1,2].map(k=>{const id=st.winners[k], m=S.members[id], i=ents.findIndex(x=>x.id===id);
+    return `<div class="dr-slot"><i class="${m?'on':''}" style="${m?`background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.6),${DRAW_COLORS[i%DRAW_COLORS.length]} 45%)`:''}">${m?escT(m.name):'?'}</i>${m?'🎉 당첨':(k+1)+'번째'}</div>`;}).join('');
+  const full=st.winners.length>=need;
+  const btn=done?`<button class="btn" disabled style="background:#6B665E">${mon}월 추첨 완료 · 발표됨</button>`
+    :!ents.length?`<button class="btn" disabled style="background:#6B665E">응모자가 없어요</button>`
+    :full?`<button class="btn" id="drSave">🎉 결과 저장하고 발표하기</button>`
+    :`<button class="btn" id="drGo" ${st.rolling?'disabled style="background:#6B665E"':''}>${st.rolling?'돌리는 중…':st.winners.length?`${st.winners.length+1}번째 뽑기`:'🎰 추첨 시작'}</button>`;
+  $('#sheet').innerHTML=`<div class="dr-sheet">
+    <div style="display:flex;align-items:center;gap:14px"><button class="fee-btn done" id="drPrev">‹</button>
+      <span style="font-size:12px;font-weight:800;background:#F2994A;padding:4px 11px;border-radius:20px">${+ym.slice(0,4)}년 ${mon}월 행운의 뽑기</span>
+      <button class="fee-btn done" id="drNext" ${ym>=todayISO().slice(0,7)?'disabled':''}>›</button></div>
+    <b style="font-size:20px;font-weight:900">🍀 커피 쿠폰 ${need||DRAW_WINNERS}명 추첨</b>
+    <span style="font-size:13px;color:#CFC8BC;margin-top:-8px">${mon}월 ${MONTH_GOAL}일 이상 출석 · ${ents.length}명 자동 응모</span>
+    <div class="dr-globe ${st.rolling?'roll':''}">${balls}</div>
+    <div class="dr-slots" style="margin-top:6px">${slots}</div>
+    ${btn}
+    <span style="font-size:11.5px;color:#9B978F;text-align:center;line-height:1.5">결과는 한 번만 저장돼요 · 당첨자 MY탭에 커피 쿠폰이 '교환 대기중'으로 들어가요</span>
+  </div><button class="btn ghost" id="drX" style="margin-top:10px">닫기</button>`;
+  openOv();
+  $('#drX').onclick=()=>{closeOv();};
+  $('#drPrev').onclick=()=>{if(st.rolling)return;drawYm=ymAdd(drawYm,-1);openDrawSheet();};
+  $('#drNext').onclick=()=>{if(st.rolling)return;drawYm=ymAdd(drawYm,1);openDrawSheet();};
+  $('#drGo')&&($('#drGo').onclick=()=>{
+    if(st.rolling)return; st.rolling=true; openDrawSheet();
+    setTimeout(()=>{const left=ents.filter(m=>!st.winners.includes(m.id));st.winners.push(left[rndInt(left.length)].id);st.rolling=false;openDrawSheet();},1400);
+  });
+  $('#drSave')&&($('#drSave').onclick=()=>saveDraw(ym,ents.map(m=>m.id),st.winners.slice()));
+}
+async function saveDraw(ym,entrants,winners){
+  const dc=drawCol(), gc=giftCol(); if(!dc||!gc)return;
+  const g=GIFTS.find(x=>x.id===DRAW_GIFT)||{name:'커피 쿠폰'}, mon=+ym.slice(5,7), t=todayISO(), now=Date.now();
+  try{
+    const b=window._fb.db.batch();
+    b.set(dc.doc(ym),{ym,entrants,winners,drawnAt:now,drawnBy:S.meId});
+    winners.forEach(uid=>{const m=S.members[uid];
+      b.set(gc.doc(`draw_${ym}_${uid}`),{oid:`draw_${ym}_${uid}`,uid,member:m?m.name:'',gid:DRAW_GIFT,item:g.name,cost:0,
+        memo:`🍀 ${mon}월 행운의 뽑기 당첨`,boughtAt:t,reqDate:t,reqAt:now,status:'requested',source:'draw'});});
+    await b.commit();
+    toast(`${mon}월 행운의 뽑기 결과를 발표했어요 🎉`); closeOv();
+  }catch(e){console.error(e);toast('저장에 실패했어요 (이미 추첨했거나 권한 확인)');}
+}
+/* 홈 맨 위: 최근 추첨 결과 (추첨 후 14일간) */
+function drawHomeHTML(){
+  const d=(S.draws||[]).slice().sort((a,b)=>(b.drawnAt||0)-(a.drawnAt||0))[0];
+  if(!d||Date.now()-(d.drawnAt||0)>14*864e5)return '';
+  const mon=+d.ym.slice(5,7), g=GIFTS.find(x=>x.id===DRAW_GIFT)||{icon:'☕'};
+  const wins=d.winners.map(id=>{const m=S.members[id];return m?`<div class="dr-win"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div><b>${escT(m.name)}</b><span>${g.icon} 커피 쿠폰</span></div>`:'';}).join('');
+  const meWon=d.winners.includes(S.meId);
+  return `<div class="home-sec"><div class="dr-home">
+    <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:16px;font-weight:900">🍀 ${mon}월 행운의 뽑기 당첨자</b><span style="font-size:11.5px;color:#CFC8BC">${mdLabel(isoLocal(new Date(d.drawnAt)))} 추첨</span></div>
+    <div class="dr-wins">${wins}</div>
+    <div style="font-size:12px;color:${meWon?'#FCEBD8':'#CFC8BC'};text-align:center">${meWon?'🎉 축하해요! 상점 → MY 탭에서 확인해요':`${MONTH_GOAL}일 이상 출석한 ${d.entrants.length}명 중 추첨 · 쿠폰은 월말에 발송돼요`}</div>
+  </div></div>`;
 }
 
 function openMemberProfile(id){
@@ -3994,6 +4089,7 @@ function renderDress(){
     </div>
   </div>
   ${myFeeHTML()}
+ ${isStaff()?`<button class="gf-admin" id="drAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>🍀 행운의 뽑기 <small style="font-weight:600;opacity:.6;font-size:11px">· 운영진만 보여요</small></b><span>추첨하기</span></button>`:''}
   ${isOwner()?`<button class="gf-admin" id="feeAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>💳 회비 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 나만 보여요</small></b><span id="feeAdminN">확인 ${(S.feeReq||[]).length}건</span></button>`:''}
   ${isAdmin()?`<button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 14px"><b>📦 교환 신청 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 모임장만 보여요</small></b><span id="gfAdminN">…</span></button>`:''}
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
@@ -4003,6 +4099,7 @@ function renderDress(){
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
   $('#feeAdmin')&&($('#feeAdmin').onclick=()=>{feeAdminYm=null;openFeeAdmin();});
+  $('#drAdmin')&&($('#drAdmin').onclick=()=>{drawYm=null;_drState=null;openDrawSheet();});
   bindMyFee();
   refreshAdminBadge();
   drawItems();
@@ -4168,13 +4265,19 @@ function requestGift(oid){
 /* 모임장이 발송 처리한 주문을 내 기록에 반영 (MY 탭 열 때) */
 async function syncMyGifts(){
   const m=me(), col=giftCol(); if(!col)return;
-  const wait=myGifts(m).filter(x=>x.status==='requested'); if(!wait.length)return;
   try{
     const qs=await col.where('uid','==',S.meId).get();
-    let changed=false;
-    qs.forEach(d=>{const o=d.data(); if(o.status!=='sent')return;
-      const it=wait.find(x=>x.oid===o.oid); if(it){it.status='sent';it.sentDate=o.sentDate||todayISO();changed=true;}});
-    if(changed){await save(); if(dressSlot==='my')drawItems();}
+    let changed=false; const mine=myGifts(m);
+    qs.forEach(d=>{const o=d.data();
+      let it=mine.find(x=>x.oid===o.oid);
+      if(!it&&o.source==='draw'){   // 🍀 행운의 뽑기 당첨 선물 → MY탭에 '교환 대기중'으로 자동 추가
+        const g=GIFTS.find(x=>x.id===o.gid)||{};
+        it={oid:o.oid,gid:o.gid,name:o.item||g.name||'선물',icon:g.icon||'🎁',cost:0,boughtAt:o.reqDate,status:'requested',reqDate:o.reqDate,memo:o.memo||'',source:'draw'};
+        mine.push(it); changed=true;
+      }
+      if(it&&o.status==='sent'&&it.status!=='sent'){it.status='sent';it.sentDate=o.sentDate||todayISO();changed=true;}
+    });
+    if(changed){await save(); if(tab==='dress'&&dressSlot==='my')drawItems();}
   }catch(e){console.error(e);}
 }
 function giftCardHTML(it){ // MY 탭 '내 선물' 한 줄
@@ -4658,6 +4761,11 @@ function notifEvents(){
     S.giftReq.forEach(o=>ev.push({id:'g_'+o.oid,type:'gift',name:o.member||'멤버',
       text:(o.item||'')+(o.memo?` · ${o.memo}`:''),ts:o.reqAt||0}));
   }
+  // 6) 행운의 뽑기 결과
+  (S.draws||[]).forEach(d=>{
+    const won=(d.winners||[]).includes(S.meId);
+    ev.push({id:'dr_'+d.ym,type:'draw',name:won?'축하해요':'행운의 뽑기',text:won?`${+d.ym.slice(5,7)}월 행운의 뽑기에 당첨됐어요 ☕`:`${+d.ym.slice(5,7)}월 행운의 뽑기 결과가 나왔어요`,ts:d.drawnAt||0});
+  });
   // 5) (모임장만) 회비 '입금했어요'
   if(isOwner()&&Array.isArray(S.feeReq)){
     S.feeReq.forEach(f=>ev.push({id:'f_'+f.ym+'_'+f.uid,type:'fee',name:f.name||'멤버',text:`${+String(f.ym).slice(5,7)}월 회비 ${won(FEE_AMOUNT)}`,ts:f.reportedAt||0}));
@@ -4694,7 +4802,8 @@ function scanNotifications(){
   // 가장 최근 이벤트가 (안읽음이고) 직전에 알린 것보다 새로우면 토스트
   if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
     _notifTopTs=top.ts||0;
-    const msg=top.type==='fee'?`${top.name}님이 «${top.text}» 입금했대요 💳`
+    const msg=top.type==='draw'?`🍀 ${top.text}`
+             :top.type==='fee'?`${top.name}님이 «${top.text}» 입금했대요 💳`
              :top.type==='gift'?`${top.name}님이 «${top.text}» 교환을 신청했어요 🎁`
              :top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
              :top.type==='comment'?`${top.name}님이 내 글에 댓글을 남겼어요 💬`
@@ -4715,8 +4824,8 @@ function openNotifSheet(){
   const rows=evs.length?evs.map(ev=>{
     const uid=ev.uid||'';
     const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
-    const icon=ev.type==='fee'?'💳':ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
-    const ttl=ev.type==='fee'?'님 회비 입금':ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
+    const icon=ev.type==='draw'?'🍀':ev.type==='fee'?'💳':ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
+    const ttl=ev.type==='draw'?'':ev.type==='fee'?'님 회비 입금':ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
     const subDef=ev.type==='done'?'책장에 꽂혔어요':'피드에서 확인해요';
     return `
     <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}" data-pid="${ev.pid||''}">
@@ -4735,6 +4844,7 @@ function openNotifSheet(){
     closeOv();
     if(el.dataset.type==='gift'){ openGiftAdmin(); return; }
     if(el.dataset.type==='fee'){ feeAdminYm=null; openFeeAdmin(); return; }
+    if(el.dataset.type==='draw'){ go('home'); return; }
     if(el.dataset.type==='done'){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
@@ -4826,7 +4936,14 @@ function subscribeRealtime(){
     rerender();
   }, e=>console.warn('meetups snapshot',e));
 
-  _rtUnsub=()=>{u1();u2();u3();u4();};
+  const u5=roomRef.collection('draws').onSnapshot(qs=>{
+    if(!S)return;
+    S.draws=qs.docs.map(d=>d.data());
+    if(S.draws.some(d=>(d.winners||[]).includes(S.meId)))syncMyGifts();   // 당첨 선물 MY탭 반영
+    rerender();
+  }, e=>console.warn('draws snapshot',e));
+
+  _rtUnsub=()=>{u1();u2();u3();u4();u5();};
 }
 
 function boot(){
