@@ -2945,20 +2945,26 @@ async function searchBooks(q,opts){
   const box=$(boxSel);box.style.display='block';
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
   try{
-    // 알라딘 직결은 막혀(HTTPS/CORS 미지원) Vercel 서버리스 함수(/api/aladin) 경유
-    const r=await fetch('/api/aladin?q='+encodeURIComponent(q));
+    // 카카오 책 검색 — 키 보호를 위해 Vercel 서버리스 함수(/api/kakao) 경유 (알라딘 API 2026-10-30 종료)
+    const r=await fetch('/api/kakao?q='+encodeURIComponent(q));
     const data=await r.json();
-    if(data&&(data.error||data.errorCode)){throw new Error(data.error||data.errorMessage||('errorCode '+data.errorCode));}
-    // 알라딘 응답 → 기존 구글(volumeInfo) 형태로 매핑해서 호출부/커버 처리 그대로 재사용
-    const items=((data&&data.item)||[]).map(it=>({
+    if(data&&data.error){throw new Error(data.error);}
+    // 카카오 응답 → 기존 구글(volumeInfo) 형태로 매핑해서 호출부/커버 처리 그대로 재사용
+    // ⚠️ 카카오는 쪽수를 주지 않음 → pageCount 0 (전체 페이지는 직접 입력)
+    let items=((data&&data.items)||[]).map((it,idx)=>({
       title:it.title||'',
-      authors:[_aladinAuthor(it.author)],
-      pageCount:(it.subInfo&&it.subInfo.itemPage)||0,
+      authors:[(it.authors||[]).join(', ')].filter(Boolean),
+      pageCount:0,
       publishedDate:it.pubDate||'',
       publisher:it.publisher||'',
       isbn13:it.isbn13||'',
-      imageLinks:{thumbnail:it.cover||''}
-    })).slice(0,8);
+      imageLinks:{thumbnail:it.cover||it.thumb||''},
+      _thumb:it.thumb||'',
+      _i:idx
+    }));
+    // 제목이 검색어로 시작/포함하는 책을 위로 (동점이면 카카오 정확도 순서 유지)
+    items=items.map(v=>Object.assign(v,{_s:_scoreBook(v,q)}))
+      .sort((a,b)=>(b._s-a._s)||(a._i-b._i)).slice(0,8);
     if(!items.length){box.innerHTML=`<div class="sr-state">검색 결과가 없어요. 제목·저자를 직접 입력해 기록해도 돼요.</div>`;return;}
     box.innerHTML=items.map((v,i)=>{
       const img=_coverUrl(v),au=(v.authors||[]).join(', ');
@@ -2966,9 +2972,18 @@ async function searchBooks(q,opts){
         ${img?`<img src="${img}">`:'<div class="ph"></div>'}
         <div><b>${esc(v.title||'')||v.title}</b><small>${au||'저자 미상'}${v.publishedDate?' · '+v.publishedDate.slice(0,4):''}</small></div></div>`;
     }).join('');
-    box.querySelectorAll('.sr').forEach(r=>r.onclick=()=>{
-      onPick(items[+r.dataset.i]);
-      box.style.display='none';
+    box.querySelectorAll('.sr').forEach(r=>{
+      // 큰 표지(원본 주소)가 안 열리면 카카오 기본 썸네일로 교체 — 저장되는 표지도 같이 바꿈
+      const v=items[+r.dataset.i],im=r.querySelector('img');
+      if(im&&v._thumb)im.onerror=()=>{
+        im.onerror=null;
+        v.imageLinks.thumbnail=v._thumb;
+        im.src=_coverUrl(v);
+      };
+      r.onclick=()=>{
+        onPick(v);
+        box.style.display='none';
+      };
     });
   }catch(e){
     box.innerHTML=`<div class="sr-state">지금은 자동 검색을 쓸 수 없어요. 제목·저자를 직접 입력해 기록하면 됩니다.<br><span style="color:#bbb">(${esc(String((e&&e.message)||e))})</span></div>`;
