@@ -129,7 +129,8 @@ input{font-family:inherit}
 .mq-top{display:flex;align-items:flex-end;justify-content:space-between}
 .mq-t{font-size:13px;font-weight:700;color:var(--soft)}
 .mq-s{font-size:12px;color:var(--soft);margin-top:2px}
-.mq-n{font-weight:900;font-size:30px;letter-spacing:-1px;line-height:1}
+.mq-n{font-weight:900;font-size:30px;letter-spacing:-1px;line-height:1;white-space:nowrap;flex:none;margin-left:10px}
+.mq-g{display:inline-block;margin-top:6px;font-size:11.5px;font-weight:800;color:var(--honey-d);background:var(--honey-s);padding:3px 9px;border-radius:20px}
 .mq-n small{font-size:16px;font-weight:700;color:var(--soft);letter-spacing:0}
 .mq-row{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:3px}
 .mq-row i{display:flex;justify-content:center}
@@ -156,16 +157,16 @@ input{font-family:inherit}
 /* 홈: 얼굴 둘레 월간 게이지 + 이번 달 출석 현황 */
 .att-ring{position:absolute;left:-5px;top:-5px;width:64px;height:64px;pointer-events:none;z-index:2}
 .att-cnt{font-size:10.5px;font-weight:800;color:var(--soft);margin-top:1px}
-.att-cnt.done{color:var(--honey-d)}
-.att-done{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--honey);color:#fff;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:20px;white-space:nowrap;z-index:4;box-shadow:0 1px 3px rgba(120,70,20,.25)}
+.att-cnt.done{color:#3F8A63}
+.att-done{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--moss);color:#fff;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:20px;white-space:nowrap;z-index:4;box-shadow:0 1px 3px rgba(120,70,20,.25)}
 .mqs-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #F4EFE7}
 .mqs-row:last-child{border-bottom:none}
 .mqs-nm{width:52px;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mqs-bar{flex:1;height:8px;background:#F0EADF;border-radius:30px;overflow:hidden}
 .mqs-bar i{display:block;height:100%;border-radius:30px;background:#E24B4A}
-.mqs-row.done .mqs-bar i{background:var(--honey)}
+.mqs-row.done .mqs-bar i{background:var(--moss)}
 .mqs-n{width:34px;text-align:right;font-size:13px;font-weight:800}
-.mqs-row.done .mqs-n{color:var(--honey-d)}
+.mqs-row.done .mqs-n{color:#3F8A63}
 /* 15일 달성 축하 시트 */
 .mqw{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:6px 0 4px}
 .mqw-medal{position:relative;width:124px;height:124px;border-radius:50%;background:var(--honey-s);display:grid;place-items:center}
@@ -2243,7 +2244,7 @@ function monthQuotaCardHTML(m){
   let apples='';for(let i=0;i<MONTH_GOAL;i++)apples+=`<i>${i<q.got?MQ_APPLE_ON:MQ_APPLE_OFF}</i>`;
   return `<div class="card mq">
     <div class="mq-top">
-      <div><div class="mq-t">${title}</div><div class="mq-s">평일·주말 상관없이 ${MONTH_GOAL}일</div></div>
+      <div><div class="mq-t">${title}</div><div class="mq-s">평일·주말 상관없이 ${MONTH_GOAL}일</div>${MQ_REWARD>0?`<div class="mq-g">${q.state==='done'?`🎁 완주 선물 +${MQ_REWARD}캐시 받았어요`:`🎁 ${MONTH_GOAL}일 채우면 +${MQ_REWARD}캐시 선물`}</div>`:''}</div>
       <div class="mq-n">${q.got}<small> / ${MONTH_GOAL}일</small></div>
     </div>
     <div class="mq-row">${apples}</div>
@@ -2437,8 +2438,7 @@ function renderHome(){
       </div>`).join('')}
     </div></div>
     <div class="gsub" style="margin:8px 6px 0">얼굴 둘레 = 이번 달 출석 · 🍎 = 오늘 출석</div>
-  </div>
-  ${monthStatusHTML(members)}`;
+  </div>`;
 
   // 2) 지금 멤버들이 읽는 책 — '출첵으로 진도를 찍은 책'만, 가장 최근에 출첵한 순.
   //    예전엔 읽는 중(isReading)인 책을 전부 보여줘서, 그냥 등록만 해둔 책까지 다 떴음.
@@ -2517,7 +2517,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=attHTML+readsHTML+streakHTML+timeHTML+doneHTML+allBooksHTML+feedHTML;
+  $('#s-home').innerHTML=attHTML+readsHTML+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML+feedHTML;
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -2533,7 +2533,7 @@ function renderHome(){
 function attRingSVG(m){
   const C=2*Math.PI*29, got=monthCount(m,todayISO().slice(0,7)), done=got>=MONTH_GOAL;
   const len=Math.min(1,got/MONTH_GOAL)*C;
-  return `<svg class="att-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#F0EADF" stroke-width="3.5"/>${got?`<circle cx="32" cy="32" r="29" fill="none" stroke="${done?'#F2994A':'#E24B4A'}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>`:''}</svg>`;
+  return `<svg class="att-ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#F0EADF" stroke-width="3.5"/>${got?`<circle cx="32" cy="32" r="29" fill="none" stroke="${done?'#5FA17E':'#E24B4A'}" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>`:''}</svg>`;
 }
 /* 홈 — 이번 달 출석 현황 (많이 온 순) */
 function monthStatusHTML(members){
