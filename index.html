@@ -229,6 +229,40 @@ input{font-family:inherit}
 .mt-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .mt-seg button{height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;color:#6B665E;cursor:pointer;font-family:inherit}
 .mt-seg button.on{background:var(--honey);border-color:var(--honey);color:#fff;font-weight:800}
+/* ---- 💳 회비 (fee-) ---- */
+.fee-card{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.fee-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.fee-t{font-size:13px;font-weight:700;color:var(--soft)}
+.fee-amt{font-weight:900;font-size:26px;letter-spacing:-.5px;margin-top:2px}
+.fee-chip{font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.fee-chip.due{background:#FCEBD8;color:#A0521A}
+.fee-chip.late{background:#ea321f;color:#fff}
+.fee-chip.wait{background:#FCEBD8;color:#A0521A}
+.fee-chip.ok{background:#EFEBE4;color:#6B665E}
+.fee-chip.ex{background:#232220;color:#FCEBD8}
+.fee-acc{background:#F7F4EE;border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fee-acc small{display:block;font-size:12px;color:var(--soft)}
+.fee-acc b{display:block;font-size:14.5px;font-weight:800;margin-top:2px;word-break:break-all}
+.fee-note{font-size:12px;color:var(--soft);text-align:center}
+.fee-line{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 14px;margin-bottom:14px;cursor:pointer}
+.fee-line .l{display:flex;align-items:center;gap:8px;min-width:0}
+.fee-line .l b{display:block;font-size:13.5px;font-weight:800}
+.fee-line .l small{display:block;font-size:11.5px;color:var(--soft)}
+.fee-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:4px 0 8px}
+.fee-sum div{border-radius:12px;padding:8px 0;display:flex;flex-direction:column;align-items:center}
+.fee-sum b{font-size:18px;font-weight:900}
+.fee-sum span{font-size:11px;font-weight:700}
+.fee-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #F1ECE3}
+.fee-row .av{width:34px;height:34px;border-radius:50%;overflow:hidden;flex:none;border:1px solid var(--line)}
+.fee-row .av .tinyav img{margin-top:0}
+.fee-row .who{flex:1;min-width:0}
+.fee-row .who b{display:block;font-size:13.5px}
+.fee-row .who small{display:block;font-size:11.5px;color:var(--soft)}
+.fee-btn{flex:none;font-size:12px;font-weight:800;padding:6px 10px;border-radius:10px;white-space:nowrap;border:none;cursor:pointer;font-family:inherit}
+.fee-btn.check{background:var(--honey);color:#fff}
+.fee-btn.unpaid{background:#fff;color:#B8321F;border:1.5px solid #ea321f}
+.fee-btn.done{background:#EFEBE4;color:#8A857C}
+.fee-btn.ex{background:#232220;color:#FCEBD8;cursor:default}
 .streak{display:flex;align-items:center;gap:14px}
 .streak .fire{width:64px;height:64px;border-radius:18px;background:linear-gradient(160deg,#FFE6CB,#FBD2A6);
   display:grid;place-items:center;font-size:34px;flex:none}
@@ -1558,6 +1592,14 @@ function isFav(id){const m=me();return Array.isArray(m.favs)&&m.favs.includes(id
 function toggleFav(id){const m=me();if(!Array.isArray(m.favs))m.favs=[];const i=m.favs.indexOf(id);i<0?m.favs.push(id):m.favs.splice(i,1);} // 찜 토글
 // 하루 1번만 캐시 적립 — 활동(key)별로 '오늘 받았는지'를 기록해 중복 적립을 막음
 // key: 'checkin'(출첵) | 'post'(글) | 'comment'(댓글)
+/* 좋아요 + 댓글: 오늘 남의 글에 둘 다 하면 +1캐시 (하루 1번) */
+function markSocial(kind){
+  const m=me(); ensureItems(m); const t=todayISO();
+  m.cashLog[kind+'Done']=t;
+  if(m.cashLog.likeDone===t&&m.cashLog.commentDone===t&&earnDaily(m,'social',1)){toast('좋아요 + 댓글 완료! +1캐시 💰');return true;}
+  if(m.cashLog.social!==t)toast(kind==='like'?'오늘 댓글도 남기면 +1캐시 💬':'오늘 좋아요도 누르면 +1캐시 ❤️');
+  return true;
+}
 function earnDaily(m,key,amount){
   ensureItems(m);                          // m.cashLog 보장
   const today=todayISO();
@@ -2041,7 +2083,7 @@ function renderFeed(){
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
   <!-- 캐시 적립 안내: 출첵·댓글·좋아요는 각각 하루 1번 +1캐시 (글 작성은 출첵 조건이라 캐시 없음) -->
-  <div class="fd-cashtip">🎁 매일 출첵·댓글·좋아요로 최대 +3캐시 💰</div>
+  <div class="fd-cashtip">🎁 좋아요와 댓글 둘 다 하면 +1캐시 · 월 15일 출석 +30캐시 💰</div>
   <div class="fd-search">
     <span class="fd-search-ic">🔍</span>
     <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
@@ -2210,7 +2252,7 @@ async function toggleLike(id){
   const othersPost=!!(target && target.authorId!==S.meId);          // 남의 글인가
   await _mutatePost(id,p=>{p.likes=p.likes||[];const i=p.likes.indexOf(S.meId);i<0?p.likes.push(S.meId):p.likes.splice(i,1);});
   // 남의 글에 '좋아요 추가' + 오늘 첫 좋아요면 +1캐시 (취소·내 글·중복은 적립 X)
-  if(adding && othersPost && earnDaily(me(),'like',1)){ await save(); toast('좋아요 +1캐시 💰'); }
+  if(adding && othersPost && me().cashLog?.likeDone!==todayISO()){ markSocial('like'); await save(); }
 }
 function toggleSave(id){return _mutatePost(id,p=>{p.saves=p.saves||[];const i=p.saves.indexOf(S.meId);i<0?p.saves.push(S.meId):p.saves.splice(i,1);});}
 async function submitComment(id,txt,parentId){
@@ -2223,7 +2265,7 @@ async function submitComment(id,txt,parentId){
   await _mutatePost(id,p=>{p.comments=p.comments||[];p.comments.push(c);});
   delete replyTarget[id];                            // 보냈으면 답글 모드 해제, 다음엔 일반 댓글로
   // 남의 글 + 오늘 첫 댓글이면 +1캐시 (내 글 댓글은 적립 X, 답글도 동일하게 적립)
-  if(othersPost && earnDaily(me(),'comment',1)){ await save(); toast('댓글 +1캐시 💰'); }
+  if(othersPost && me().cashLog?.commentDone!==todayISO()){ markSocial('comment'); await save(); }
 }
 function removeComment(pid,cid){return _mutatePost(pid,p=>{p.comments=(p.comments||[]).filter(c=>c.id!==cid&&c.parentId!==cid);});}
 async function removePost(id){
@@ -2516,6 +2558,12 @@ function grantMonthReward(m){
   if(MQ_REWARD>0)m.cash=(m.cash||0)+MQ_REWARD;
   return q.ym;
 }
+const MQ_BONUS=1;   // 15일 채운 뒤 출석할 때마다 추가 보너스
+function grantMonthBonus(m){
+  const q=monthQuota(m);
+  if(q.state==='pre'||q.got<=MONTH_GOAL)return false;
+  return earnDaily(m,'mqBonus',MQ_BONUS);
+}
 function openMonthDoneSheet(ym){
   const mo=+ym.slice(5);
   $('#sheet').innerHTML=`<div class="mqw">
@@ -2534,7 +2582,7 @@ function monthQuotaCardHTML(m){
   let apples='';for(let i=0;i<MONTH_GOAL;i++)apples+=`<i>${i<q.got?MQ_APPLE_ON:MQ_APPLE_OFF}</i>`;
   return `<div class="card mq">
     <div class="mq-top">
-      <div><div class="mq-t">${title}</div><div class="mq-s">평일·주말 상관없이 ${MONTH_GOAL}일</div>${MQ_REWARD>0?`<div class="mq-g">${q.state==='done'?`🎁 완주 선물 +${MQ_REWARD}캐시 받았어요`:`🎁 ${MONTH_GOAL}일 채우면 +${MQ_REWARD}캐시 선물`}</div>`:''}</div>
+      <div><div class="mq-t">${title}</div><div class="mq-s">평일·주말 상관없이 ${MONTH_GOAL}일</div>${MQ_REWARD>0?`<div class="mq-g">${q.state==='done'?`🎁 +${MQ_REWARD}캐시 받았어요 · 출석마다 보너스 +${MQ_BONUS}`:`🎁 ${MONTH_GOAL}일 채우면 +${MQ_REWARD}캐시 · 이후 매일 +${MQ_BONUS}`}</div>`:''}</div>
       <div class="mq-n">${q.got}<small> / ${MONTH_GOAL}일</small></div>
     </div>
     <div class="mq-row">${apples}</div>
@@ -2653,15 +2701,17 @@ function renderCheckin(){
     const ageBefore=age(me());                    // 출첵 전 나이 (생일 판정용)
     if(!me().reads.includes(t))me().reads.push(t);
     me().lastReadTs=Date.now(); // 홈탭 '오늘 출석한 멤버' 순서용
-    const gotCheckin=earnDaily(me(),'checkin',1); // 하루 첫 출첵이면 +1캐시
+    const gotCheckin=false; // (변경) 매일 출첵 +1캐시 없음 — 월 15일 완주 +30캐시 · 이후 출석마다 +1 보너스
     const birthday=age(me())>ageBefore;           // 출첵으로 나이가 올랐으면 = 생일!
-    if(birthday)me().cash=(me().cash||0)+10;       // 생일 선물 +10캐시
+    // (변경) 생일 캐시 지급 없음 — 나이만 오름
     const mqWon=grantMonthReward(me());            // 이번 출석으로 월 15일 달성 → 배지 + 보상
+    const mqBonus=grantMonthBonus(me());           // 16일째부터는 출석할 때마다 보너스 +1캐시
     await save();
     if(justDone)checkinBookId=null; // 완독 → 읽는 책 목록에서 빠짐
     renderCheckin();
     if(mqWon)openMonthDoneSheet(mqWon);
-    if(birthday)toast('🎉 생일 축하해요! 선물로 10캐시를 적립해드렸어요');
+    if(mqBonus&&!mqWon&&!birthday){toast(`출석 완료! 🍎 완주 보너스 +${MQ_BONUS}캐시 🔥`);return;}
+    if(birthday)toast('🎉 생일 축하해요! 한 살 더 자랐어요');
     else if(justDone)toast('완독했어요! 책장에 꽂혔어요 📚');
     else toast(gotCheckin?'출석 완료! +1캐시 💰🍎':'출석 완료! 🍎');
   });
@@ -2842,6 +2892,173 @@ function monthStatusHTML(members){
       <div class="mqs-n">${n}일</div></div>`).join('')}</div>
   </div>`;
 }
+/* ---------- 💳 회비 ----------
+   · 매달 10,000원 · 매달 5일까지 · 2026년 10월부터
+   · 면제: 모임장·운영진(매달) / 모임 10회 달성 → 달성한 다음 달 1회
+   · rooms/{room}/fees/{YYYY-MM}_{uid} = {ym, uid, name, status:'reported'|'paid', reportedAt, paidDate}
+     (문서 없음 = 입금 전) · 멤버는 '입금했어요'만, '완료'는 모임장만
+   · 입금 계좌: rooms/{room}.feeAccount = {bank, number, holder} (모임장만 수정) */
+const FEE_AMOUNT=10000, FEE_DUE_DAY=5, FEE_START='2026-10';
+function feeCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('fees'):null;}
+function feeYm(){return todayISO().slice(0,7);}
+function ymAdd(ym,n){let y=+ym.slice(0,4),m=+ym.slice(5,7)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return `${y}-${String(m+1).padStart(2,'0')}`;}
+function won(n){return n.toLocaleString()+'원';}
+/* 모임 10회 달성 → 10번째 모임이 있던 달의 '다음 달' 1회 면제 */
+function meetExemptYm(uid){
+  const t=todayISO();
+  const mine=meetList().filter(x=>isDebate(x.type)&&x.date<=t&&(x.attendees||[]).includes(uid));
+  if(mine.length<DEBATE_GOAL)return null;
+  return ymAdd(mine[DEBATE_GOAL-1].date.slice(0,7),1);
+}
+/* 그 달 회비 상태 → {state:'pre'|'exempt'|'paid'|'reported'|'due'|'late', reason, doc} */
+function feeStatus(uid,ym,doc){
+  if(ym<FEE_START)return {state:'pre'};
+  if(isStaffId(uid))return {state:'exempt',reason:uid===S.ownerId?'모임장 면제':'운영진 면제'};
+  if(meetExemptYm(uid)===ym)return {state:'exempt',reason:'🗣️ 모임 10회 달성 · 1회 면제'};
+  if(doc&&doc.status==='paid')return {state:'paid',doc};
+  if(doc&&doc.status==='reported')return {state:'reported',doc};
+  const late=ym<feeYm()||(ym===feeYm()&&+todayISO().slice(8,10)>FEE_DUE_DAY);
+  return {state:late?'late':'due'};
+}
+function myFeeHTML(){
+  const ym=feeYm(), mon=+ym.slice(5,7);
+  const st=feeStatus(S.meId,ym,(S.myFees||{})[ym]);
+  if(st.state==='pre')return '';
+  if(st.state==='exempt'||st.state==='paid'){
+    const sub=st.state==='paid'?`${mdLabel(st.doc.paidDate)} 납부 완료 · 고마워요`:st.reason;
+    return `<div class="fee-line" id="feeLine"><div class="l"><span style="font-size:18px">💳</span><div><b>${mon}월 회비 · ${st.state==='paid'?won(FEE_AMOUNT):'0원'}</b><small>${sub}</small></div></div>
+      <span class="fee-chip ${st.state==='paid'?'ok':'ex'}">${st.state==='paid'?'✓ 완료':'면제'}</span></div>`;
+  }
+  const acc=S.feeAccount||{};
+  const accTxt=acc.number?`${escT(acc.bank||'')} ${escT(acc.number)}`:'계좌 정보 준비 중';
+  const chip=st.state==='reported'?'<span class="fee-chip wait">확인 중</span>':st.state==='late'?'<span class="fee-chip late">미납</span>':'<span class="fee-chip due">입금 전</span>';
+  return `<div class="card fee-card">
+    <div class="fee-top"><div><div class="fee-t">💳 ${mon}월 회비</div><div class="fee-amt">${won(FEE_AMOUNT)}</div></div>${chip}</div>
+    <div class="fee-acc"><div><small>입금 계좌${acc.holder?` · ${escT(acc.holder)}`:''}</small><b>${accTxt}</b></div>
+      ${acc.number?`<button class="gf-btn ghost" id="feeCopy">복사</button>`:''}</div>
+    ${st.state==='reported'
+      ?`<div class="fee-note">${mdLabel(st.doc.reportedDate)} 입금했어요 · 모임장이 확인하면 완료로 바뀌어요</div>`
+      :`<button class="btn" id="feeReport">입금했어요</button><div class="fee-note">매달 ${FEE_DUE_DAY}일까지 · 입금 후 눌러주세요</div>`}
+    <div class="fee-note" style="text-align:right"><span id="feeHist" style="cursor:pointer;color:var(--honey-d);font-weight:700">지난 내역 ›</span></div>
+  </div>`;
+}
+function bindMyFee(){
+  $('#feeCopy')&&($('#feeCopy').onclick=async()=>{const a=S.feeAccount||{};try{await navigator.clipboard.writeText(`${a.bank||''} ${a.number||''}`.trim());toast('계좌번호를 복사했어요');}catch(e){toast(a.number||'');}});
+  $('#feeReport')&&($('#feeReport').onclick=reportFee);
+  $('#feeLine')&&($('#feeLine').onclick=openFeeHistory);
+  $('#feeHist')&&($('#feeHist').onclick=openFeeHistory);
+}
+function reportFee(){
+  const col=feeCol(); if(!col){toast('지금은 할 수 없어요');return;}
+  const ym=feeYm();
+  confirmDialog({title:'입금했어요',body:`${+ym.slice(5,7)}월 회비 ${won(FEE_AMOUNT)}을 입금하셨나요?<br>모임장이 확인하면 완료로 바뀌어요`,okText:'네, 입금했어요',onOk:async()=>{
+    try{await col.doc(`${ym}_${S.meId}`).set({ym,uid:S.meId,name:me().name||'',status:'reported',reportedAt:Date.now(),reportedDate:todayISO()});
+      toast('알려주셔서 고마워요! 확인되면 완료로 바뀌어요');}
+    catch(e){console.error(e);toast('전송에 실패했어요 (권한 확인)');}
+  }});
+}
+function openFeeHistory(){
+  let rows='', ym=feeYm();
+  for(let i=0;i<12&&ym>=FEE_START;i++,ym=ymAdd(ym,-1)){
+    const st=feeStatus(S.meId,ym,(S.myFees||{})[ym]);
+    const v=st.state==='exempt'?`0원 · ${st.reason}`:st.state==='paid'?`${won(FEE_AMOUNT)} · ${mdLabel(st.doc.paidDate)} 완료`
+      :st.state==='reported'?`${won(FEE_AMOUNT)} · 확인 중`:st.state==='late'?`${won(FEE_AMOUNT)} · 미납`:`${won(FEE_AMOUNT)} · 입금 전`;
+    rows+=`<div class="go-row"><div class="who"><b>${+ym.slice(0,4)}년 ${+ym.slice(5,7)}월</b></div><span style="font-size:12.5px;color:var(--soft)">${v}</span></div>`;
+  }
+  $('#sheet').innerHTML=`<h3>회비 내역</h3>${rows||'<div class="mt-empty">아직 내역이 없어요</div>'}<button class="btn ghost" id="fhX" style="margin-top:12px">닫기</button>`;
+  openOv(); $('#fhX').onclick=closeOv;
+}
+/* ── 모임장 전용: 회비 관리 ── */
+let feeAdminYm=null;
+async function openFeeAdmin(){
+  if(!isOwner())return;
+  const col=feeCol(); if(!col)return;
+  if(!feeAdminYm||feeAdminYm<FEE_START)feeAdminYm=feeYm()<FEE_START?FEE_START:feeYm();
+  const ym=feeAdminYm;
+  $('#sheet').innerHTML=`<h3>회비 관리</h3><div class="mt-empty">불러오는 중…</div>`; openOv();
+  const docs={};
+  try{const qs=await col.where('ym','==',ym).get(); qs.forEach(d=>{const x=d.data();docs[x.uid]=x;});}
+  catch(e){console.error(e);$('#sheet').innerHTML=`<h3>회비 관리</h3><p style="text-align:center;color:var(--soft);font-size:13px">불러오지 못했어요. Firestore 규칙(fees)을 확인해주세요.</p><button class="btn ghost" id="faX">닫기</button>`;$('#faX').onclick=closeOv;return;}
+  const ord={reported:0,late:1,due:2,paid:3,exempt:4};
+  const list=Object.values(S.members).map(m=>({m,st:feeStatus(m.id,ym,docs[m.id])})).sort((a,b)=>(ord[a.st.state]-ord[b.st.state])||cmpJoin(a.m,b.m));
+  const cnt=k=>list.filter(r=>k.includes(r.st.state)).length;
+  const paidN=cnt(['paid']), needN=list.length-cnt(['exempt']);
+  const row=({m,st})=>{
+    const sub=st.state==='reported'?`${mdLabel(st.doc.reportedDate)} 입금했어요`:st.state==='paid'?`${mdLabel(st.doc.paidDate)} 완료`
+      :st.state==='exempt'?st.reason:st.state==='late'?'미납':'아직 입금 전';
+    const btn=st.state==='reported'?`<button class="fee-btn check" data-fpay="${m.id}">입금 확인</button>`
+      :st.state==='paid'?`<button class="fee-btn done" data-fundo="${m.id}">✓ 완료</button>`
+      :st.state==='exempt'?`<span class="fee-btn ex">면제</span>`
+      :`<button class="fee-btn unpaid" data-fpay="${m.id}">${st.state==='late'?'미납':'입금 전'}</button>`;
+    return `<div class="fee-row"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
+      <div class="who"><b>${escT(m.name)}</b><small>${sub}</small></div>${btn}</div>`;
+  };
+  const acc=S.feeAccount||{};
+  $('#sheet').innerHTML=`<h3>회비 관리 <span style="font-size:11px;font-weight:800;color:#fff;background:#232220;padding:3px 8px;border-radius:20px;vertical-align:middle">나만 보여요</span></h3>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-weight:800;font-size:15px;margin-bottom:6px">
+      <button class="fee-btn done" id="faPrev" ${ym<=FEE_START?'disabled':''}>‹</button><span>${+ym.slice(0,4)}년 ${+ym.slice(5,7)}월 · ${won(FEE_AMOUNT)}</span><button class="fee-btn done" id="faNext">›</button></div>
+    <div class="fee-sum">
+      <div style="background:#F3F0EA;color:#5F5A52"><b>${paidN}</b><span>납부 완료</span></div>
+      <div style="background:#FCEBD8;color:#A0521A"><b>${cnt(['reported'])}</b><span>확인 필요</span></div>
+      <div style="background:#FDE7E4;color:#B8321F"><b>${cnt(['late','due'])}</b><span>미납·입금 전</span></div>
+      <div style="background:#232220;color:#FCEBD8"><b>${cnt(['exempt'])}</b><span>면제</span></div></div>
+    <div style="font-size:12.5px;color:#6B665E;text-align:center;margin-bottom:6px">입금 확인 ${won(paidN*FEE_AMOUNT)} · 받을 금액 ${won(needN*FEE_AMOUNT)}</div>
+    <div style="max-height:44vh;overflow-y:auto">${list.map(row).join('')}</div>
+    <div class="fee-acc" style="margin-top:12px;cursor:pointer" id="faAcc"><div><small>입금 계좌 (멤버에게 보여요)</small><b>${acc.number?`${escT(acc.bank||'')} ${escT(acc.number)} · ${escT(acc.holder||'')}`:'아직 등록 안 됨'}</b></div><span style="color:var(--honey-d);font-weight:800;font-size:13px">수정 ›</span></div>
+    <button class="btn ghost" id="faX" style="margin-top:10px">닫기</button>`;
+  $('#faX').onclick=closeOv;
+  $('#faPrev').onclick=()=>{if(feeAdminYm>FEE_START){feeAdminYm=ymAdd(feeAdminYm,-1);openFeeAdmin();}};
+  $('#faNext').onclick=()=>{feeAdminYm=ymAdd(feeAdminYm,1);openFeeAdmin();};
+  $('#faAcc').onclick=openFeeAccountForm;
+  const markPaid=async(uid)=>{
+    const m=S.members[uid];
+    try{await col.doc(`${ym}_${uid}`).set({ym,uid,name:m?m.name:'',status:'paid',paidAt:Date.now(),paidDate:todayISO()},{merge:true});toast(`${m?m.name:''}님 납부 완료 처리했어요`);}
+    catch(e){console.error(e);toast('처리에 실패했어요');}
+    openFeeAdmin();
+  };
+  $('#sheet').querySelectorAll('[data-fpay]').forEach(el=>el.onclick=()=>{
+    const uid=el.dataset.fpay, m=S.members[uid];
+    if(el.classList.contains('check'))return markPaid(uid);           // '입금했어요' 누른 사람 → 바로 완료
+    confirmDialog({title:'직접 완료 처리',body:`${m?escT(m.name):''}님이 '입금했어요'를 안 눌렀어요.<br>입금을 확인했다면 완료로 바꿀까요?`,okText:'완료 처리',onOk:()=>markPaid(uid)});
+  });
+  $('#sheet').querySelectorAll('[data-fundo]').forEach(el=>el.onclick=()=>{
+    const uid=el.dataset.fundo, m=S.members[uid];
+    confirmDialog({title:'완료 취소',body:`${m?escT(m.name):''}님 ${+ym.slice(5,7)}월 회비를 '입금 전'으로 되돌릴까요?`,okText:'되돌리기',danger:true,
+      onOk:async()=>{try{await col.doc(`${ym}_${uid}`).delete();toast('되돌렸어요');}catch(e){toast('실패했어요');}openFeeAdmin();}});
+  });
+}
+function openFeeAccountForm(){
+  const a=S.feeAccount||{}, inp='width:100%;box-sizing:border-box;height:44px;border-radius:12px;border:1.5px solid var(--line);background:#FCFBF8;padding:0 12px;font-size:14px;font-family:inherit;margin-bottom:10px';
+  $('#sheet').innerHTML=`<h3>입금 계좌</h3>
+    <label style="font-size:13px;font-weight:800" for="faBank">은행</label><input id="faBank" value="${esc2(a.bank||'')}" placeholder="예: 카카오뱅크" style="${inp}">
+    <label style="font-size:13px;font-weight:800" for="faNum">계좌번호</label><input id="faNum" value="${esc2(a.number||'')}" inputmode="numeric" style="${inp}">
+    <label style="font-size:13px;font-weight:800" for="faHolder">예금주</label><input id="faHolder" value="${esc2(a.holder||'')}" style="${inp}">
+    <button class="btn" id="faSave">저장</button><button class="btn ghost" id="faBack" style="margin-top:8px">돌아가기</button>`;
+  $('#faBack').onclick=openFeeAdmin;
+  $('#faSave').onclick=async()=>{
+    const acc={bank:$('#faBank').value.trim(),number:$('#faNum').value.trim(),holder:$('#faHolder').value.trim()};
+    try{await roomDoc().set({feeAccount:acc},{merge:true});S.feeAccount=acc;toast('입금 계좌를 저장했어요');openFeeAdmin();}
+    catch(e){console.error(e);toast('저장에 실패했어요 (권한 확인)');}
+  };
+}
+/* 회비 실시간: 내 회비 문서 (모두) + 입금했어요 알림 (모임장) */
+let _feeUnsub=null,_feeAdminUnsub=null;
+function startFeeWatch(){
+  const col=feeCol(); if(!col||!S||!S.meId)return;
+  if(!_feeUnsub){
+    try{_feeUnsub=col.where('uid','==',S.meId).onSnapshot(qs=>{
+      S.myFees={}; qs.forEach(d=>{const x=d.data();S.myFees[x.ym]=x;});
+      if(tab==='dress'&&!$('#ov').classList.contains('on'))renderDress();
+    },e=>console.warn('fees(me)',e));}catch(e){}
+  }
+  if(!_feeAdminUnsub&&isOwner()){
+    try{_feeAdminUnsub=col.where('status','==','reported').onSnapshot(qs=>{
+      S.feeReq=qs.docs.map(d=>d.data()); scanNotifications();
+      const n=$('#feeAdminN'); if(n)n.textContent=`확인 ${S.feeReq.length}건`;
+    },e=>console.warn('fees(admin)',e));}catch(e){}
+  }
+}
+
 function openMemberProfile(id){
   const m=S.members[id]; if(!m)return;
   const isMine=id===S.meId;
@@ -3773,9 +3990,11 @@ function renderDress(){
       <!-- 캐시 배지 아래: 다음 생일(나이↑)까지 진행도 가로 그래프 + 안내 문구.
            출첵 30일 = 한 살. ageProg(m)=출첵일수%30 (0~29)이라 30으로 나눠 % 계산. -->
       <div class="gauge" style="max-width:240px;margin:12px auto 4px"><i style="width:${(ageProg(m)/30*100).toFixed(0)}%"></i></div>
-      <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일 · 🎁 +10캐시</div>
+      <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일</div>
     </div>
   </div>
+  ${myFeeHTML()}
+  ${isOwner()?`<button class="gf-admin" id="feeAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>💳 회비 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 나만 보여요</small></b><span id="feeAdminN">확인 ${(S.feeReq||[]).length}건</span></button>`:''}
   ${isAdmin()?`<button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 14px"><b>📦 교환 신청 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 모임장만 보여요</small></b><span id="gfAdminN">…</span></button>`:''}
   <div class="dcat" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
@@ -3783,6 +4002,8 @@ function renderDress(){
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
+  $('#feeAdmin')&&($('#feeAdmin').onclick=()=>{feeAdminYm=null;openFeeAdmin();});
+  bindMyFee();
   refreshAdminBadge();
   drawItems();
 }
@@ -4437,6 +4658,10 @@ function notifEvents(){
     S.giftReq.forEach(o=>ev.push({id:'g_'+o.oid,type:'gift',name:o.member||'멤버',
       text:(o.item||'')+(o.memo?` · ${o.memo}`:''),ts:o.reqAt||0}));
   }
+  // 5) (모임장만) 회비 '입금했어요'
+  if(isOwner()&&Array.isArray(S.feeReq)){
+    S.feeReq.forEach(f=>ev.push({id:'f_'+f.ym+'_'+f.uid,type:'fee',name:f.name||'멤버',text:`${+String(f.ym).slice(5,7)}월 회비 ${won(FEE_AMOUNT)}`,ts:f.reportedAt||0}));
+  }
   ev.sort((a,b)=>(b.ts||0)-(a.ts||0)); // 최신순
   return ev.slice(0,50);
 }
@@ -4450,6 +4675,7 @@ function initNotif(){
   const btn=document.getElementById('bellBtn');
   if(btn) btn.onclick=openNotifSheet;
   startGiftWatch();   // 모임장이면 교환 신청 실시간 감시 시작
+  startFeeWatch();    // 내 회비 + (모임장) 입금했어요 감시
   updateBellBadge();
 }
 
@@ -4468,7 +4694,8 @@ function scanNotifications(){
   // 가장 최근 이벤트가 (안읽음이고) 직전에 알린 것보다 새로우면 토스트
   if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
     _notifTopTs=top.ts||0;
-    const msg=top.type==='gift'?`${top.name}님이 «${top.text}» 교환을 신청했어요 🎁`
+    const msg=top.type==='fee'?`${top.name}님이 «${top.text}» 입금했대요 💳`
+             :top.type==='gift'?`${top.name}님이 «${top.text}» 교환을 신청했어요 🎁`
              :top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
              :top.type==='comment'?`${top.name}님이 내 글에 댓글을 남겼어요 💬`
                                :`${top.name}님이 «${top.text}» 완독했어요 📚`;
@@ -4488,8 +4715,8 @@ function openNotifSheet(){
   const rows=evs.length?evs.map(ev=>{
     const uid=ev.uid||'';
     const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
-    const icon=ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
-    const ttl=ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
+    const icon=ev.type==='fee'?'💳':ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
+    const ttl=ev.type==='fee'?'님 회비 입금':ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
     const subDef=ev.type==='done'?'책장에 꽂혔어요':'피드에서 확인해요';
     return `
     <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}" data-pid="${ev.pid||''}">
@@ -4507,6 +4734,7 @@ function openNotifSheet(){
   $('#sheet').querySelectorAll('.nti').forEach(el=>el.onclick=()=>{
     closeOv();
     if(el.dataset.type==='gift'){ openGiftAdmin(); return; }
+    if(el.dataset.type==='fee'){ feeAdminYm=null; openFeeAdmin(); return; }
     if(el.dataset.type==='done'){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
@@ -4585,8 +4813,9 @@ function subscribeRealtime(){
   // 방 문서(모임장 등): 가벼우니 변경 시 ownerId만 반영
   const u2=roomRef.onSnapshot(snap=>{
     if(!S)return;
-    try{ const d=snap.exists?snap.data():null; if(d&&('leader'in d))S.ownerId=d.leader||null; S.staff=(d&&Array.isArray(d.staff))?d.staff:[]; }catch(e){}
+    try{ const d=snap.exists?snap.data():null; if(d&&('leader'in d))S.ownerId=d.leader||null; S.staff=(d&&Array.isArray(d.staff))?d.staff:[]; S.feeAccount=(d&&d.feeAccount)||null; }catch(e){}
     startGiftWatch();   // 모임장 확인되면 교환 신청 감시 시작 (이미 시작했으면 무시)
+    startFeeWatch();
     rerender();
   }, e=>console.warn('room snapshot',e));
 
