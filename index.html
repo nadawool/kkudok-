@@ -3167,7 +3167,17 @@ function feeStatus(uid,ym,doc){
 function myFeeHTML(){
   const ym=feeYm(), mon=+ym.slice(5,7);
   const st=feeStatus(S.meId,ym,(S.myFees||{})[ym]);
-  if(st.state==='pre')return '';
+  if(st.state==='pre'){   // 회비 시작 전(9월): 어디서 내는지 미리 알려주는 안내 카드
+    const sm=+FEE_START.slice(5,7);
+    return `<div class="card fee-card">
+      <div class="fee-top"><div><div class="fee-t">💳 회비 안내</div><div class="fee-amt">${sm}월부터 ${won(FEE_AMOUNT)}</div></div><span class="fee-chip due">예정</span></div>
+      <div class="fee-acc" style="display:block;line-height:1.55;font-size:13px;color:#5F5A52;word-break:keep-all">
+        매달 <b style="display:inline;font-size:13px">${FEE_DUE_DAY}일까지</b> 입금해요.<br>
+        ${sm}월 1일부터 <b style="display:inline;font-size:13px">바로 이 자리</b>에 입금 계좌와 <b style="display:inline;font-size:13px">입금했어요</b> 버튼이 생겨요.
+      </div>
+      <div class="fee-note" style="word-break:keep-all">👑 모임 10회 참여하면 1회 면제 · 15일 이후 가입은 다음 달부터</div>
+    </div>`;
+  }
   if(st.state==='exempt'||st.state==='paid'){
     const sub=st.state==='paid'?`${mdLabel(st.doc.paidDate)} 납부 완료 · 고마워요`:st.reason;
     return `<div class="fee-line" id="feeLine"><div class="l"><span style="font-size:18px">💳</span><div><b>${mon}월 회비 · ${st.state==='paid'?won(FEE_AMOUNT):'0원'}</b><small>${sub}</small></div></div>
