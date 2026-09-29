@@ -3953,6 +3953,13 @@ async function searchBooks(q,opts){
     $('#bAuthor').value=(v.authors||[]).join(', ');
     if(v.pageCount&&$('#bPages'))$('#bPages').value=v.pageCount;
     _cover=_coverUrl(v);
+    // 쪽수가 없으면 고른 책의 ISBN으로 도서관·구글에 한 번 더 물어봄 (칸이 비어 있을 때만 채움)
+    if(!v.pageCount&&v.isbn13&&$('#bPages')){
+      const pi=$('#bPages'); pi.placeholder='쪽수 찾는 중…';
+      fetch('/api/books?isbn='+encodeURIComponent(v.isbn13)).then(r=>r.json()).then(d=>{
+        if(d&&d.pages&&pi&&!pi.value){pi.value=d.pages;toast('전체 페이지를 찾았어요 📖');}
+      }).catch(()=>{}).finally(()=>{if(pi)pi.placeholder='예: 312';});
+    }
   });
   const box=$(boxSel);box.style.display='block';
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
