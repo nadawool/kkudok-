@@ -2127,7 +2127,7 @@ async function toggleStaff(id){
    · rooms/{room}/bookNoms/{YYYY-MM}_{uid} = {ym, uid, name, title, author, cover, reason, createdAt, voters:[uid]} */
 const VOTE_LAST_DAY=2, VOTE_MAX=2, NOM_REASON_MIN=10;   // 1~2일 추천·투표 → 3일 선정
 /* 미리보기: 주소 뒤에 ?votepreview=1 → 오늘을 투표 기간처럼 보여줌 (예시 후보 3권 · 저장 안 됨 · 새로고침하면 초기화) */
-const VOTE_PREVIEW=/[?&]votepreview=1/.test(location.search);
+let VOTE_PREVIEW=/votepreview/.test(location.search+location.hash);   // 운영진은 홈 카드의 '👀 미리보기' 버튼으로도 켤 수 있음
 let _pvNoms=null;
 function pvYm(){const c=todayISO().slice(0,7);return isAssignedMonth(c)?c:ymAdd(c,1);}
 function nomSrc(){
@@ -2183,7 +2183,7 @@ function nomRowHTML(n,ph,used,max,win){
 function voteCardHTML(){
   const t=todayISO(), ym=voteTargetYm();
   if(!ym){
-    return `<div class="home-sec"><div class="bn-mini">📚 이번 달은 <b>자유독서</b> · 다음 지정도서 추천·투표는 <b>${+ymAdd(t.slice(0,7),1).slice(5)}월 1~${VOTE_LAST_DAY}일</b></div></div>`;
+    return `<div class="home-sec"><div class="bn-mini">📚 이번 달은 <b>자유독서</b> · 다음 지정도서 추천·투표는 <b>${+ymAdd(t.slice(0,7),1).slice(5)}월 1~${VOTE_LAST_DAY}일</b>${isStaff()?` <span id="bnPv" style="color:var(--honey-d);font-weight:800;cursor:pointer;white-space:nowrap">· 👀 미리보기</span>`:''}</div></div>`;
   }
   const ph=votePhase(ym);
   const mon=+ym.slice(5), list=nomsOf(ym), used=myVotesUsed(ym), mineNom=list.find(n=>n.uid===S.meId);
@@ -2191,7 +2191,7 @@ function voteCardHTML(){
   if(ph==='open'){
     const dleft=VOTE_LAST_DAY-(+t.slice(8,10));
     return `<div class="home-sec"><div class="card bn-card">
-      ${VOTE_PREVIEW?'<div class="bn-mini" style="background:#232220;color:#FCEBD8">👀 미리보기 · 예시 후보예요 · 저장되지 않아요</div>':''}
+      ${VOTE_PREVIEW?'<div class="bn-mini" style="background:#232220;color:#FCEBD8;display:flex;justify-content:space-between;gap:8px"><span>👀 미리보기 · 예시 후보예요 · 저장되지 않아요</span><span id="bnPvOff" style="font-weight:800;cursor:pointer;white-space:nowrap">끄기 ✕</span></div>':''}
       <div class="bn-head"><b>📚 ${mon}월 지정도서 투표</b><span class="bn-dday">${VOTE_PREVIEW?'미리보기':dleft>0?`D-${dleft}`:'오늘 마감'}</span></div>
       <div class="bn-sub">${mon}월 ${VOTE_LAST_DAY}일까지 추천·투표 · ${VOTE_LAST_DAY+1}일에 가장 많이 받은 책으로 자동 선정 · 남은 표 <b>${VOTE_MAX-used}/${VOTE_MAX}</b></div>
       ${list.length?`<div class="bn-list">${list.map(n=>nomRowHTML(n,ph,used,max,false)).join('')}</div>`
@@ -2210,6 +2210,8 @@ function voteCardHTML(){
   </div></div>`;
 }
 function bindVoteCard(){
+  $('#bnPv')&&($('#bnPv').onclick=()=>{VOTE_PREVIEW=true;_pvNoms=null;renderHome();});
+  $('#bnPvOff')&&($('#bnPvOff').onclick=e=>{e.stopPropagation();VOTE_PREVIEW=false;_pvNoms=null;renderHome();});
   const ym=voteTargetYm(); if(!ym)return;
   $('#bnNom')&&($('#bnNom').onclick=()=>openNomForm(ym));
   $('#bnOthers')&&($('#bnOthers').onclick=()=>openNomList(ym));
