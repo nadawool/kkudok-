@@ -2126,40 +2126,22 @@ async function toggleStaff(id){
    · 3일 0시 자동 선정: 최다 득표 책, 동점이면 먼저 추천된 책
    · rooms/{room}/bookNoms/{YYYY-MM}_{uid} = {ym, uid, name, title, author, cover, reason, createdAt, voters:[uid]} */
 const VOTE_LAST_DAY=2, VOTE_MAX=2, NOM_REASON_MIN=10;   // 1~2일 추천·투표 → 3일 선정
-/* 미리보기: 주소 뒤에 ?votepreview=1 → 오늘을 투표 기간처럼 보여줌 (예시 후보 3권 · 저장 안 됨 · 새로고침하면 초기화) */
-let VOTE_PREVIEW=/votepreview/.test(location.search+location.hash);   // 운영진은 홈 카드의 '👀 미리보기' 버튼으로도 켤 수 있음
-let _pvNoms=null;
-function pvYm(){const c=todayISO().slice(0,7);return isAssignedMonth(c)?c:ymAdd(c,1);}
-function nomSrc(){
-  if(!VOTE_PREVIEW)return S.noms||[];
-  if(!_pvNoms){
-    const ym=pvYm(), ids=Object.keys(S.members||{}).filter(id=>id!==S.meId);
-    const pick=i=>ids[i%Math.max(1,ids.length)]||'x'+i, nm=id=>(S.members[id]||{}).name||'멤버';
-    const smp=[['데미안','헤르만 헤세','성장에 대해 같이 이야기 나누고 싶어서 추천해요. 다시 읽어도 새로워요.',[pick(1),pick(2)]],
-      ['아몬드','손원평','감정에 대해 생각해볼 거리가 많아서 토론하기 좋을 것 같아요.',[pick(0)]],
-      ['사피엔스','유발 하라리','길지만 한 달이면 충분하고, 나눌 이야기가 정말 많은 책이에요.',[]]];
-    _pvNoms=smp.map((b,i)=>({id:ym+'_'+pick(i),ym,uid:pick(i),name:nm(pick(i)),title:b[0],author:b[1],cover:'',reason:b[2],createdAt:i,voters:b[3]}));
-  }
-  return _pvNoms;
-}
 function nomCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('bookNoms'):null;}
 function isAssignedMonth(ym){return +ym.slice(5,7)%2===0;}
 function votePhase(ym){ // 'none'(자유독서 달) | 'before' | 'open' | 'closed'
   if(!isAssignedMonth(ym))return 'none';
-  if(VOTE_PREVIEW&&ym===pvYm())return 'open';
   const t=todayISO(), cur=t.slice(0,7);
   if(ym>cur)return 'before';
   if(ym<cur)return 'closed';
   return +t.slice(8,10)<=VOTE_LAST_DAY?'open':'closed';
 }
 function voteTargetYm(){ // 홈에 보여줄 지정독서 달 = 이번 달이 지정독서 달일 때만
-  if(VOTE_PREVIEW)return pvYm();
   const cur=todayISO().slice(0,7);
   return isAssignedMonth(cur)?cur:null;
 }
-function nomsOf(ym){return nomSrc().filter(n=>n.ym===ym).sort((a,b)=>((b.voters||[]).length-(a.voters||[]).length)||((a.createdAt||0)-(b.createdAt||0)));}
+function nomsOf(ym){return (S.noms||[]).filter(n=>n.ym===ym).sort((a,b)=>((b.voters||[]).length-(a.voters||[]).length)||((a.createdAt||0)-(b.createdAt||0)));}
 function voteWinner(ym){if(votePhase(ym)!=='closed')return null;const l=nomsOf(ym);return l.length?l[0]:null;}
-function myVotesUsed(ym){return nomSrc().filter(n=>n.ym===ym&&(n.voters||[]).includes(S.meId)).length;}
+function myVotesUsed(ym){return (S.noms||[]).filter(n=>n.ym===ym&&(n.voters||[]).includes(S.meId)).length;}
 function nomRowHTML(n,ph,used,max,win){
   const v=(n.voters||[]).length, mine=(n.voters||[]).includes(S.meId), au=S.members[n.uid];
   let btn='';
@@ -2183,7 +2165,7 @@ function nomRowHTML(n,ph,used,max,win){
 function voteCardHTML(){
   const t=todayISO(), ym=voteTargetYm();
   if(!ym){
-    return `<div class="home-sec"><div class="bn-mini">📚 이번 달은 <b>자유독서</b> · 다음 지정도서 추천·투표는 <b>${+ymAdd(t.slice(0,7),1).slice(5)}월 1~${VOTE_LAST_DAY}일</b>${isStaff()?` <span id="bnPv" style="color:var(--honey-d);font-weight:800;cursor:pointer;white-space:nowrap">· 👀 미리보기</span>`:''}</div></div>`;
+    return `<div class="home-sec"><div class="bn-mini">📚 이번 달은 <b>자유독서</b> · 다음 지정도서 추천·투표는 <b>${+ymAdd(t.slice(0,7),1).slice(5)}월 1~${VOTE_LAST_DAY}일</b></div></div>`;
   }
   const ph=votePhase(ym);
   const mon=+ym.slice(5), list=nomsOf(ym), used=myVotesUsed(ym), mineNom=list.find(n=>n.uid===S.meId);
@@ -2191,8 +2173,7 @@ function voteCardHTML(){
   if(ph==='open'){
     const dleft=VOTE_LAST_DAY-(+t.slice(8,10));
     return `<div class="home-sec"><div class="card bn-card">
-      ${VOTE_PREVIEW?'<div class="bn-mini" style="background:#232220;color:#FCEBD8;display:flex;justify-content:space-between;gap:8px"><span>👀 미리보기 · 예시 후보예요 · 저장되지 않아요</span><span id="bnPvOff" style="font-weight:800;cursor:pointer;white-space:nowrap">끄기 ✕</span></div>':''}
-      <div class="bn-head"><b>📚 ${mon}월 지정도서 투표</b><span class="bn-dday">${VOTE_PREVIEW?'미리보기':dleft>0?`D-${dleft}`:'오늘 마감'}</span></div>
+      <div class="bn-head"><b>📚 ${mon}월 지정도서 투표</b><span class="bn-dday">${dleft>0?`D-${dleft}`:'오늘 마감'}</span></div>
       <div class="bn-sub">${mon}월 ${VOTE_LAST_DAY}일까지 추천·투표 · ${VOTE_LAST_DAY+1}일에 가장 많이 받은 책으로 자동 선정 · 남은 표 <b>${VOTE_MAX-used}/${VOTE_MAX}</b></div>
       ${list.length?`<div class="bn-list">${list.map(n=>nomRowHTML(n,ph,used,max,false)).join('')}</div>`
         :`<div class="mt-empty">아직 추천된 책이 없어요 · 첫 책을 추천해보세요</div>`}
@@ -2210,8 +2191,6 @@ function voteCardHTML(){
   </div></div>`;
 }
 function bindVoteCard(){
-  $('#bnPv')&&($('#bnPv').onclick=()=>{VOTE_PREVIEW=true;_pvNoms=null;renderHome();});
-  $('#bnPvOff')&&($('#bnPvOff').onclick=e=>{e.stopPropagation();VOTE_PREVIEW=false;_pvNoms=null;renderHome();});
   const ym=voteTargetYm(); if(!ym)return;
   $('#bnNom')&&($('#bnNom').onclick=()=>openNomForm(ym));
   $('#bnOthers')&&($('#bnOthers').onclick=()=>openNomList(ym));
@@ -2220,13 +2199,7 @@ function bindVoteCard(){
   document.querySelectorAll('#s-home .bn-row[data-nom]').forEach(el=>el.onclick=()=>openNomSheet(el.dataset.nom));
 }
 async function castVote(id,on){
-  const n=nomSrc().find(x=>x.id===id), col=nomCol(); if(!n)return;
-  if(VOTE_PREVIEW){
-    if(on&&myVotesUsed(n.ym)>=VOTE_MAX){toast(`표는 ${VOTE_MAX}개까지예요 · 다른 책 투표를 취소하고 눌러주세요`);return;}
-    n.voters=on?(n.voters||[]).concat([S.meId]):(n.voters||[]).filter(u=>u!==S.meId);
-    toast(on?'(미리보기) 투표했어요 🗳️':'(미리보기) 투표를 취소했어요'); renderHome(); return;
-  }
-  if(!col)return;
+  const n=(S.noms||[]).find(x=>x.id===id), col=nomCol(); if(!n||!col)return;
   if(votePhase(n.ym)!=='open'){toast('투표 기간이 끝났어요');return;}
   if(on&&myVotesUsed(n.ym)>=VOTE_MAX){toast(`표는 ${VOTE_MAX}개까지예요 · 다른 책 투표를 취소하고 눌러주세요`);return;}
   const FV=firebase.firestore.FieldValue;
@@ -2235,7 +2208,7 @@ async function castVote(id,on){
   catch(e){console.error(e);toast('투표에 실패했어요');}
 }
 function openNomSheet(id){
-  const n=nomSrc().find(x=>x.id===id); if(!n)return;
+  const n=(S.noms||[]).find(x=>x.id===id); if(!n)return;
   const ph=votePhase(n.ym), au=S.members[n.uid];
   const voters=(n.voters||[]).map(u=>S.members[u]).filter(Boolean);
   const mine=n.voters&&n.voters.includes(S.meId), used=myVotesUsed(n.ym);
@@ -2257,7 +2230,7 @@ function openNomSheet(id){
   $('#nsVote')&&($('#nsVote').onclick=async()=>{closeOv();await castVote(id,!mine);});
   $('#nsEdit')&&($('#nsEdit').onclick=()=>openNomForm(n.ym));
   $('#nsDel')&&($('#nsDel').onclick=()=>confirmDialog({title:'추천 삭제',body:'이 추천을 삭제할까요?<br>받은 표도 함께 사라져요',okText:'삭제',danger:true,
-    onOk:async()=>{if(VOTE_PREVIEW){_pvNoms=nomSrc().filter(x=>x.id!==id);renderHome();return;}try{await nomCol().doc(id).delete();toast('추천을 삭제했어요');}catch(e){console.error(e);toast('삭제에 실패했어요');}}}));
+    onOk:async()=>{try{await nomCol().doc(id).delete();toast('추천을 삭제했어요');}catch(e){console.error(e);toast('삭제에 실패했어요');}}}));
 }
 function openNomList(ym){
   const list=nomsOf(ym), max=Math.max(1,...list.map(n=>(n.voters||[]).length));
@@ -2271,7 +2244,7 @@ function openNomList(ym){
 let _nomBook={t:'',a:'',c:''};
 function openNomForm(ym){
   if(votePhase(ym)!=='open'){toast('추천 기간이 아니에요');return;}
-  const id=`${ym}_${S.meId}`, ex=nomSrc().find(n=>n.id===id);
+  const id=`${ym}_${S.meId}`, ex=(S.noms||[]).find(n=>n.id===id);
   _nomBook={t:ex?ex.title:'',a:ex?ex.author||'':'',c:ex?ex.cover||'':''};
   $('#sheet').innerHTML=`<h3>${ex?'내 추천 수정':'읽고 싶은 책 추천'}</h3>
     <div class="hint" style="text-align:center;margin:-6px 0 14px">${+ym.slice(5)}월 지정도서 후보 · 1인 1권 · ${+ym.slice(5)}월 ${VOTE_LAST_DAY}일까지</div>
@@ -2296,12 +2269,8 @@ function openNomForm(ym){
     if(!title){toast('추천할 책을 골라주세요');return;}
     if(reason.replace(/\s/g,'').length<NOM_REASON_MIN){toast(`추천 이유를 ${NOM_REASON_MIN}자 이상 적어주세요`);return;}
     if(votePhase(ym)!=='open'){toast('추천 기간이 끝났어요');return;}
-    const others=nomSrc().find(n=>n.ym===ym&&n.uid!==S.meId&&normBk(n.title)===normBk(title));
+    const others=(S.noms||[]).find(n=>n.ym===ym&&n.uid!==S.meId&&normBk(n.title)===normBk(title));
     if(others){toast(`이미 ${(S.members[others.uid]||{}).name||'다른 멤버'}님이 추천한 책이에요 · 그 책에 투표해주세요`);return;}
-    if(VOTE_PREVIEW){
-      const d={id,ym,uid:S.meId,name:me().name||'',title,author:_nomBook.a||'',cover:_nomBook.c||'',reason,createdAt:Date.now(),voters:ex&&!(normBk(ex.title)!==normBk(title))?ex.voters:[]};
-      _pvNoms=nomSrc().filter(n=>n.id!==id).concat([d]); closeOv(); toast('(미리보기) 추천했어요 · 저장은 안 돼요'); renderHome(); return;
-    }
     const col=nomCol(); if(!col){toast('지금은 추천할 수 없어요');return;}
     const bookChanged=ex&&normBk(ex.title)!==normBk(title);
     const data={ym,uid:S.meId,name:me().name||'',title,author:_nomBook.a||'',cover:_nomBook.c||'',reason};
