@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>꾸독 가이드북</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBF6EE;--card:#fff;--ink:#232220;--soft:#8A857C;--line:#EFE6D8;--honey:#F2994A;--honey-d:#E07B2C;--honey-s:#FCEBD8;--moss:#5FA17E;--moss-s:#E2F0E8;--red:#ea321f;--purple:#7A5EA8;--purple-s:#EEE9F4;--blue:#2F72B8;--blue-s:#E3EEF7}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#FBF6EE;font-family:'Noto Sans CJK KR','Noto Color Emoji',sans-serif;color:var(--ink);word-break:keep-all}
+.s{width:1080px;height:1350px;background:var(--bg);position:relative;overflow:hidden;padding:68px 76px 70px;display:flex;flex-direction:column;margin-bottom:0}
+.top{display:flex;align-items:center;justify-content:space-between;font-size:30px;font-weight:700;color:var(--soft);margin-bottom:34px}
+.top .brand{display:flex;align-items:center;gap:12px;color:var(--honey-d);font-weight:900}
+.top .pg{background:#fff;border:2px solid var(--line);border-radius:40px;padding:6px 22px;font-size:26px}
+.kick{font-size:34px;font-weight:800;color:var(--honey-d);margin-bottom:14px}
+h2{font-size:72px;font-weight:900;line-height:1.16;letter-spacing:-2px;margin-bottom:30px}
+.lead{font-size:36px;line-height:1.5;color:#5F5A52;font-weight:500;margin-bottom:44px}
+.lead b{color:var(--ink)}
+.box{background:#fff;border:2px solid var(--line);border-radius:36px;padding:32px 40px;box-shadow:0 10px 30px rgba(60,45,30,.07)}
+.stack{display:flex;flex-direction:column;gap:22px}
+.row{display:flex;align-items:center;gap:30px}
+.ic{width:104px;height:104px;border-radius:30px;background:var(--honey-s);display:grid;place-items:center;font-size:56px;flex:none}
+.t1{font-size:40px;font-weight:900;line-height:1.3}
+.t2{font-size:31px;color:#6B665E;line-height:1.45;margin-top:6px;font-weight:500}
+.t2 b{color:var(--ink)}
+.num{width:78px;height:78px;border-radius:50%;background:var(--honey);color:#fff;font-size:40px;font-weight:900;display:grid;place-items:center;flex:none}
+.foot{margin-top:auto;padding-top:18px;font-size:29px;color:var(--soft);line-height:1.5;font-weight:500}
+.foot b{color:var(--honey-d)}
+.note{background:var(--ink);color:#FCEBD8;border-radius:30px;padding:30px 36px;font-size:31px;line-height:1.5;font-weight:500}
+.note b{color:#fff}
+.pill{display:inline-block;background:var(--honey-s);color:var(--honey-d);font-weight:900;border-radius:40px;padding:8px 22px;font-size:30px}
+.big{font-size:64px;font-weight:900;letter-spacing:-1px}
+.plus{font-size:50px;font-weight:900;color:var(--honey);text-align:center;margin:-14px 0;line-height:1}
+table{width:100%;border-collapse:separate;border-spacing:0 16px}
+td{font-size:33px;padding:0 10px;vertical-align:middle}
+.cash{font-size:44px;font-weight:900;color:var(--honey-d);text-align:right;white-space:nowrap}
+.coin{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;font-size:26px;font-weight:900;vertical-align:4px;margin-right:6px}
+.apples{display:grid;grid-template-columns:repeat(5,1fr);gap:14px 16px;margin:4px 0 0}
+.apples span{font-size:54px;text-align:center;line-height:1.15}
+.apples span.off{filter:grayscale(1);opacity:.25}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.mini{background:#fff;border:2px solid var(--line);border-radius:30px;padding:24px 26px;text-align:center}
+.mini .e{font-size:54px;line-height:1.1}
+.mini .h{font-size:38px;font-weight:900;margin-top:8px}
+.mini .d{font-size:28px;color:#6B665E;margin-top:6px;line-height:1.4}
+.tl{display:flex;align-items:stretch;gap:0;margin-top:6px}
+.tl .st{flex:1;text-align:center;position:relative}
+.tl .dot{width:120px;height:120px;border-radius:50%;margin:0 auto 18px;display:grid;place-items:center;font-size:54px;background:var(--purple-s)}
+.tl .st.hl .dot{background:var(--honey)}
+.tl .d1{font-size:38px;font-weight:900}
+.tl .d2{font-size:28px;color:#6B665E;margin-top:6px;line-height:1.35}
+.tl .ar{font-size:50px;color:#CFC6B8;align-self:center;margin-top:-80px}
+/* cover */
+.cover{background:linear-gradient(170deg,#F7B36A 0%,#F2994A 45%,#E07B2C 100%);color:#fff;justify-content:center;align-items:center;text-align:center}
+.cover .ap{font-size:220px;line-height:1;filter:drop-shadow(0 18px 30px rgba(120,50,0,.28))}
+.cover h1{font-size:118px;font-weight:900;letter-spacing:-3px;margin-top:40px}
+.cover .sub{font-size:44px;font-weight:700;margin-top:18px;opacity:.95}
+.cover .tag{margin-top:60px;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.55);border-radius:60px;padding:18px 40px;font-size:34px;font-weight:700}
+.cover .toc{margin-top:70px;display:grid;grid-template-columns:repeat(4,auto);gap:14px 18px;justify-content:center}
+.cover .toc span{background:#fff;color:var(--honey-d);border-radius:40px;padding:10px 24px;font-size:28px;font-weight:800}
+.cover .date{position:absolute;bottom:70px;left:0;right:0;font-size:28px;opacity:.85}
+.end{background:var(--ink);color:#fff;justify-content:center;align-items:center;text-align:center}
+.end h2{color:#fff}
+.end .lk{background:#fff;color:var(--ink);border-radius:30px;padding:30px 40px;font-size:34px;font-weight:700;margin-top:18px;width:100%;text-align:left;line-height:1.5}
+.end .lk small{display:block;font-size:26px;color:var(--soft);font-weight:700}
+
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Noto Sans KR','Noto Sans CJK KR','Apple SD Gothic Neo','Malgun Gothic','Noto Color Emoji',sans-serif}
+.wrap{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#F3ECE1}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.track::-webkit-scrollbar{display:none}
+.cell{flex:none;scroll-snap-align:center;display:flex;justify-content:center;overflow:hidden}
+.cell .s{transform-origin:0 0;border-radius:40px;flex:none}
+.nav{display:flex;align-items:center;gap:14px;margin-top:10px}
+.arr{width:34px;height:34px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(60,45,30,.15);font-size:18px;color:#E07B2C;cursor:pointer;font-family:inherit}
+.arr:disabled{opacity:.35;cursor:default}
+.dots{display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:10px;background:#D9CFC0;transition:.2s;cursor:pointer}
+.dots i.on{width:20px;background:#F2994A}
+</style></head><body>
+<div class="wrap"><div class="track" id="tr"><div class="cell"><div class="s cover" id="c1">
+  <div class="ap">🍎</div>
+  <h1>꾸독 가이드북</h1>
+  <div class="sub">지식의 열매를 매일 한 입씩</div>
+  <div class="tag">꾸준한 독서 습관을 만드는 온라인 독서 모임</div>
+  <div class="toc"><span>출석</span><span>월 15일</span><span>캐시·선물</span><span>뽑기</span><span>독서모임</span><span>지정도서 투표</span><span>회비</span><span>시작하기</span></div>
+  <div class="date">2026년 10월 기준 · 옆으로 넘겨보세요 →</div>
+</div></div><div class="cell"><div class="s" id="c2">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">2 / 9</div></div>
+  <div class="kick">매일 출석</div>
+  <h2>하루 한 번,<br>이렇게 두 가지만</h2>
+  <div class="box" style="margin-bottom:28px;display:flex;justify-content:space-around;text-align:center">
+    <div><div class="t2" style="margin:0">🌞 오전</div><div class="big">7–9시</div></div>
+    <div style="width:2px;background:var(--line)"></div>
+    <div><div class="t2" style="margin:0">🌙 오후</div><div class="big">9–11시</div></div>
+  </div>
+  <div class="stack">
+    <div class="box row"><div class="ic">⏱️</div><div><div class="t1">디스코드 10분 독서</div><div class="t2">정규시간에 음성방에서 <b>10분 이상</b><br>시간은 앱에 자동으로 기록돼요</div></div></div>
+    <div class="plus">+</div>
+    <div class="box row"><div class="ic">📝</div><div><div class="t1">피드에 오늘의 문장</div><div class="t2">오늘 읽은 책의 인상 깊은 문장<br><b>10자 이상 · 책 제목 필수</b></div></div></div>
+  </div>
+  <div class="foot">평일·주말 상관없이 편한 시간대 <b>한 번</b>이면 충분해요.<br>정규시간 밖에 읽은 시간은 출석에 안 들어가요.</div>
+</div></div><div class="cell"><div class="s" id="c3">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">3 / 9</div></div>
+  <div class="kick">출첵 순서</div>
+  <h2>사과 도장 받는 법 🍎</h2>
+  <div class="stack" style="gap:20px">
+    <div class="box row"><div class="num">1</div><div><div class="t1">디스코드 입장</div><div class="t2">음소거 · 카메라 ON · 10분 이상 독서</div></div></div>
+    <div class="box row"><div class="num">2</div><div><div class="t1">피드 탭 → + → 문장 공유</div><div class="t2">책 추천 글은 출석에 안 들어가요</div></div></div>
+    <div class="box row"><div class="num">3</div><div><div class="t1">출첵 탭에서 페이지 입력</div><div class="t2">읽고 있는 책을 고르고 오늘 읽은 곳까지</div></div></div>
+    <div class="box row" style="border-color:var(--honey);background:#FFF8F0"><div class="num">4</div><div><div class="t1">🍎 저장하고 출석체크</div><div class="t2">두 조건이 ✅면 달력에 사과 도장!</div></div></div>
+  </div>
+  <div class="foot">출석은 <b>오늘 날짜만</b> 가능해요 · 디스코드 이름은 나이/실명으로</div>
+</div></div><div class="cell"><div class="s" id="c4">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">4 / 9</div></div>
+  <div class="kick">월 15일 필수 출석</div>
+  <h2>한 달에 사과<br>15개 모으기</h2>
+  <div class="lead" style="margin:-14px 0 22px;font-size:32px">10월부터 · 평일·주말 상관없이 <b>한 달 15일</b></div>
+  <div class="box" style="margin-bottom:20px;padding:26px 40px">
+    <div class="apples"><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span>🍎</span><span class="off">🍎</span><span class="off">🍎</span><span class="off">🍎</span><span class="off">🍎</span><span class="off">🍎</span><span class="off">🍎</span></div>
+    <div class="t2" style="text-align:center;margin-top:10px;font-size:28px">출첵 탭 맨 위 카드에서 진행 상황을 확인해요</div>
+  </div>
+  <div class="twocol" style="margin-bottom:26px">
+    <div class="mini"><div class="e">🏅</div><div class="h">완주 배지</div><div class="d">15일 채우면<br>프로필에 쌓여요</div></div>
+    <div class="mini"><div class="e">💰</div><div class="h">+30캐시</div><div class="d">16일째부터는<br>출석마다 +1</div></div>
+  </div>
+  <div class="note" style="font-size:29px;padding:24px 32px;line-height:1.45">🙋 매달 <b>15일 이후에 들어온 분</b>은 가입한 달은 회비 없이, 출석 부담 없이 <b>연습</b>해요. 출첵은 그대로 되고, <b>다음 달 1일부터</b> 회비·월 15일 출석·캐시가 시작돼요.</div>
+</div></div><div class="cell"><div class="s" id="c5">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">5 / 9</div></div>
+  <div class="kick">캐시 & 선물</div>
+  <h2>열심히 할수록<br>쌓이는 캐시</h2>
+  <div class="box" style="padding:20px 38px;margin-bottom:26px">
+    <table>
+      <tr><td style="font-size:52px;width:70px">❤️</td><td><div class="t1" style="font-size:35px">좋아요 + 댓글</div><div class="t2" style="font-size:27px;margin:0">남의 글에 둘 다 · 하루 1번</div></td><td class="cash">+1</td></tr>
+      <tr><td style="font-size:52px">🏅</td><td><div class="t1" style="font-size:35px">월 15일 완주</div><div class="t2" style="font-size:27px;margin:0">한 달에 1번</div></td><td class="cash">+30</td></tr>
+      <tr><td style="font-size:52px">🔥</td><td><div class="t1" style="font-size:35px">완주 보너스</div><div class="t2" style="font-size:27px;margin:0">16일째부터 출석할 때마다</div></td><td class="cash">+1</td></tr>
+    </table>
+  </div>
+  <div class="kick" style="margin-bottom:16px">🎁 상점에서 선물로 교환</div>
+  <div class="twocol">
+    <div class="mini"><div class="e">☕</div><div class="h" style="font-size:32px">스벅 아아</div><div class="d"><span class="coin">C</span><b style="color:var(--ink);font-size:34px">50</b><br>월말 일괄 발송</div></div>
+    <div class="mini"><div class="e">📚</div><div class="h" style="font-size:32px">2만원 이내 책</div><div class="d"><span class="coin">C</span><b style="color:var(--ink);font-size:34px">200</b><br>신청 후 2일 이내</div></div>
+  </div>
+  <div class="foot">상점 탭 → 🎁선물 구매 → <b>MY 탭에서 교환 신청</b> · 캐릭터 꾸미기 아이템도 캐시로 사요</div>
+</div></div><div class="cell"><div class="s" id="c6">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">6 / 9</div></div>
+  <div class="kick">월말 이벤트</div>
+  <h2>🍀 행운의 뽑기</h2>
+  <div class="lead">15일 완주하면 <b>자동으로 응모</b>돼요.<br>따로 신청할 필요 없어요!</div>
+  <div class="box" style="background:var(--ink);border-color:var(--ink);color:#fff;text-align:center;padding:50px 40px;margin-bottom:28px">
+    <div style="font-size:34px;color:#FCEBD8;font-weight:700">매달 말 추첨</div>
+    <div style="font-size:120px;font-weight:900;line-height:1.2">3명</div>
+    <div style="font-size:40px;font-weight:800">☕ 커피 쿠폰 당첨</div>
+  </div>
+  <div class="stack" style="gap:18px">
+    <div class="box row" style="padding:28px 36px"><div class="ic" style="width:88px;height:88px;font-size:46px">🏠</div><div class="t1" style="font-size:34px">홈 탭 맨 위에 당첨자 발표</div></div>
+    <div class="box row" style="padding:28px 36px"><div class="ic" style="width:88px;height:88px;font-size:46px">🛍️</div><div class="t1" style="font-size:34px">MY 탭에 쿠폰이 자동으로 들어가요</div></div>
+  </div>
+  <div class="foot">쿠폰은 월말에 한꺼번에 보내드려요 · <b>15일 완주</b>가 응모 조건이에요</div>
+</div></div><div class="cell"><div class="s" id="c7">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">7 / 9</div></div>
+  <div class="kick">독서모임 · 월 2회</div>
+  <h2>함께 읽고<br>이야기 나누기</h2>
+  <div class="stack" style="gap:18px;margin-bottom:26px">
+    <div class="box row" style="padding:30px 38px"><div class="ic">💬</div><div><div class="t1">주제 대화</div><div class="t2">정해진 주제로 각자의 생각을 나눠요</div></div></div>
+    <div class="box" style="padding:30px 38px">
+      <div class="row" style="margin-bottom:18px"><div class="ic">📖</div><div><div class="t1">월말 독서 토론</div><div class="t2">지정독서와 자유독서를 번갈아요</div></div></div>
+      <div class="twocol" style="gap:16px"><div class="pill" style="text-align:center">짝수 달 · 지정독서</div><div class="pill" style="text-align:center;background:var(--moss-s);color:#2F6B4D">홀수 달 · 자유독서</div></div>
+    </div>
+  </div>
+  <div class="twocol" style="margin-bottom:26px">
+    <div class="mini"><div class="e">🪑</div><div class="h">정원 8명</div><div class="d">홈 탭 달력에서<br>선착순 참석 신청</div></div>
+    <div class="mini"><div class="e">👑</div><div class="h">토론왕</div><div class="d">10회 참여하면<br>회비 1회 면제</div></div>
+  </div>
+  <div class="foot">못 오게 되면 꼭 <b>미리 취소</b>해 주세요 · 가끔 오프모임도 열려요</div>
+</div></div><div class="cell"><div class="s" id="c8">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">8 / 9</div></div>
+  <div class="kick">짝수 달 지정도서</div>
+  <h2>📚 읽고 싶은 책,<br>투표로 정해요</h2>
+  <div class="box" style="padding:46px 30px;margin-bottom:28px">
+    <div class="tl">
+      <div class="st"><div class="dot">🗳️</div><div class="d1">1~2일</div><div class="d2">추천·투표</div></div>
+      <div class="ar">›</div>
+      <div class="st hl"><div class="dot">🏆</div><div class="d1">3일</div><div class="d2">자동 선정</div></div>
+      <div class="ar">›</div>
+      <div class="st"><div class="dot">💬</div><div class="d1">월말</div><div class="d2">지정독서 모임</div></div>
+    </div>
+  </div>
+  <div class="twocol" style="margin-bottom:26px">
+    <div class="mini"><div class="e">✍️</div><div class="h">추천 1권</div><div class="d">읽고 싶은 이유<br>10자 이상</div></div>
+    <div class="mini"><div class="e">✅</div><div class="h">투표 2표</div><div class="d">내가 추천한 책에도<br>투표할 수 있어요</div></div>
+  </div>
+  <div class="foot">홈 탭 독서모임 달력 아래 <b>투표 카드</b>에서 참여해요.<br>가장 많이 받은 책이 선정 · 동점이면 먼저 추천된 책</div>
+</div></div><div class="cell"><div class="s" id="c9">
+  <div class="top"><div class="brand">🍎 꾸독 가이드</div><div class="pg">9 / 9</div></div>
+  <div class="kick">회비</div>
+  <h2>💳 매달 <span style="color:var(--honey-d)">1만원</span><br>5일까지</h2>
+  <div class="stack" style="gap:14px;margin-bottom:20px">
+    <div class="box row" style="padding:26px 36px"><div class="num">1</div><div class="t1" style="font-size:34px">상점 탭 회비 카드에서 계좌 복사</div></div>
+    <div class="box row" style="padding:26px 36px"><div class="num">2</div><div class="t1" style="font-size:34px">입금 후 <span class="pill">입금했어요</span> 누르기</div></div>
+    <div class="box row" style="padding:26px 36px"><div class="num">3</div><div class="t1" style="font-size:34px">모임장 확인 → ‘완료’로 바뀌어요</div></div>
+  </div>
+  <div class="note" style="margin-bottom:20px;padding:24px 34px">👑 토론왕(모임 10회)은 다음 달 <b>1회 면제</b> · 15일 이후 가입은 <b>다음 달 1일부터</b></div>
+  <div class="box" style="background:var(--honey-s);border-color:#F6DDBF;padding:28px 36px">
+    <div class="t1" style="font-size:34px">🔗 처음이라면</div>
+    <div class="t2" style="font-size:29px">디스코드 가입 → 꾸독앱 구글 로그인 → 상점 ⚙️에서 <b>디스코드 유저명 연동</b><br>꾸독앱: <b>kkudok.vercel.app</b> · 카톡 말고 사파리·크롬으로 열어요</div>
+  </div>
+</div></div></div>
+<div class="nav"><button class="arr" id="pv" aria-label="이전">‹</button><div class="dots" id="dt"></div><button class="arr" id="nx" aria-label="다음">›</button></div></div>
+<script>
+const tr=document.getElementById('tr'),cells=[...tr.children],dt=document.getElementById('dt');
+const pv=document.getElementById('pv'),nx=document.getElementById('nx');
+cells.forEach((c,i)=>{const d=document.createElement('i');d.onclick=()=>go(i);dt.appendChild(d);});
+let W=1,cur=0;
+function fit(){
+  const vv=window.visualViewport, de=document.documentElement;
+  const vw=Math.min(window.innerWidth||9999,de.clientWidth||9999,vv?vv.width:9999,screen.width||9999);
+  const vh=Math.min(window.innerHeight||9999,de.clientHeight||9999,vv?vv.height:9999,screen.height||9999)-56;
+  const sc=Math.min(vw*0.96/1080,vh/1350);W=vw;
+  tr.style.width=vw+'px';
+  cells.forEach(c=>{c.style.width=vw+'px';c.style.height=(1350*sc)+'px';const s=c.firstElementChild;
+    s.style.transform='scale('+sc+')';s.style.marginRight=(-1080*(1-sc))+'px';s.style.marginBottom=(-1350*(1-sc))+'px';});
+  tr.scrollLeft=cur*vw;upd();
+}
+function upd(){[...dt.children].forEach((d,i)=>d.classList.toggle('on',i===cur));pv.disabled=cur===0;nx.disabled=cur===cells.length-1;}
+function go(i){cur=Math.max(0,Math.min(cells.length-1,i));tr.scrollTo({left:cur*W,behavior:'smooth'});upd();}
+pv.onclick=()=>go(cur-1);nx.onclick=()=>go(cur+1);
+let t;tr.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{cur=Math.round(tr.scrollLeft/W);upd();},80);});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1);});
+window.addEventListener('resize',fit);window.addEventListener('orientationchange',()=>setTimeout(fit,200));if(window.visualViewport)visualViewport.addEventListener('resize',fit);fit();setTimeout(fit,300);
+</script></body></html>

@@ -768,6 +768,13 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .hd .bell{position:relative;width:31px;height:31px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
 .hd .bell:active{background:#F6F1E8}
   /* 헤더 캐시 코인 배지 (벨 왼쪽, 작게) — 골드 동그라미 C + 숫자 */
+.hd .guidebtn{margin-left:auto;width:31px;height:31px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:15px;line-height:1;cursor:pointer;flex:none;padding:0}
+.hd .guidebtn:active{background:#F6F1E8}
+.hd .guidebtn + .hdcash{margin-left:0}
+.gdov{position:fixed;inset:0;z-index:55;background:#F3ECE1;display:none}
+.gdov.on{display:block}
+.gdov iframe{width:100%;height:100%;border:0;display:block}
+.gdov .gdx{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:2;width:38px;height:38px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 10px rgba(60,45,30,.18);font-size:17px;color:var(--ink);cursor:pointer}
 .hd .hdcash{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);
   color:var(--ink);font-weight:800;font-size:12.5px;padding:6px 11px 6px 6px;border-radius:30px;flex:none}
 .hd .hdcash .coin{width:17px;height:17px;border-radius:50%;background:linear-gradient(145deg,#FFD874,#F5A623);color:#fff;
@@ -903,6 +910,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
   <div class="hd">
     <img id="logo" alt="꾸독">
     <div class="t">꾸독<small>함께 꾸준히, 독서 모임</small></div>
+    <button class="guidebtn" id="guideBtn" aria-label="꾸독 가이드">📖</button>
     <div class="hdcash" id="hdCashWrap"><span class="coin">C</span><b id="hdCash">0</b></div>
     <button class="bell" id="bellBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge" hidden>0</span></button>
   </div>
@@ -949,6 +957,8 @@ body.dragx,body.dragx *{cursor:grabbing!important}
     <button class="btn" id="onbStart" style="margin-top:18px" disabled>시작하기</button>
   </div>
 </div>
+
+<div class="gdov" id="gdOv"><button class="gdx" id="gdX" aria-label="닫기">✕</button><iframe id="gdFrame" title="꾸독 가이드"></iframe></div>
 
 <div class="toast" id="toast"></div>
 
@@ -5020,6 +5030,10 @@ function initNotif(){
   if(m && typeof m.notifSeenTs!=='number'){ m.notifSeenTs=Date.now(); save(); }
   const btn=document.getElementById('bellBtn');
   if(btn) btn.onclick=openNotifSheet;
+  const gb=document.getElementById('guideBtn');   // 📖 가이드: 레포의 guide.html을 전체화면으로
+  if(gb) gb.onclick=()=>{const f=document.getElementById('gdFrame');if(!f.src)f.src='guide.html';document.getElementById('gdOv').classList.add('on');};
+  const gx=document.getElementById('gdX');
+  if(gx) gx.onclick=()=>document.getElementById('gdOv').classList.remove('on');
   startGiftWatch();   // 모임장이면 교환 신청 실시간 감시 시작
   startFeeWatch();    // 내 회비 + (모임장) 입금했어요 감시
   updateBellBadge();
