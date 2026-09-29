@@ -3958,15 +3958,17 @@ async function searchBooks(q,opts){
   box.innerHTML=`<div class="sr-state">'${q}' 검색 중…</div>`;
   try{
     // 카카오 책 검색 — 키 보호를 위해 Vercel 서버리스 함수(/api/kakao) 경유 (알라딘 API 2026-10-30 종료)
-    const r=await fetch('/api/kakao?q='+encodeURIComponent(q));
-    const data=await r.json();
+    // 카카오 + 국립중앙도서관 + 구글북스 통합 검색(/api/books). 실패하면 카카오 단독(/api/kakao)으로 대체
+    let data=null;
+    try{const r=await fetch('/api/books?q='+encodeURIComponent(q));if(r.ok)data=await r.json();}catch(e){}
+    if(!data||!Array.isArray(data.items)){const r=await fetch('/api/kakao?q='+encodeURIComponent(q));data=await r.json();}
     if(data&&data.error){throw new Error(data.error);}
     // 카카오 응답 → 기존 구글(volumeInfo) 형태로 매핑해서 호출부/커버 처리 그대로 재사용
-    // ⚠️ 카카오는 쪽수를 주지 않음 → pageCount 0 (전체 페이지는 직접 입력)
+    // 쪽수는 국립중앙도서관·구글북스에서 보강 (없으면 0 → 직접 입력)
     let items=((data&&data.items)||[]).map((it,idx)=>({
       title:it.title||'',
       authors:[(it.authors||[]).join(', ')].filter(Boolean),
-      pageCount:0,
+      pageCount:it.pages||0,
       publishedDate:it.pubDate||'',
       publisher:it.publisher||'',
       isbn13:it.isbn13||'',
