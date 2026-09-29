@@ -153,6 +153,10 @@ input{font-family:inherit}
 .mqb-l{font-size:11.5px;font-weight:800;color:var(--ink);white-space:nowrap}
 .mqb.new .mqb-l{color:var(--honey-d)}
 .mqb-empty{text-align:center;color:var(--soft);font-size:12.5px;line-height:1.7;padding:6px 4px 2px}
+.mp-hero{padding:22px 10px 14px;margin-bottom:12px;box-shadow:none}
+.mp-box{background:#fff;border-radius:18px;padding:12px 14px 14px;margin:6px 4px 0;box-shadow:0 2px 10px rgba(60,45,30,.08)}
+.mp-box .mqb-mini{margin:0}
+.mp-stat{font-size:12.5px;color:var(--soft);margin-top:9px}
 .mqb-mini{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 14px}
 .mqb-mini span{display:inline-flex;align-items:center;gap:3px;background:var(--honey-s);color:var(--honey-d);font-size:11.5px;font-weight:800;padding:3px 9px 3px 5px;border-radius:20px}
 .mqb-mini .mqa{font-size:12px}
@@ -226,7 +230,7 @@ input{font-family:inherit}
 .mt-seat.empty .av{border:1.5px dashed #D9D2C5;display:grid;place-items:center;color:#C9C3B8;font-size:18px}
 .mt-seat span{font-size:12px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mt-seat.empty span{color:#B5AFA4;font-weight:500}
-.mt-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.mt-seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .mt-seg button{height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;color:#6B665E;cursor:pointer;font-family:inherit}
 .mt-seg button.on{background:var(--honey);border-color:var(--honey);color:#fff;font-weight:800}
 /* ---- 💳 회비 (fee-) ---- */
@@ -1895,8 +1899,8 @@ function applyFeedSearch(v){
    · 참석: 누구나 · 정원 8명 선착순 · 취소하면 뒷사람이 자동으로 앞당겨짐
    · 토론(지정·자유독서) 10회 이상 참여 → 회비 면제 대상 + 👑 토론왕 배지 */
 const MEET_CAP=8, DEBATE_GOAL=10;
-const MEET_TYPES={topic:'주제 대화',free:'자유독서 (자독)',assigned:'지정독서 (지독)'};
-const MEET_SHORT={topic:'주제',free:'자독',assigned:'지독'};
+const MEET_TYPES={topic:'주제 대화',free:'자유독서 (자독)',assigned:'지정독서 (지독)',off:'오프모임'};
+const MEET_SHORT={topic:'주제',free:'자독',assigned:'지독',off:'오프'};
 let meetY=null, meetM=null;
 function meetCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('meetups'):null;}
 function roomDoc(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId):null;}
@@ -2008,7 +2012,7 @@ function openMeetSheet(id){
     <div style="display:flex;gap:14px;align-items:center;margin:4px 0 14px">
       <div class="mt-date" style="width:62px;height:66px;${st==='past'?'background:#EFEBE4;color:var(--soft)':''}"><span>${+x.date.slice(5,7)}월</span><b style="font-size:26px">${+x.date.slice(8,10)}</b><span>${wdOf(x.date)}</span></div>
       <div style="min-width:0"><div style="font-size:12px;font-weight:800;color:var(--honey-d)">${MEET_TYPES[x.type]||'독서모임'}</div>
-        <div style="font-size:19px;font-weight:900;line-height:1.3">${x.bookTitle?escT(x.bookTitle):(x.type==='topic'?'주제 대화':'자유독서')}</div>
+        <div style="font-size:19px;font-weight:900;line-height:1.3">${x.bookTitle?escT(x.bookTitle):(MEET_TYPES[x.type]||'독서모임')}</div>
         <div style="font-size:13px;color:#6B665E">${fmtTime(x.time)}${x.bookAuthor?` · ${escT(x.bookAuthor)}`:''}</div></div>
     </div>
     ${x.note?`<div style="background:#F7F4EE;border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4A4640;white-space:pre-line;margin-bottom:14px">${escT(x.note)}</div>`:''}
@@ -2042,7 +2046,7 @@ function openMeetForm(x){
     <div class="field" id="mfBookWrap" style="display:${_mtType==='assigned'?'':'none'}"><label for="mfBook">지정도서</label>
       <input id="mfBook" placeholder="제목 2글자만 입력해도 검색돼요" value="${esc2(_mtBook.t)}" autocomplete="off" style="${inp}">
       <div class="searchres" id="mfsres" style="display:none"></div></div>
-    <div class="field"><label for="mfNote">발제문 · 안내 <span style="font-weight:400">(선택)</span></label>
+    <div class="field"><label for="mfNote">발제문 · 안내 · 장소 <span style="font-weight:400">(선택)</span></label>
       <textarea id="mfNote" rows="3" maxlength="800" style="width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${x?escT(x.note||''):''}</textarea></div>
     <div style="display:flex;justify-content:space-between;background:#F7F4EE;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:800;margin-bottom:12px"><span>정원</span><span style="color:var(--honey-d)">${MEET_CAP}명 · 선착순</span></div>
     <button class="btn" id="mfSave">${x?'수정 완료':'일정 등록하기'}</button>
@@ -2079,7 +2083,7 @@ async function toggleStaff(id){
     await rd.set({staff:on?firebase.firestore.FieldValue.arrayRemove(id):firebase.firestore.FieldValue.arrayUnion(id)},{merge:true});
     S.staff=on?(S.staff||[]).filter(x=>x!==id):(S.staff||[]).concat([id]);
     toast(on?'운영진에서 해제했어요':'운영진으로 지정했어요 ⭐');
-    openMemberProfile(id);
+    openManageSheet();
   }catch(e){console.error(e);toast('변경에 실패했어요 (권한 확인)');}
 }
 
@@ -2423,14 +2427,14 @@ function openComposeSheet(editing){
   $('#sheet').innerHTML=`
     <h3>${_editPostId?'문장 수정하기':'문장 공유하기'}</h3>
     <div class="field">
-      <label>오늘의 문장 · 감상</label>
+      <label>오늘의 문장 · 감상 <span style="font-weight:400">(10자 이상)</span></label>
       <textarea id="fpText" rows="4" maxlength="600" placeholder="마음에 남은 문장이나 짧은 감상을 적어보세요"
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${editing?escT(editing.text||''):''}</textarea>
     </div>
     <div class="field">
-      <label>책 <span style="font-weight:400">(선택)</span></label>
+      <label>책 <span style="font-weight:400;color:var(--honey-d)">(필수)</span></label>
       <input id="fpBook" placeholder="제목 2글자만 입력해도 검색돼요" value="${editing?esc2(editing.bookTitle||''):''}" autocomplete="off">
-      <div class="hint">출처가 없으면 비워두거나 제목만 직접 적어도 돼요</div>
+      <div class="hint">검색 결과에 없으면 제목만 직접 적어도 돼요</div>
     </div>
     <div class="searchres" id="fpsres" style="display:none"></div>
     <div class="btnrow">
@@ -2450,10 +2454,13 @@ function openComposeSheet(editing){
     }}),320);};
   setTimeout(()=>$('#fpText').focus(),250);
 }
+const POST_MIN=10;   // 문장 공유 최소 글자 수 (공백 제외)
 async function submitPost(){
   const text=$('#fpText').value.trim();
   if(!text){toast('문장이나 감상을 입력해주세요');return;}
+  if(text.replace(/\s/g,'').length<POST_MIN){toast(`문장은 ${POST_MIN}자 이상 적어주세요 (지금 ${text.replace(/\s/g,'').length}자)`);return;}
   const bookT=($('#fpBook')?$('#fpBook').value.trim():'')||_composeBookT;
+  if(!bookT){toast('어떤 책의 문장인지 책 제목을 적어주세요');$('#fpBook')&&$('#fpBook').focus();return;}
   if(_editPostId){ // 수정 모드 — 작성자 본인만
     const id=_editPostId, target=(S.posts||[]).find(x=>x.id===id);
     if(target&&target.authorId!==S.meId){toast('내 글만 수정할 수 있어요');return;}
@@ -2513,6 +2520,13 @@ const MQ_START='2026-10';     // 이 달부터 필수 출석 시작 (이전 달�
 const MQ_APPLE_ON='<span class="mqa">🍎</span>';          // 채운 칸 / 배지
 const MQ_APPLE_OFF='<span class="mqa off">🍎</span>';      // 빈 칸 (흐리게)
 /* 이번 달 출석 현황 계산 → {ym, mon, got, need, left, state, head, sub} */
+/* 중간 가입자: 1~14일 가입 → 그 달부터 / 15일 이후 가입 → 다음 달부터 (출석·회비 공통) */
+const JOIN_CUTOFF_DAY=14;
+function joinStartYm(m){
+  const c=m&&m.createdAt; if(!c||!/^\d{4}-\d{2}-\d{2}/.test(c))return '0000-00';   // 가입일 기록이 없으면 기존 멤버로 봄
+  return +c.slice(8,10)<=JOIN_CUTOFF_DAY?c.slice(0,7):ymAdd(c.slice(0,7),1);
+}
+function ruleStartYm(m){const j=joinStartYm(m);return j>MQ_START?j:MQ_START;}   // 필수 출석이 시작되는 달
 function monthQuota(m){
   const t=todayISO(), ym=t.slice(0,7), mon=+t.slice(5,7), day=+t.slice(8,10);
   const y=+t.slice(0,4), dim=new Date(y,mon,0).getDate();
@@ -2521,9 +2535,10 @@ function monthQuota(m){
   const left=dim-day+(readToday?0:1);        // 아직 출석할 수 있는 날 (오늘 포함)
   const need=Math.max(0,MONTH_GOAL-got);
   let state,head,sub;
-  if(ym<MQ_START){
-    state='pre'; head=`${+MQ_START.slice(5)}월 1일부터 월 ${MONTH_GOAL}일 필수 출석이 시작돼요`;
-    sub=`이번 달 기록은 연습이에요 · 지금까지 ${got}일`;
+  const startYm=ruleStartYm(m);
+  if(ym<startYm){
+    state='pre'; head=`${+startYm.slice(5)}월 1일부터 월 ${MONTH_GOAL}일 필수 출석이 시작돼요`;
+    sub=ym<MQ_START?`이번 달 기록은 연습이에요 · 지금까지 ${got}일`:`${JOIN_CUTOFF_DAY+1}일 이후 가입이라 다음 달부터 적용돼요 · 지금까지 ${got}일`;
   }else if(got>=MONTH_GOAL){
     state='done'; head=`${mon}월 ${MONTH_GOAL}일 출석 완주!`;
     sub=got>MONTH_GOAL?`이번 달 ${got}일째 · 보너스 도장이 쌓이고 있어요`:'이제부터는 보너스 도장이에요';
@@ -2933,6 +2948,8 @@ function meetExemptYm(uid){
 function feeStatus(uid,ym,doc){
   if(ym<FEE_START)return {state:'pre'};
   if(isStaffId(uid))return {state:'exempt',reason:uid===S.ownerId?'모임장 면제':'운영진 면제'};
+  const js=joinStartYm(S.members[uid]);
+  if(ym<js)return {state:'exempt',reason:`신규 가입 · ${+js.slice(5)}월부터 회비`};
   if(meetExemptYm(uid)===ym)return {state:'exempt',reason:'🗣️ 모임 10회 달성 · 1회 면제'};
   if(doc&&doc.status==='paid')return {state:'paid',doc};
   if(doc&&doc.status==='reported')return {state:'reported',doc};
@@ -3157,18 +3174,26 @@ function drawHomeHTML(){
 function openMemberProfile(id){
   const m=S.members[id]; if(!m)return;
   const isMine=id===S.meId;
+  const role=id===S.ownerId?'<span>👑 모임장</span>':isStaffId(id)?'<span>⭐ 운영진</span>':'';
+  const king=isDebateKing(id)?`<span>🗣️ 토론왕 · ${debateCount(id)}회</span>`:'';
   $('#sheet').innerHTML=`
-    <h3>${escT(m.name)}${isMine?'님 (나)':'님'}</h3>
-    <div style="display:flex;justify-content:center;margin:-2px 0 6px"><div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div></div>
-    <div style="text-align:center;color:var(--soft);font-size:12.5px;margin:0 0 ${monthBadges(m).length?10:16}px">${genderLabel(m)} · ${age(m)}살 · 완독 ${doneBooks(m).length}권</div>
-    ${(isStaffId(id)||isDebateKing(id))?`<div class="mqb-mini">${id===S.ownerId?'<span>👑 모임장</span>':isStaffId(id)?'<span>⭐ 운영진</span>':''}${isDebateKing(id)?`<span>🗣️ 토론왕 · ${debateCount(id)}회</span>`:''}</div>`:''}
-    ${monthBadgesMiniHTML(m)}
-    ${(isOwner()&&id!==S.ownerId)?`<button class="btn ghost" id="mpStaff" style="margin-bottom:8px">${(S.staff||[]).includes(id)?'⭐ 운영진 해제':'⭐ 운영진으로 지정'}</button>`:''}
+    <div class="card hero mp-hero" style="background:${m.bg||'var(--card)'}">
+      ${avatarHTML(m)}
+      <div class="mp-box">
+        <div class="nm">${escT(m.name)}${isMine?' <span style="font-size:13px;color:var(--honey-d)">(나)</span>':''}</div>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:6px">
+          <span class="agebadge" style="margin-top:0">🎂 ${age(m)}살 · 독서 ${readDays(m)}일</span>
+          <span class="nickbadge">${nickname(age(m))}</span>
+        </div>
+        <div class="mp-stat">${genderLabel(m)} · 완독 ${doneBooks(m).length}권 · 이번 달 출석 ${monthCount(m,todayISO().slice(0,7))}일</div>
+        ${(role||king)?`<div class="mqb-mini" style="margin:10px 0 0">${role}${king}</div>`:''}
+        ${monthBadges(m).length?`<div style="margin-top:8px">${monthBadgesMiniHTML(m)}</div>`:''}
+      </div>
+    </div>
     <button class="btn" id="mpShelf">📚 ${escT(m.name)}님의 책장 보러가기</button>
     <button class="btn ghost" id="mpClose" style="margin-top:8px">닫기</button>`;
   openOv();
   $('#mpShelf').onclick=()=>{S.viewId=id;closeOv();go('shelf');};
-  $('#mpStaff')&&($('#mpStaff').onclick=()=>toggleStaff(id));
   $('#mpClose').onclick=closeOv;
 }
 function cmpJoin(a,b){return ((a.createdAt||'')<(b.createdAt||'')?-1:(a.createdAt||'')>(b.createdAt||'')?1:(a.name||'').localeCompare(b.name||'','ko'));}
@@ -3919,13 +3944,14 @@ $('#backMe')&&($('#backMe').onclick=()=>{S.viewId=S.meId;go(tab);});
 /* ---------- member management (모임장 전용) ---------- */
 function openManageSheet(){
   $('#sheet').innerHTML=`<h3>멤버 관리</h3>
-    <div class="hint" style="text-align:center;margin:-6px 0 14px">🍎출첵 처리 · 💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
+    <div class="hint" style="text-align:center;margin:-6px 0 14px">⭐운영진 지정 · 🍎출첵 처리 · 💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
     <div>${Object.values(S.members).map(m=>`
       <div class="row-m" data-id="${m.id}" style="cursor:default">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
-          <div class="sub">${genderLabel(m)} · 💰${(m.cash||0).toLocaleString()}</div></div>
+          <div class="sub">${(S.staff||[]).includes(m.id)?'<b style="color:var(--honey-d)">⭐운영진</b> · ':''}${genderLabel(m)} · 💰${(m.cash||0).toLocaleString()}</div></div>
         <div class="mg-acts">
+          ${m.id!==S.ownerId?`<button class="mg-gift mgstaff" data-id="${m.id}" title="${(S.staff||[]).includes(m.id)?'운영진 해제':'운영진 지정'}" style="${(S.staff||[]).includes(m.id)?'background:var(--honey);color:#fff':'background:#F4EFE6;color:var(--soft)'}">⭐</button>`:''}
           <button class="mg-gift mgcheck" data-id="${m.id}" title="출첵 처리">🍎</button>
           <button class="mg-gift mgcash" data-id="${m.id}" title="캐시 지급">💰</button>
           <button class="mg-gift mgitem" data-id="${m.id}" title="아이템 잠금해제">🎁</button>
@@ -3935,6 +3961,10 @@ function openManageSheet(){
     <button class="btn ghost" id="mgClose" style="margin-top:8px">닫기</button>`;
   openOv();
   $('#mgClose').onclick=closeOv;
+  $('#sheet').querySelectorAll('.mgstaff').forEach(b=>b.onclick=e=>{e.stopPropagation();
+    const mm=S.members[b.dataset.id], on=(S.staff||[]).includes(b.dataset.id);
+    confirmDialog({title:on?'운영진 해제':'운영진 지정',body:`${mm?escT(mm.name):''}님을 운영진${on?'에서 해제':'으로 지정'}할까요?${on?'':'<br>모임 일정 등록 · 행운의 뽑기 · 회비 면제가 적용돼요'}`,
+      okText:on?'해제':'지정',danger:on,onOk:()=>toggleStaff(b.dataset.id)});});
   $('#sheet').querySelectorAll('.mgcheck').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerCheckIn(b.dataset.id);});
   $('#sheet').querySelectorAll('.mgcash').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveCash(b.dataset.id);});
   $('#sheet').querySelectorAll('.mgitem').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveItem(b.dataset.id);});
