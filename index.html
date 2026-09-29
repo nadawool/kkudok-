@@ -3385,7 +3385,10 @@ const DRAW_PRIZE_INFO={
 const LD_COLORS=['#f6d2b8','#ece2bf','#d9e8d2','#f1d6cf','#f6e6c2','#d5e6e2','#e6dcf0','#f3dbe3'];
 function drawCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('draws'):null;}
 function drawEntrants(ym){return Object.values(S.members).filter(m=>monthCount(m,ym)>=MONTH_GOAL);}
-function rndInt(n){try{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n;}catch(e){return Math.floor(Math.random()*n);}}
+function rndInt(n){   // 암호학적 난수 + 거부 샘플링 → 모든 사람이 정확히 같은 확률
+  try{const lim=Math.floor(0x100000000/n)*n, a=new Uint32Array(1);do{crypto.getRandomValues(a);}while(a[0]>=lim);return a[0]%n;}
+  catch(e){return Math.floor(Math.random()*n);}
+}
 function drawPrizes(d){return (d&&Array.isArray(d.prizes)&&d.prizes.length)?d.prizes:DRAW_PRIZES;}
 function prizeOf(d,uid){const i=(d.winners||[]).indexOf(uid);return i<0?null:(drawPrizes(d)[i]||'coffee');}
 function lastDayISO(ym){const y=+ym.slice(0,4),m=+ym.slice(5,7);return `${ym}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
@@ -3436,15 +3439,14 @@ function openDrawSheet(){
   const btnOff=done||!ents.length||!ready||full||st.busy;
   const status=done?`${mon}월 추첨이 끝났어요 · 결과가 발표됐어요`
     :!ents.length?`${mon}월에 ${MONTH_GOAL}일 이상 출석한 멤버가 없어요`
-    :!ready?`${mon}월 ${+lastDayISO(ym).slice(8)}일(말일)에 추첨할 수 있어요 · 지금 ${ents.length}명 응모 중`
+    :!ready?`매월 말일에 추첨이 가능해요 · 지금 ${ents.length}명 응모 중`
     :full?'모두 뽑았어요 · 아래 버튼으로 결과를 발표해요'
     :`${ents.length}명의 꾸준함이 모였어요 · 버튼을 눌러 행운을 뽑아요`;
   $('#sheet').innerHTML=`<div class="ld">
     <div class="ld-top"><button class="ld-nav" id="drPrev" aria-label="이전 달">‹</button>
       <div class="ld-date"><i></i>${+ym.slice(0,4)}년 ${mon}월 행운의 뽑기</div>
       <button class="ld-nav" id="drNext" aria-label="다음 달" ${ym>=t.slice(0,7)?'disabled':''}>›</button></div>
-    <div class="ld-eyebrow">A LITTLE LUCK, EVERY MONTH</div>
-    <h3 class="ld-h">꾸준함 끝에, 작은 행운</h3>
+    <h3 class="ld-h" style="margin-top:16px!important">열심히 읽은 당신! 받아라!</h3>
     <div class="ld-sub">${mon}월 ${MONTH_GOAL}일 이상 출석 · ${ents.length}명 자동 응모 · 중복 없이 ${need||3}명</div>
     <div class="ld-stage" id="ldStage"><div class="ld-machine" id="ldMachine">
       <div class="ld-cap">KKUDOK</div>
@@ -3453,7 +3455,7 @@ function openDrawSheet(){
       <div class="ld-shadow"></div>
     </div></div>
     <div class="ld-status" id="ldStatus">${status}</div>
-    <div class="ld-rewards"><div class="ld-rhead">이달의 행운 선물<small>총 ${need||3}명 · 중복 당첨 없이</small></div>
+    <div class="ld-rewards"><div class="ld-rhead">이달의 행운 추첨<small>총 ${need||3}명 · 중복 당첨 없이</small></div>
       <div class="ld-grid">${slots}</div></div>
     ${!done&&full&&ents.length?`<button class="btn" id="drSave" style="margin-top:14px">🎉 결과 저장하고 발표하기</button>`:''}
     <p class="ld-note">결과는 한 번만 저장돼요 · 커피 쿠폰은 당첨자 MY 탭에 '교환 대기중'으로,<br>10캐시는 당첨자 앱에 자동으로 들어가요</p>
