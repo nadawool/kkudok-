@@ -1646,6 +1646,7 @@ function toggleFav(id){const m=me();if(!Array.isArray(m.favs))m.favs=[];const i=
 function markSocial(kind){
   const m=me(); ensureItems(m); const t=todayISO();
   m.cashLog[kind+'Done']=t;
+  if(isNewbieMonth(m))return true;   // 15일 이후 가입자의 가입 달: 캐시는 다음 달부터
   if(m.cashLog.likeDone===t&&m.cashLog.commentDone===t&&earnDaily(m,'social',1)){toast('좋아요 + 댓글 완료! +1캐시 💰');return true;}
   if(m.cashLog.social!==t)toast(kind==='like'?'오늘 댓글도 남기면 +1캐시 💬':'오늘 좋아요도 누르면 +1캐시 ❤️');
   return true;
@@ -2721,6 +2722,7 @@ function joinStartYm(m){
   const c=m&&m.createdAt; if(!c||!/^\d{4}-\d{2}-\d{2}/.test(c))return '0000-00';   // 가입일 기록이 없으면 기존 멤버로 봄
   return +c.slice(8,10)<=JOIN_CUTOFF_DAY?c.slice(0,7):ymAdd(c.slice(0,7),1);
 }
+function isNewbieMonth(m){return todayISO().slice(0,7)<joinStartYm(m);}   // 15일 이후 가입자의 '연습 기간'(가입한 달)
 function ruleStartYm(m){const j=joinStartYm(m);return j>MQ_START?j:MQ_START;}   // 필수 출석이 시작되는 달
 function monthQuota(m){
   const t=todayISO(), ym=t.slice(0,7), mon=+t.slice(5,7), day=+t.slice(8,10);
@@ -2733,7 +2735,7 @@ function monthQuota(m){
   const startYm=ruleStartYm(m);
   if(ym<startYm){
     state='pre'; head=`${+startYm.slice(5)}월 1일부터 월 ${MONTH_GOAL}일 필수 출석이 시작돼요`;
-    sub=ym<MQ_START?`이번 달 기록은 연습이에요 · 지금까지 ${got}일`:`${JOIN_CUTOFF_DAY+1}일 이후 가입이라 다음 달부터 적용돼요 · 지금까지 ${got}일`;
+    sub=ym<MQ_START?`이번 달 기록은 연습이에요 · 지금까지 ${got}일`:`이번 달은 연습 기간 · 출첵은 그대로 되고 회비·캐시는 다음 달 1일부터 · 지금까지 ${got}일`;
   }else if(got>=MONTH_GOAL){
     state='done'; head=`${mon}월 ${MONTH_GOAL}일 출석 완주!`;
     sub=got>MONTH_GOAL?`이번 달 ${got}일째 · 보너스 도장이 쌓이고 있어요`:'이제부터는 보너스 도장이에요';
