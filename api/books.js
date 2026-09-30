@@ -1,5 +1,5 @@
 // api/books.js — 꾸독 책 검색 (카카오 + 국립중앙도서관 + 구글북스 합치기)
-// 호출: /api/books?q=검색어
+// 호출: /api/books?q=검색어  ·  /api/books?isbn=9788937460449 (쪽수만)
 // Vercel 환경변수: KAKAO_REST_KEY (기존), NL_CERT_KEY (국립중앙도서관), GOOGLE_BOOKS_KEY (구글북스)
 // · 카카오 결과를 기본 목록으로 쓰고, 같은 ISBN의 쪽수·표지를 도서관/구글에서 채워 넣어요.
 // · 카카오에 없는 책은 도서관 → 구글 순서로 뒤에 붙여요.
@@ -87,7 +87,34 @@ async function google(q) {
 
 const norm = s => String(s || '').toLowerCase().replace(/[\s·:\-–—_()\[\]]/g, '');
 
+// ISBN 한 권의 쪽수·표지만 조회 (책을 고른 뒤 쪽수가 비어 있을 때 사용)
+async function lookupIsbn(isbn) {
+  const tasks = [];
+  if (process.env.NL_CERT_KEY) tasks.push((async () => {
+    const r = await fetch('https://www.nl.go.kr/seoji/SearchApi.do?result_style=json&page_no=1&page_size=5'
+      + '&cert_key=' + encodeURIComponent(process.env.NL_CERT_KEY) + '&isbn=' + encodeURIComponent(isbn));
+    const d = ((await r.json()).docs || [])[0] || {};
+    return { pages: toPages(d.PAGE), cover: https(d.TITLE_URL || '') };
+  })());
+  tasks.push((async () => {
+    const key = process.env.GOOGLE_BOOKS_KEY;
+    const r = await fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + encodeURIComponent(isbn)
+      + (key ? '&key=' + encodeURIComponent(key) : ''));
+    const v = (((await r.json()).items || [])[0] || {}).volumeInfo || {};
+    const img = (v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail)) || '';
+    return { pages: v.pageCount || 0, cover: https(img).replace('&edge=curl', '') };
+  })());
+  const rs = await Promise.all(tasks.map(t => withTimeout(t, T).catch(() => ({}))));
+  return { pages: (rs.find(x => x.pages) || {}).pages || 0, cover: (rs.find(x => x.cover) || {}).cover || '' };
+}
+
 export default async function handler(req, res) {
+  const isbn = String((req.query && req.query.isbn) || '').replace(/[^0-9Xx]/g, '');
+  if (isbn) {
+    const r = await lookupIsbn(isbn);
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
+    return res.status(200).json(r);
+  }
   const q = String((req.query && req.query.q) || '').trim();
   if (!q) return res.status(400).json({ error: 'q required', items: [] });
 
