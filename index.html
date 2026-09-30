@@ -1710,14 +1710,19 @@ function isFav(id){const m=me();return Array.isArray(m.favs)&&m.favs.includes(id
 function toggleFav(id){const m=me();if(!Array.isArray(m.favs))m.favs=[];const i=m.favs.indexOf(id);i<0?m.favs.push(id):m.favs.splice(i,1);} // 찜 토글
 // 하루 1번만 캐시 적립 — 활동(key)별로 '오늘 받았는지'를 기록해 중복 적립을 막음
 // key: 'checkin'(출첵) | 'post'(글) | 'comment'(댓글)
-/* 좋아요 + 댓글: 오늘 남의 글에 둘 다 하면 +1캐시 (하루 1번) */
+/* 좋아요·댓글(하나로 합침): 오늘 남의 글에 좋아요 또는 댓글 → +1캐시 (하루 1번) */
 function markSocial(kind){
   const m=me(); ensureItems(m); const t=todayISO();
   m.cashLog[kind+'Done']=t;
   if(isNewbieMonth(m))return true;   // 15일 이후 가입자의 가입 달: 캐시는 다음 달부터
-  if(m.cashLog.likeDone===t&&m.cashLog.commentDone===t&&earnDaily(m,'social',1)){toast('좋아요 + 댓글 완료! +1캐시 💰');return true;}
-  if(m.cashLog.social!==t)toast(kind==='like'?'오늘 댓글도 남기면 +1캐시 💬':'오늘 좋아요도 누르면 +1캐시 ❤️');
+  if(earnDaily(m,'social',1))toast(kind==='like'?'좋아요 +1캐시 💰 (오늘 소통 캐시 완료)':'댓글 +1캐시 💰 (오늘 소통 캐시 완료)');
   return true;
+}
+/* 글쓰기(하나로 합침): 오늘 문장 공유 또는 책 추천 → +1캐시 (하루 1번) */
+function markWrite(){
+  const m=me(); ensureItems(m);
+  if(isNewbieMonth(m))return false;
+  return earnDaily(m,'post',1);
 }
 function earnDaily(m,key,amount){
   ensureItems(m);                          // m.cashLog 보장
@@ -2370,7 +2375,7 @@ function renderFeed(){
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
   <!-- 캐시 적립 안내: 출첵·댓글·좋아요는 각각 하루 1번 +1캐시 (글 작성은 출첵 조건이라 캐시 없음) -->
-  <div class="fd-cashtip">🎁 좋아요와 댓글 둘 다 하면 +1캐시 · 월 15일 출석 +30캐시 💰</div>
+  <div class="fd-cashtip">🎁 글쓰기(문장·책 추천) +1 · 좋아요·댓글 +1 · 하루 1번씩 💰</div>
   <div class="fd-search">
     <span class="fd-search-ic">🔍</span>
     <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
@@ -2648,7 +2653,8 @@ async function submitRec(){
     createdAt:Date.now(),likes:[],saves:[],comments:[]};
   S.posts=S.posts||[]; S.posts.push(post);
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
-  _recBookId=null; closeOv(); toast('책을 추천했어요 📚');
+  const got=markWrite(); if(got)await save();
+  _recBookId=null; closeOv(); toast(got?'책을 추천했어요 📚 +1캐시 💰':'책을 추천했어요 📚');
   feedSavedOnly=false; feedSort='recent'; renderFeed();
 }
 // 추천글 수정 — 책·별점은 원본 그대로 두고 '추천 한마디'만 고침
@@ -2691,7 +2697,7 @@ function openComposeSheet(editing){
   $('#sheet').innerHTML=`
     <h3>${_editPostId?'문장 수정하기':'문장 공유하기'}</h3>
     <div class="field">
-      <label>오늘의 문장 · 감상 <span style="font-weight:400">(10자 이상)</span></label>
+      <label>오늘의 문장 · 감상 <span style="font-weight:400">(15자 이상)</span></label>
       <textarea id="fpText" rows="4" maxlength="600" placeholder="마음에 남은 문장이나 짧은 감상을 적어보세요"
         style="width:100%;border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${editing?escT(editing.text||''):''}</textarea>
     </div>
@@ -2718,7 +2724,7 @@ function openComposeSheet(editing){
     }}),320);};
   setTimeout(()=>$('#fpText').focus(),250);
 }
-const POST_MIN=10;   // 문장 공유 최소 글자 수 (공백 제외)
+const POST_MIN=15;   // 문장 공유 최소 글자 수 (공백 제외)
 async function submitPost(){
   const text=$('#fpText').value.trim();
   if(!text){toast('문장이나 감상을 입력해주세요');return;}
@@ -2737,9 +2743,9 @@ async function submitPost(){
   const post={id:'p'+Date.now(),authorId:S.meId,text,bookTitle:bookT,bookAuthor:_composeBookA,bookCover:_composeCover,createdAt:Date.now(),likes:[],saves:[],comments:[]};
   S.posts=S.posts||[];S.posts.push(post);
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
-  // (변경) 글 작성 캐시 적립 없음 — 대신 '오늘의 문장'이 출첵 조건이 됨
-  const needCheckin=!me().reads.includes(todayISO());
-  closeOv();toast(needCheckin?'문장을 공유했어요 ✨ 출첵 탭에서 출석체크를 눌러주세요':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
+  // 글쓰기 캐시: 문장 공유·책 추천 합쳐서 하루 1번 +1
+  const got=markWrite(); if(got)await save();
+  closeOv();toast(got?'문장을 공유했어요 ✨ +1캐시 💰':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
 }
 function renderTabs(){
   $('#tabs').innerHTML=TABMETA.map(([k,l,d])=>
@@ -2768,9 +2774,9 @@ function refreshHeader(){
 let calY,calM;
 /* ---------- 출첵 조건: 평일=디스코드+페이지 / 주말=페이지만 ---------- */
 const DISCORD_GOAL=10; // 출첵에 필요한 디스코드 음성 최소 분 (평일·주말 동일 · 봇이 정규시간 안의 분만 기록)
-const PAGE_GOAL=2;     // (참고용) 오늘 누적 진도 — 지금은 출첵 조건 아님. 조건은 디스코드 10분 + 오늘 피드 문장
+const PAGE_GOAL=2;     // (참고용) 오늘 누적 진도 — 지금은 출첵 조건 아님. 조건은 디스코드 정규시간 10분뿐
 /* 오늘 누적 진도 — 하루 중 여러 번 나눠 저장해도 합산 (다음 날이면 0부터) */
-/* 오늘 피드에 '문장 공유' 글을 올렸는지 (책 추천 글은 제외) — 출첵 조건 */
+/* 오늘 피드에 '문장 공유' 글을 올렸는지 (책 추천 글은 제외) — 지금은 출첵 조건 아님(참고용) */
 function postedToday(){
   const t=todayISO();
   return (S.posts||[]).some(p=>p&&p.authorId===S.meId&&p.type!=='rec'&&p.createdAt&&isoLocal(new Date(p.createdAt))===t);
@@ -2980,20 +2986,18 @@ function renderCheckin(){
     }
     const t=todayISO();
     const alreadyIn=me().reads.includes(t);
-    // 출첵 조건 판정 (평일·주말 동일): 디스코드 10분 + 오늘 피드에 인상 깊은 문장 작성
+    // 출첵 조건 판정 (평일·주말 동일): 디스코드 정규시간 10분
     if(gained>0)addTodayGain(me(),gained);
-    const progressOK=postedToday();
     let discordMin=0;
     if(!alreadyIn){ discordMin=await getTodayDiscordMinutes(); }
     const discordOK=discordMin>=DISCORD_GOAL;
-    const condOK = alreadyIn || (discordOK && progressOK);
+    const condOK = alreadyIn || discordOK;
 
     if(!condOK){
       // 조건 미달 → 진도만 저장하고 출석은 보류
       await save();
       renderCheckin();
-      if(!progressOK){ toast('📝 진도 저장 완료! 피드에 오늘 읽은 책의 인상 깊은 문장을 남기면 출석돼요'); openComposeSheet(); }
-      else toast(`📖 진도 저장 완료! 디스코드 ${DISCORD_GOAL}분을 채우면 출석 완료돼요 (현재 ${discordMin}분)`);
+      toast(`📖 진도 저장 완료! 디스코드 ${DISCORD_GOAL}분을 채우면 출석 완료돼요 (현재 ${discordMin}분)`);
       return;
     }
 
@@ -3014,18 +3018,14 @@ function renderCheckin(){
     else if(justDone)toast('완독했어요! 책장에 꽂혔어요 📚');
     else toast(gotCheckin?'출석 완료! +1캐시 💰🍎':'출석 완료! 🍎');
   });
-  // 출첵 조건 안내 (평일·주말 동일: 디스코드 10분 + 오늘 피드 문장)
+  // 출첵 조건 안내 (평일·주말 동일: 디스코드 정규시간 10분)
   if($('#ciCond')&&!readToday){
     getTodayDiscordMinutes().then(min=>{
       const el=$('#ciCond'); if(!el)return;
-      const dOK=min>=DISCORD_GOAL, pOK=postedToday();
-      const dTxt=dOK?`⏱️ 디스코드 ${min}분 ✅`:`⏱️ 디스코드 ${min}/${DISCORD_GOAL}분`;
-      const pTxt=pOK?`📝 오늘의 문장 ✅`:`📝 피드에 오늘 읽은 책의 인상 깊은 문장을 남겨주세요`;
-      el.innerHTML=(pOK?`${dTxt} · ${pTxt}`:`${dTxt}<br>${pTxt}`)
-        +(!pOK?`<br><button class="gf-btn ghost" id="ciPost" style="margin-top:8px">✍️ 문장 쓰러 가기</button>`:'')
-        +(dOK&&pOK?'<br>저장하고 출석체크를 누르면 출석 완료!':'')
-        +(!dOK?'<br>정규시간(오전 7–9시·오후 9–11시)에 디스코드 10분을 채워주세요':'');
-      const cp=$('#ciPost'); if(cp)cp.onclick=()=>openComposeSheet();
+      const dOK=min>=DISCORD_GOAL;
+      el.innerHTML=dOK
+        ?`⏱️ 디스코드 ${min}분 ✅<br>저장하고 출석체크를 누르면 출석 완료!`
+        :`⏱️ 디스코드 ${min}/${DISCORD_GOAL}분<br>정규시간(오전 7–9시·오후 9–11시)에 디스코드 10분을 채워주세요`;
     });
   }
   $('#pm').onclick=()=>{calM--;if(calM<0){calM=11;calY--;}drawCal();};
@@ -3788,10 +3788,6 @@ async function toggleRead(iso){
   const discordMin=await getTodayDiscordMinutes();
   if(discordMin<DISCORD_GOAL){
     toast(`⏱️ 디스코드 ${DISCORD_GOAL}분이 필요해요 (현재 ${discordMin}분)`);
-    return;
-  }
-  if(!postedToday()){
-    toast('📝 피드에 오늘 읽은 책의 인상 깊은 문장을 남겨주세요');
     return;
   }
   m.reads.push(iso);
