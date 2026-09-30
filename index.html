@@ -212,6 +212,21 @@ input{font-family:inherit}
 .mqw h3{margin:6px 0 0;font-size:22px;font-weight:900}
 .mqw p{margin:0;font-size:14px;color:#6B665E;line-height:1.55}
 .mqw .gift{display:inline-flex;align-items:center;gap:6px;background:var(--honey-s);color:#A0521A;border-radius:14px;padding:9px 16px;font-size:14px;font-weight:800}
+.dw{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:4px 0 2px}
+.dw-ic{width:72px;height:72px;border-radius:50%;background:#FDE7E4;display:grid;place-items:center;font-size:34px}
+.dw h3{margin:0;font-size:20px;line-height:1.35}
+.dw-box{width:100%;background:#FFF6F4;border:1.5px solid #F6CFC8;border-radius:16px;padding:14px 16px;box-sizing:border-box}
+.dw-row{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;font-weight:700;color:#8A4A3E}
+.dw-row b{font-size:24px;font-weight:900;color:#ea321f}
+.dw-row b small{font-size:13px;font-weight:700;color:#B0776C}
+.dw-bar{height:8px;background:#F6DCD6;border-radius:10px;overflow:hidden;margin:8px 0 8px}
+.dw-bar i{display:block;height:100%;background:#ea321f;border-radius:10px}
+.dw-left{font-size:13px;font-weight:800;color:#B8321F}
+.dw p{margin:0;font-size:13.5px;line-height:1.6;color:#6B665E}
+.dw p b{color:var(--ink)}
+.dw-saved{font-size:12.5px;font-weight:700;color:#2F6B4D;background:var(--moss-s);padding:6px 12px;border-radius:20px}
+.dw .btn{margin-top:4px}
+.dw-help{font-size:11.5px;color:var(--soft);line-height:1.5}
 /* ---- 📅 독서모임 (mt-) ---- */
 .mt-card{display:flex;flex-direction:column;gap:12px}
 .mt-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -1710,12 +1725,13 @@ function isFav(id){const m=me();return Array.isArray(m.favs)&&m.favs.includes(id
 function toggleFav(id){const m=me();if(!Array.isArray(m.favs))m.favs=[];const i=m.favs.indexOf(id);i<0?m.favs.push(id):m.favs.splice(i,1);} // 찜 토글
 // 하루 1번만 캐시 적립 — 활동(key)별로 '오늘 받았는지'를 기록해 중복 적립을 막음
 // key: 'checkin'(출첵) | 'post'(글) | 'comment'(댓글)
-/* 좋아요·댓글(하나로 합침): 오늘 남의 글에 좋아요 또는 댓글 → +1캐시 (하루 1번) */
+/* 좋아요 + 댓글: 오늘 남의 글에 둘 다 하면 +1캐시 (하루 1번) */
 function markSocial(kind){
   const m=me(); ensureItems(m); const t=todayISO();
   m.cashLog[kind+'Done']=t;
   if(isNewbieMonth(m))return true;   // 15일 이후 가입자의 가입 달: 캐시는 다음 달부터
-  if(earnDaily(m,'social',1))toast(kind==='like'?'좋아요 +1캐시 💰 (오늘 소통 캐시 완료)':'댓글 +1캐시 💰 (오늘 소통 캐시 완료)');
+  if(m.cashLog.likeDone===t&&m.cashLog.commentDone===t&&earnDaily(m,'social',1)){toast('좋아요 + 댓글 완료! +1캐시 💰');return true;}
+  if(m.cashLog.social!==t)toast(kind==='like'?'오늘 댓글도 남기면 +1캐시 💬':'오늘 좋아요도 누르면 +1캐시 ❤️');
   return true;
 }
 /* 글쓰기(하나로 합침): 오늘 문장 공유 또는 책 추천 → +1캐시 (하루 1번) */
@@ -2375,7 +2391,7 @@ function renderFeed(){
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
   <!-- 캐시 적립 안내: 출첵·댓글·좋아요는 각각 하루 1번 +1캐시 (글 작성은 출첵 조건이라 캐시 없음) -->
-  <div class="fd-cashtip">🎁 글쓰기(문장·책 추천) +1 · 좋아요·댓글 +1 · 하루 1번씩 💰</div>
+  <div class="fd-cashtip">🎁 글쓰기(문장·책 추천) +1 · 좋아요+댓글 둘 다 +1 · 하루 1번씩 💰</div>
   <div class="fd-search">
     <span class="fd-search-ic">🔍</span>
     <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
@@ -2997,7 +3013,7 @@ function renderCheckin(){
       // 조건 미달 → 진도만 저장하고 출석은 보류
       await save();
       renderCheckin();
-      toast(`📖 진도 저장 완료! 디스코드 ${DISCORD_GOAL}분을 채우면 출석 완료돼요 (현재 ${discordMin}분)`);
+      openDiscordWarn(discordMin, true);
       return;
     }
 
@@ -3032,6 +3048,27 @@ function renderCheckin(){
   $('#nm').onclick=()=>{calM++;if(calM>11){calM=0;calY++;}drawCal();};
   drawCal();
 }
+/* ⚠️ 디스코드 10분 미달 경고 팝업 (출첵 버튼을 눌렀는데 조건이 안 됐을 때) */
+function openDiscordWarn(min, saved){
+  min=Math.max(0,Math.floor(min||0));
+  const left=Math.max(0,DISCORD_GOAL-min), pct=Math.round(Math.min(1,min/DISCORD_GOAL)*100);
+  $('#sheet').innerHTML=`<div class="dw">
+    <div class="dw-ic">⏱️</div>
+    <h3>디스코드 ${DISCORD_GOAL}분이<br>아직 안 채워졌어요</h3>
+    <div class="dw-box">
+      <div class="dw-row"><span>오늘 디스코드</span><b>${min}<small> / ${DISCORD_GOAL}분</small></b></div>
+      <div class="dw-bar"><i style="width:${pct}%"></i></div>
+      <div class="dw-left">${left}분만 더 읽으면 출석할 수 있어요</div>
+    </div>
+    <p>정규시간 <b>오전 7–9시 · 오후 9–11시</b>에<br>디스코드 음성방에서 읽은 시간만 들어가요.</p>
+    ${saved?'<div class="dw-saved">📖 오늘 읽은 페이지는 저장됐어요</div>':''}
+    <button class="btn" id="dwOk">확인</button>
+    <div class="dw-help">디스코드에서 읽었는데 0분이라면 상점 ⚙️에서 <b>디스코드 유저명</b> 연동을 확인해 주세요</div>
+  </div>`;
+  openOv();
+  $('#dwOk').onclick=closeOv;
+}
+
 /* 📖 디스코드 독서중 — 경과 시간 계산 (readingSince는 봇이 기록한 시작 시각) */
 function readSinceMs(m){var t=m&&m.readingSince;if(!t)return 0;
   if(typeof t==='number')return t;
@@ -3787,7 +3824,7 @@ async function toggleRead(iso){
   // 새로 출첵 → 정식 버튼(#ciSave)과 동일한 조건 검사 (평일·주말 동일)
   const discordMin=await getTodayDiscordMinutes();
   if(discordMin<DISCORD_GOAL){
-    toast(`⏱️ 디스코드 ${DISCORD_GOAL}분이 필요해요 (현재 ${discordMin}분)`);
+    openDiscordWarn(discordMin, false);
     return;
   }
   m.reads.push(iso);
