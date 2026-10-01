@@ -42,6 +42,20 @@ input{font-family:inherit}
 .peer-del{position:absolute;top:6px;right:6px;width:19px;height:19px;border:none;border-radius:50%;background:#F0EADF;color:var(--soft);font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;z-index:2}
 .peer-del:active{background:#E5DCCB}
 .hd .me b{font-size:13px}
+/* 📢 공지 배너 (모든 탭 상단 한 줄) */
+.ntc{display:none;align-items:center;gap:8px;margin:0 14px 6px;height:34px;padding:0 6px 0 12px;border-radius:12px;
+  background:var(--honey-s);color:#7A4416;font-size:12.5px;font-weight:600;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ntc.on{display:flex}
+.ntc .ntc-ic{flex:none;font-size:14px}
+.ntc .ntc-vp{flex:1;min-width:0;height:34px;position:relative;overflow:hidden}
+.ntc .ntc-tx{position:absolute;left:0;right:0;top:0;height:34px;line-height:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .35s ease,opacity .35s ease}
+.ntc .ntc-tx b{color:#5A2F0C;font-weight:800}
+.ntc .ntc-tx.out{transform:translateY(-100%);opacity:0}
+.ntc .ntc-tx.in{transform:translateY(100%);opacity:0}
+.ntc .ntc-n{flex:none;font-size:10.5px;font-weight:700;color:#B5773F;background:rgba(255,255,255,.65);border-radius:10px;padding:2px 7px}
+.ntc.k-gift{background:#FCE8EC;color:#8A3346}.ntc.k-gift .ntc-tx b{color:#6B1F31}.ntc.k-gift .ntc-n{color:#C0607A}
+.ntc.k-done{background:var(--moss-s);color:#2F6B4D}.ntc.k-done .ntc-tx b{color:#1F4F37}.ntc.k-done .ntc-n{color:#5FA17E}
+.ntc.k-meet{background:#E9EEF7;color:#2F4E7A}.ntc.k-meet .ntc-tx b{color:#1D365A}.ntc.k-meet .ntc-n{color:#5C7DAA}
 /* viewing banner */
 .viewbar{display:none;align-items:center;gap:8px;margin:0 14px 6px;padding:9px 12px;border-radius:14px;
   background:var(--moss-s);color:#2f6b4d;font-size:13px;font-weight:600}
@@ -987,6 +1001,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
     <div class="hdcash" id="hdCashWrap"><span class="coin">C</span><b id="hdCash">0</b></div>
     <button class="bell" id="bellBtn" aria-label="알림"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge" hidden>0</span></button>
   </div>
+  <div class="ntc" id="ntc" role="status" aria-live="polite"><span class="ntc-ic" id="ntcIc">📢</span><div class="ntc-vp" id="ntcVp"></div><span class="ntc-n" id="ntcN"></span></div>
   <div class="viewbar" id="viewbar"><span id="viewtxt"></span><button id="backMe">내 기록으로</button></div>
   <div class="scroll">
     <section class="screen" id="s-home"></section>
@@ -2843,7 +2858,75 @@ function refreshHeader(){
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
   else vb.classList.remove('on');
+  renderNotice();
 }
+
+/* ---------- 📢 공지 배너 (모든 탭 상단 · 한 줄 · 여러 개면 4초마다 넘어감) ----------
+   · 🗳️ 지정도서 투표: 투표 기간(짝수 달 1~2일) 동안
+   · 📅 독서모임 일정: 모임 날짜가 지나기 전까지 (가까운 순 3개)
+   · 🎁 선물 교환 신청: 12시간 — participants/{uid}.giftNews (본인 기록에 남김 → 모두 읽기 가능)
+   · 🏅 월 15일 완주: 12시간 — participants/{uid}.mqRewards[ym] (달성 시각) */
+const NTC_TTL=12*60*60*1000, NTC_ROTATE=4000, NTC_MEET_MAX=3;
+let _ntcItems=[], _ntcIdx=0, _ntcTimer=null, _ntcKey='';
+function noticeItems(){
+  if(!S||!S.members)return [];
+  const out=[], now=Date.now(), t=todayISO();
+  try{   // 🗳️ 투표
+    const ym=voteTargetYm();
+    if(votePhase(ym)==='open'&&nomsOf(ym).length){
+      const voted=myVotesUsed(ym)>0;
+      out.push({k:'vote',ic:'🗳️',go:'vote',html:`<b>${+ym.slice(5)}월 지정도서 투표</b> 중 · ${VOTE_LAST_DAY}일 마감${voted?' · 투표 완료':' · 지금 투표해요'}`});
+    }
+  }catch(e){}
+  try{   // 📅 모임 일정 (오늘 포함, 지나기 전까지)
+    meetList().filter(x=>(x.date||'')>=t).slice(0,NTC_MEET_MAX).forEach(x=>{
+      const a=(x.attendees||[]).length, cap=x.cap||MEET_CAP;
+      const day=x.date===t?'오늘':`${+x.date.slice(5,7)}/${+x.date.slice(8,10)}(${wdOf(x.date)})`;
+      const st=(x.attendees||[]).includes(S.meId)?'참석 예정':a>=cap?'마감':`참석 ${a}/${cap}`;
+      const nm=(MEET_TYPES[x.type]||'독서모임').replace(/ \(.+\)$/,'');
+      out.push({k:'meet',ic:'📅',go:'meet',html:`<b>${day}${x.time?' '+fmtTime(x.time):''}</b> ${escT(nm)} · ${st}`});
+    });
+  }catch(e){}
+  const ev=[];   // 🎁 선물 교환 · 🏅 완주 (12시간 · 최신순)
+  Object.values(S.members).forEach(m=>{
+    if(!m||!m.name)return;
+    (m.giftNews||[]).forEach(g=>{if(g&&g.at&&now-g.at<NTC_TTL)ev.push({at:g.at,k:'gift',ic:g.icon||'🎁',
+      html:`<b>${escT(m.name)}</b>님이 ${escT(g.item||'선물')} 교환 🎁`});});
+    Object.entries(m.mqRewards||{}).forEach(([ym,at])=>{if(typeof at==='number'&&now-at<NTC_TTL)ev.push({at,k:'done',ic:'🏅',
+      html:`<b>${escT(m.name)}</b>님이 ${+ym.slice(5)}월 15일 출석을 완주했어요 🎉`});});
+  });
+  ev.sort((a,b)=>b.at-a.at).forEach(e=>out.push(e));
+  return out;
+}
+function _ntcShow(i,anim){
+  const vp=$('#ntcVp'), bar=$('#ntc'); if(!vp||!bar||!_ntcItems.length)return;
+  const it=_ntcItems[i], many=_ntcItems.length>1;
+  bar.className='ntc on k-'+it.k;
+  $('#ntcIc').textContent=it.ic;
+  $('#ntcN').textContent=many?`${i+1}/${_ntcItems.length}`:''; $('#ntcN').style.display=many?'':'none';
+  const old=vp.querySelector('.ntc-tx:not(.out)');
+  const nx=document.createElement('div'); nx.className='ntc-tx'+(anim?' in':''); nx.innerHTML=it.html; vp.appendChild(nx);
+  if(anim)requestAnimationFrame(()=>requestAnimationFrame(()=>nx.classList.remove('in')));
+  if(old){ if(anim){old.classList.add('out');setTimeout(()=>old.remove(),400);} else old.remove(); }
+}
+function renderNotice(){
+  const bar=$('#ntc'); if(!bar)return;
+  const items=noticeItems(), key=items.map(x=>x.html).join('|');
+  if(key===_ntcKey)return;               // 내용이 그대로면 넘김을 끊지 않음
+  _ntcKey=key; _ntcItems=items;
+  clearInterval(_ntcTimer); _ntcTimer=null;
+  if(!items.length){bar.className='ntc';$('#ntcVp').innerHTML='';return;}
+  if(_ntcIdx>=items.length)_ntcIdx=0;
+  $('#ntcVp').innerHTML=''; _ntcShow(_ntcIdx,false);
+  if(items.length>1)_ntcTimer=setInterval(()=>{_ntcIdx=(_ntcIdx+1)%_ntcItems.length;_ntcShow(_ntcIdx,true);},NTC_ROTATE);
+}
+function noticeTap(){   // 투표·일정 공지 → 홈 탭의 해당 카드로
+  const it=_ntcItems[_ntcIdx]; if(!it||!it.go)return;
+  go('home');
+  setTimeout(()=>{const el=document.querySelector(it.go==='vote'?'#s-home .bn-card':'#s-home .mt-card');
+    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},60);
+}
+setInterval(()=>{if(S&&S.meId)renderNotice();},60*1000);   // 12시간 지남 · 날짜 바뀜 반영
 
 /* ---------- HOME ---------- */
 let calY,calM;
@@ -4843,6 +4926,7 @@ function requestGift(oid){
         boughtAt:it.boughtAt||'',reqDate:todayISO(),reqAt:Date.now(),status:'requested'});
     }catch(e){toast('교환 신청에 실패했어요. 모임장에게 알려주세요');console.error(e);return;}
     it.status='requested'; it.reqDate=todayISO(); if(memo)it.memo=memo;
+    m.giftNews=(m.giftNews||[]).filter(x=>x&&Date.now()-x.at<NTC_TTL).concat({at:Date.now(),item:it.name||'선물',icon:it.icon||'🎁'}).slice(-3);  // 📢 공지 배너용 (12시간)
     await save(); closeOv(); drawItems();
     toast('교환 신청 완료! 발송되면 MY 탭에 표시돼요');
   };
@@ -5553,6 +5637,7 @@ function subscribeRealtime(){
 }
 
 function boot(){
+  $('#ntc').onclick=noticeTap;
   refreshHeader();renderTabs();go('home');
   subscribeRealtime();
   initNotif();updateBellBadge();
