@@ -266,7 +266,14 @@ input{font-family:inherit}
 .mt-date span{font-size:11px;font-weight:700}
 .mt-date b{font-size:18px;font-weight:900;line-height:1}
 .mt-info{flex:1;min-width:0}
-.mt-info b{display:block;font-size:14px;font-weight:800}
+.mt-info b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt-info .mt-kind{display:block;font-size:10.5px;font-weight:800;color:var(--honey-d);margin-bottom:1px}
+.mt-write{background:#FFF8F0;border:1.5px solid #F6DDBF;border-radius:16px;padding:13px 14px;margin:0 0 14px}
+.mt-write b{display:block;font-size:14px;font-weight:900;margin-bottom:3px}
+.mt-write p{font-size:12.5px;line-height:1.55;color:#6B5A48;margin:0 0 10px}
+.mt-write a{display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border-radius:12px;background:#232220;color:#fff;font-size:14px;font-weight:800;text-decoration:none}
+.mt-write a:active{opacity:.85}
+.mt-write.soft a{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
 .mt-info small{display:block;font-size:12px;color:var(--soft);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mt-prog{display:flex;align-items:center;gap:6px;margin-top:6px}
 .mt-prog div{height:6px;flex:1;background:#F0EADF;border-radius:10px;overflow:hidden}
@@ -2037,7 +2044,27 @@ function roomDoc(){return window._fb?window._fb.db.collection('rooms').doc(windo
 function isStaff(){return !!(S&&S.meId&&(S.meId===S.ownerId||(S.staff||[]).includes(S.meId)));}
 function isStaffId(id){return !!(id&&(id===S.ownerId||(S.staff||[]).includes(id)));}
 function meetList(){return (S.meets||[]).slice().sort((a,b)=>((a.date||'')+(a.time||''))<((b.date||'')+(b.time||''))?-1:1);}
-function isDebate(t){return !!MEET_TYPES[t];}   // 주제·자독·지독 모두 '모임 참여'로 셈
+function isDebate(t){return !!MEET_TYPES[t];}
+/* 📝 발제문: 운영진이 일정에 붙인 노션 페이지 (없으면 아카이빙 메인) · 오프모임은 발제 없음 */
+const ARCHIVE_URL='https://app.notion.com/p/3eb8cb37f41281d68755eba74f7df124';
+function meetHasPrep(x){return x&&x.type!=='off';}
+function safeUrl(u){u=(u||'').trim();return /^https:\/\/[^\s"'<>]+$/i.test(u)?u:'';}
+function meetPrepUrl(x){return safeUrl(x&&x.notionUrl)||ARCHIVE_URL;}
+/* 카드·배너에 보일 모임 제목: 지정독서=책 제목 · 주제대화=주제 · 그 외=모임 종류 */
+function meetTitle(x){
+  if(x.type==='assigned'&&x.bookTitle)return '📚 '+x.bookTitle;
+  if(x.type==='topic'&&x.topic)return '💬 '+x.topic;
+  return (MEET_TYPES[x.type]||'독서모임').replace(/ \(.+\)$/,'');
+}
+function meetPrepHTML(x,st){
+  if(!meetHasPrep(x)||st==='past')return '';
+  const own=!!safeUrl(x.notionUrl), inn=st==='in';
+  return `<div class="mt-write ${inn?'':'soft'}">
+    <b>✏️ ${inn?'모임 전에 발제문을 써주세요':'참석하면 발제문을 미리 써와요'}</b>
+    <p>${own?'이번 모임 페이지의 발제 표에서 빈 줄 하나에 이름을 쓰고 채워주세요.':'꾸독 독서 모임 아카이빙에서 이번 모임 페이지를 찾아 발제 표를 채워주세요.'}<br>모임 <b style="display:inline;font-size:12.5px">2일 전까지</b> 써주시면 운영진이 토론 질문을 골라요.</p>
+    <a href="${meetPrepUrl(x)}" target="_blank" rel="noopener">📝 노션에서 발제문 쓰기 ↗</a>
+  </div>`;
+}   // 주제·자독·지독 모두 '모임 참여'로 셈
 function debateCount(uid){const t=todayISO();return meetList().filter(x=>isDebate(x.type)&&x.date<=t&&(x.attendees||[]).includes(uid)).length;}
 function isDebateKing(uid){return debateCount(uid)>=DEBATE_GOAL;}
 function wdOf(iso){const d=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10));return '일월화수목금토'[d.getDay()];}
@@ -2071,10 +2098,10 @@ function meetCardHTML(){
   const rows=list.map(x=>{
     const a=x.attendees||[], cap=x.cap||MEET_CAP, st=meetState(x);
     const off=st==='past'||st==='full';
-    const sub=`${wdOf(x.date)} · ${fmtTime(x.time)}${x.bookTitle?` · ${escT(x.bookTitle)}`:''}`;
+    const sub=`${wdOf(x.date)} · ${fmtTime(x.time)}${x.type==='assigned'&&x.bookAuthor?` · ${escT(x.bookAuthor)}`:''}`;
     return `<div class="mt-row ${off?'off':''}" data-meet="${x.id}">
       <div class="mt-date"><span>${+x.date.slice(5,7)}월</span><b>${+x.date.slice(8,10)}</b></div>
-      <div class="mt-info"><b>${MEET_TYPES[x.type]||'독서모임'}</b><small>${sub}</small>
+      <div class="mt-info">${(x.type==='assigned'&&x.bookTitle)||(x.type==='topic'&&x.topic)?`<span class="mt-kind">${MEET_TYPES[x.type]}</span>`:''}<b>${escT(meetTitle(x))}</b><small>${sub}</small>
         <div class="mt-prog"><div><i style="width:${Math.round(Math.min(1,a.length/cap)*100)}%"></i></div><span>${a.length}/${cap}</span></div></div>
       ${meetBtnHTML(x)}</div>`;
   }).join('');
@@ -2113,6 +2140,16 @@ async function joinMeet(id){
       tx.update(ref,{attendees:a.concat([S.meId])});
       return 'ok';
     });
+    if(r==='ok'){
+      const x=(S.meets||[]).find(m=>m.id===id);
+      if(meetHasPrep(x)){   // 참석하자마자 발제문 쓰러 가는 길 안내
+        $('#sheet').innerHTML=`<h3>참석 신청 완료! 📚</h3>
+          <p style="text-align:center;color:var(--soft);font-size:13.5px;line-height:1.6;margin:-4px 4px 14px">${+x.date.slice(5,7)}월 ${+x.date.slice(8,10)}일(${wdOf(x.date)}) ${fmtTime(x.time)}<br>${escT(meetTitle(x))}</p>
+          ${meetPrepHTML(x,'in')}
+          <button class="btn ghost" id="mjClose">나중에 쓸게요</button>`;
+        openOv(); $('#mjClose').onclick=closeOv; return;
+      }
+    }
     toast(r==='ok'?'참석 신청 완료! 모임에서 만나요 📚':r==='full'?'아쉽게도 정원이 다 찼어요':r==='already'?'이미 참석 신청했어요':'신청할 수 없는 모임이에요');
   }catch(e){console.error(e);toast('참석 신청에 실패했어요');}
 }
@@ -2142,10 +2179,11 @@ function openMeetSheet(id){
     <div style="display:flex;gap:14px;align-items:center;margin:4px 0 14px">
       <div class="mt-date" style="width:62px;height:66px;${st==='past'?'background:#EFEBE4;color:var(--soft)':''}"><span>${+x.date.slice(5,7)}월</span><b style="font-size:26px">${+x.date.slice(8,10)}</b><span>${wdOf(x.date)}</span></div>
       <div style="min-width:0"><div style="font-size:12px;font-weight:800;color:var(--honey-d)">${MEET_TYPES[x.type]||'독서모임'}</div>
-        <div style="font-size:19px;font-weight:900;line-height:1.3">${x.bookTitle?escT(x.bookTitle):(MEET_TYPES[x.type]||'독서모임')}</div>
+        <div style="font-size:19px;font-weight:900;line-height:1.3">${x.type==='assigned'&&x.bookTitle?escT(x.bookTitle):x.type==='topic'&&x.topic?escT(x.topic):(MEET_TYPES[x.type]||'독서모임')}</div>
         <div style="font-size:13px;color:#6B665E">${fmtTime(x.time)}${x.bookAuthor?` · ${escT(x.bookAuthor)}`:''}</div></div>
     </div>
     ${x.note?`<div style="background:#F7F4EE;border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.6;color:#4A4640;white-space:pre-line;margin-bottom:14px">${escT(x.note)}</div>`:''}
+    ${meetPrepHTML(x,st)}
     <div style="display:flex;align-items:baseline;justify-content:space-between"><b style="font-size:14px">참석자</b><span style="font-size:13px;font-weight:800;color:var(--honey-d)">${a.length} / ${cap}명 · 선착순</span></div>
     <div class="mt-seats">${seats}</div>
     ${by?`<div style="font-size:12px;color:var(--soft);text-align:right;margin:2px 0 12px">등록 · ${escT(by.name)}</div>`:''}
@@ -2165,6 +2203,7 @@ function openMeetForm(x){
   if(!isStaff())return;
   _mtType=x?x.type:(isAssignedMonth(todayISO().slice(0,7))?'assigned':'free');
   _mtBook={t:x&&x.bookTitle||'',a:x&&x.bookAuthor||'',c:x&&x.bookCover||''};
+  const urlHint=`<div class="hint" style="margin-top:4px">꾸독 독서 모임 아카이빙의 이번 모임 페이지 → 공유 → 링크 복사. 비워두면 아카이빙 메인으로 연결돼요</div>`;
   const inp='width:100%;box-sizing:border-box;height:44px;border-radius:12px;border:1.5px solid var(--line);background:#FCFBF8;padding:0 12px;font-size:14px;font-family:inherit';
   $('#sheet').innerHTML=`<h3>${x?'모임 일정 수정':'모임 일정 등록'}</h3>
     <div class="field"><label>모임 종류</label><div class="mt-seg" id="mfType">
@@ -2176,6 +2215,10 @@ function openMeetForm(x){
     <div class="field" id="mfBookWrap" style="display:${_mtType==='assigned'?'':'none'}"><label for="mfBook">지정도서</label>
       <input id="mfBook" placeholder="제목 2글자만 입력해도 검색돼요" value="${esc2(_mtBook.t)}" autocomplete="off" style="${inp}">
       <div class="searchres" id="mfsres" style="display:none"></div></div>
+    <div class="field" id="mfTopicWrap" style="display:${_mtType==='topic'?'':'none'}"><label for="mfTopic">대화 주제</label>
+      <input id="mfTopic" maxlength="40" placeholder="예: AI는 진짜 친구인가" value="${esc2(x&&x.topic||'')}" autocomplete="off" style="${inp}"></div>
+    <div class="field" id="mfUrlWrap" style="display:${_mtType==='off'?'none':''}"><label for="mfUrl">📝 발제문 노션 페이지 링크 <span style="font-weight:400">(선택)</span></label>
+      <input id="mfUrl" type="url" inputmode="url" placeholder="https://app.notion.com/p/..." value="${esc2(x&&x.notionUrl||'')}" autocomplete="off" style="${inp}">${urlHint}</div>
     <div class="field"><label for="mfNote">발제문 · 안내 · 장소 <span style="font-weight:400">(선택)</span></label>
       <textarea id="mfNote" rows="3" maxlength="800" style="width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${x?escT(x.note||''):''}</textarea></div>
     <div style="display:flex;justify-content:space-between;background:#F7F4EE;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:800;margin-bottom:12px"><span>정원</span><span style="color:var(--honey-d)">${MEET_CAP}명 · 선착순</span></div>
@@ -2185,7 +2228,9 @@ function openMeetForm(x){
   $('#mfCancel').onclick=closeOv;
   $('#mfType').querySelectorAll('button').forEach(b=>b.onclick=()=>{
     _mtType=b.dataset.t;$('#mfType').querySelectorAll('button').forEach(o=>o.classList.toggle('on',o===b));
-    $('#mfBookWrap').style.display=_mtType==='assigned'?'':'none';fillWinner();});
+    $('#mfBookWrap').style.display=_mtType==='assigned'?'':'none';
+    $('#mfTopicWrap').style.display=_mtType==='topic'?'':'none';
+    $('#mfUrlWrap').style.display=_mtType==='off'?'none':'';fillWinner();});
   const bi=$('#mfBook');
   const fillWinner=()=>{   // 지정독서: 그 달 투표 선정 도서가 있으면 자동으로 채움
     if(_mtType!=='assigned'||(_mtBook.t||'').trim())return;
@@ -2201,10 +2246,14 @@ function openMeetForm(x){
     const date=$('#mfDate').value, time=$('#mfTime').value||'21:00';
     if(!date){toast('날짜를 골라주세요');return;}
     if(_mtType==='assigned'&&!(_mtBook.t||'').trim()){toast('지정도서를 입력해주세요');return;}
+    const topic=$('#mfTopic').value.trim(), urlRaw=$('#mfUrl').value.trim();
+    if(_mtType==='topic'&&!topic){toast('대화 주제를 입력해주세요');return;}
+    if(urlRaw&&!safeUrl(urlRaw)){toast('링크는 https:// 로 시작해야 해요');return;}
     const col=meetCol(); if(!col){toast('지금은 등록할 수 없어요');return;}
     const id=x?x.id:('mt'+Date.now().toString(36));
     const data={id,type:_mtType,date,time,note:$('#mfNote').value.trim(),cap:MEET_CAP,
-      bookTitle:_mtType==='assigned'?_mtBook.t:'',bookAuthor:_mtType==='assigned'?_mtBook.a:'',bookCover:_mtType==='assigned'?_mtBook.c:''};
+      bookTitle:_mtType==='assigned'?_mtBook.t:'',bookAuthor:_mtType==='assigned'?_mtBook.a:'',bookCover:_mtType==='assigned'?_mtBook.c:'',
+      topic:_mtType==='topic'?topic:'',notionUrl:_mtType==='off'?'':safeUrl(urlRaw)};
     if(!x){data.attendees=[];data.createdBy=S.meId;data.createdAt=Date.now();}
     try{await col.doc(id).set(data,{merge:true});}catch(e){console.error(e);toast('저장에 실패했어요 (권한 확인)');return;}
     closeOv(); meetY=+date.slice(0,4); meetM=+date.slice(5,7)-1;
@@ -2886,8 +2935,7 @@ function noticeItems(){
       const a=(x.attendees||[]).length, cap=x.cap||MEET_CAP;
       const day=x.date===t?'오늘':`${+x.date.slice(5,7)}/${+x.date.slice(8,10)}(${wdOf(x.date)})`;
       const st=(x.attendees||[]).includes(S.meId)?'참석 예정':a>=cap?'마감':`참석 ${a}/${cap}`;
-      const nm=(MEET_TYPES[x.type]||'독서모임').replace(/ \(.+\)$/,'');
-      out.push({k:'meet',ic:'📅',go:'meet',html:`<b>${day}${x.time?' '+fmtTime(x.time):''}</b> ${escT(nm)} · ${st}`});
+      out.push({k:'meet',ic:'📅',go:'meet',html:`<b>${day}${x.time?' '+fmtTime(x.time):''}</b> ${escT(meetTitle(x).replace(/^(📚|💬) /,''))} · ${st}`});
     });
   }catch(e){}
   const ev=[];   // 🎁 선물 교환 · 🏅 완주 (12시간 · 최신순)
