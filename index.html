@@ -283,6 +283,15 @@ input{font-family:inherit}
 .mt-btn{flex:none;font-size:12.5px;font-weight:800;padding:8px 12px;border-radius:12px;white-space:nowrap;border:none;cursor:pointer;font-family:inherit;background:var(--honey);color:#fff}
 .mt-btn.in{background:#fff;color:var(--honey-d);border:1.5px solid var(--honey)}
 .mt-btn.full{background:#E6DFD3;color:#fff;cursor:default}
+.mt-btn.queue{background:#7A5EA8;color:#fff}
+.mt-btn.queue.on{background:#EEE9F4;color:#5B4485}
+.btn.wait{background:#7A5EA8}
+.btn.wait.on{background:#EEE9F4;color:#5B4485}
+.mt-wnote{font-size:12px;color:var(--soft);text-align:center;line-height:1.5;margin:8px 4px 0}
+.mt-wnote b{color:#5B4485}
+.mt-qlist{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px}
+.mt-qlist span{font-size:11.5px;font-weight:800;background:#F4EFE6;border-radius:20px;padding:4px 10px;color:#6B665E}
+.mt-qlist span.me{background:#EEE9F4;color:#5B4485}
 .mt-empty{text-align:center;color:var(--soft);font-size:12.5px;padding:6px 0 2px}
 .mt-me{display:flex;align-items:center;gap:8px;background:#F7F4EE;border-radius:12px;padding:9px 12px;font-size:12.5px;color:#5F5A52;line-height:1.45}
 .mt-me.king{background:#232220;color:#FCEBD8}
@@ -2075,18 +2084,25 @@ function debateCount(uid){const t=todayISO();return meetList().filter(x=>isDebat
 function isDebateKing(uid){return debateCount(uid)>=DEBATE_GOAL;}
 function wdOf(iso){const d=new Date(+iso.slice(0,4),+iso.slice(5,7)-1,+iso.slice(8,10));return '일월화수목금토'[d.getDay()];}
 function fmtTime(t){if(!t)return '';const [h,mi]=t.split(':').map(Number);return `${h<12?'오전':'오후'} ${((h+11)%12)+1}:${String(mi||0).padStart(2,'0')}`;}
-function meetState(x){ // 'past' | 'in' | 'full' | 'open'
+/* 👥 대기 신청 (정원이 찬 모임) — meetups/{id}.waitlist=[uid 신청순]
+   · 참석자가 취소하면 대기 1번이 자동으로 참석자가 됨 (promoted.{uid}=시각 → 본인에게 '참석 확정' 알림)
+   · 모임 당일에는 자동 참석 없이 빈자리만 열림 → 대기자에게 배너로 알리고 먼저 누른 사람이 참석 */
+function meetWait(x){return (x&&x.waitlist)||[];}
+function myWaitNo(x){return meetWait(x).indexOf(S.meId)+1;}   // 0 = 대기 아님
+function meetState(x){ // 'past' | 'in' | 'wait' | 'full' | 'open'
   const a=x.attendees||[];
   if((x.date||'')<todayISO())return 'past';
   if(a.includes(S.meId))return 'in';
-  if(a.length>=(x.cap||MEET_CAP))return 'full';
-  return 'open';
+  const full=a.length>=(x.cap||MEET_CAP);
+  if(myWaitNo(x))return full?'wait':'open';   // 대기 중인데 자리가 비었으면(당일) 바로 참석 가능
+  return full?'full':'open';
 }
 function meetBtnHTML(x){
   const st=meetState(x), a=x.attendees||[];
   if(st==='past')return `<span class="mt-btn full">${a.includes(S.meId)?'참석함':'지난 모임'}</span>`;
   if(st==='in')return `<button class="mt-btn in" data-leave="${x.id}">✓ 참석 취소</button>`;
-  if(st==='full')return `<span class="mt-btn full">마감</span>`;
+  if(st==='wait')return `<button class="mt-btn queue on" data-unwait="${x.id}">대기 ${myWaitNo(x)}번</button>`;
+  if(st==='full')return `<button class="mt-btn queue" data-wait="${x.id}">대기 신청</button>`;
   return `<button class="mt-btn" data-join="${x.id}">참석하기</button>`;
 }
 function meetCardHTML(){
@@ -2103,8 +2119,9 @@ function meetCardHTML(){
   }
   const rows=list.map(x=>{
     const a=x.attendees||[], cap=x.cap||MEET_CAP, st=meetState(x);
-    const off=st==='past'||st==='full';
-    const sub=`${wdOf(x.date)} · ${fmtTime(x.time)}${x.type==='assigned'&&x.bookAuthor?` · ${escT(x.bookAuthor)}`:''}`;
+    const off=st==='past'||st==='full'||st==='wait';
+    const wn=meetWait(x).length;
+    const sub=`${wdOf(x.date)} · ${fmtTime(x.time)}${x.type==='assigned'&&x.bookAuthor?` · ${escT(x.bookAuthor)}`:''}${st!=='past'&&wn?` · 대기 ${wn}명`:''}`;
     return `<div class="mt-row ${off?'off':''}" data-meet="${x.id}">
       <div class="mt-date"><span>${+x.date.slice(5,7)}월</span><b>${+x.date.slice(8,10)}</b></div>
       <div class="mt-info">${(x.type==='assigned'&&x.bookTitle)||(x.type==='topic'&&x.topic)?`<span class="mt-kind">${MEET_TYPES[x.type]}</span>`:''}<b>${escT(meetTitle(x))}</b><small>${sub}</small>
@@ -2132,6 +2149,8 @@ function bindMeetCard(){
   document.querySelectorAll('#s-home [data-meet]').forEach(el=>el.onclick=()=>openMeetSheet(el.dataset.meet));
   document.querySelectorAll('#s-home [data-join]').forEach(el=>el.onclick=e=>{e.stopPropagation();joinMeet(el.dataset.join);});
   document.querySelectorAll('#s-home [data-leave]').forEach(el=>el.onclick=e=>{e.stopPropagation();leaveMeet(el.dataset.leave);});
+  document.querySelectorAll('#s-home [data-wait]').forEach(el=>el.onclick=e=>{e.stopPropagation();waitMeet(el.dataset.wait,true);});
+  document.querySelectorAll('#s-home [data-unwait]').forEach(el=>el.onclick=e=>{e.stopPropagation();waitMeet(el.dataset.unwait,false);});
 }
 async function joinMeet(id){
   const col=meetCol(); if(!col){toast('지금은 참석 신청을 할 수 없어요');return;}
@@ -2139,11 +2158,13 @@ async function joinMeet(id){
   try{
     const r=await window._fb.db.runTransaction(async tx=>{
       const snap=await tx.get(ref); if(!snap.exists)return 'gone';
-      const d=snap.data(), a=d.attendees||[];
+      const d=snap.data(), a=d.attendees||[], w=d.waitlist||[];
       if((d.date||'')<todayISO())return 'past';
       if(a.includes(S.meId))return 'already';
       if(a.length>=(d.cap||MEET_CAP))return 'full';
-      tx.update(ref,{attendees:a.concat([S.meId])});
+      const up={attendees:a.concat([S.meId])};
+      if(w.includes(S.meId))up.waitlist=w.filter(u=>u!==S.meId);   // 대기하다 들어가면 대기에서 빠짐
+      tx.update(ref,up);
       return 'ok';
     });
     if(r==='ok'){
@@ -2156,14 +2177,51 @@ async function joinMeet(id){
         openOv(); $('#mjClose').onclick=closeOv; return;
       }
     }
-    toast(r==='ok'?'참석 신청 완료! 모임에서 만나요 📚':r==='full'?'아쉽게도 정원이 다 찼어요':r==='already'?'이미 참석 신청했어요':'신청할 수 없는 모임이에요');
+    toast(r==='ok'?'참석 신청 완료! 모임에서 만나요 📚':r==='full'?'정원이 다 찼어요 · 대기 신청을 해주세요':r==='already'?'이미 참석 신청했어요':'신청할 수 없는 모임이에요');
   }catch(e){console.error(e);toast('참석 신청에 실패했어요');}
 }
+async function waitMeet(id,on){   // 대기 신청 / 대기 취소
+  const col=meetCol(); if(!col){toast('지금은 대기 신청을 할 수 없어요');return;}
+  const ref=col.doc(id);
+  try{
+    const r=await window._fb.db.runTransaction(async tx=>{
+      const snap=await tx.get(ref); if(!snap.exists)return 'gone';
+      const d=snap.data(), a=d.attendees||[], w=d.waitlist||[];
+      if((d.date||'')<todayISO())return 'past';
+      if(!on){ if(!w.includes(S.meId))return 'none'; tx.update(ref,{waitlist:w.filter(u=>u!==S.meId)}); return 'off'; }
+      if(a.includes(S.meId))return 'in';
+      if(a.length<(d.cap||MEET_CAP))return 'open';
+      if(w.includes(S.meId))return 'already';
+      tx.update(ref,{waitlist:w.concat([S.meId])});
+      return 'n'+(w.length+1);
+    });
+    toast(r==='off'?'대기를 취소했어요':r==='open'?'자리가 있어요! 바로 참석하기를 눌러주세요':r==='in'?'이미 참석 신청했어요':r==='already'?'이미 대기 중이에요'
+      :r[0]==='n'?`대기 ${r.slice(1)}번으로 신청했어요 · 자리가 나면 자동으로 참석돼요 👥`:'지금은 대기 신청을 할 수 없어요');
+  }catch(e){console.error(e);toast('대기 신청에 실패했어요');}
+}
 function leaveMeet(id){
-  confirmDialog({title:'참석 취소',body:'참석을 취소할까요?<br>내 자리는 다음 신청자에게 돌아가요',okText:'참석 취소',danger:true,onOk:async()=>{
-    const col=meetCol(); if(!col)return;
-    try{await col.doc(id).update({attendees:firebase.firestore.FieldValue.arrayRemove(S.meId)});toast('참석을 취소했어요');}
-    catch(e){console.error(e);toast('취소에 실패했어요');}
+  const x=(S.meets||[]).find(m=>m.id===id);
+  const auto=x&&meetWait(x).length&&(x.date||'')>todayISO();
+  confirmDialog({title:'참석 취소',body:`참석을 취소할까요?<br>${auto?'대기 1번 멤버가 자동으로 참석하게 돼요':'내 자리는 다음 신청자에게 돌아가요'}`,okText:'참석 취소',danger:true,onOk:async()=>{
+    const col=meetCol(); if(!col)return; const ref=col.doc(id);
+    try{
+      const p=await window._fb.db.runTransaction(async tx=>{
+        const snap=await tx.get(ref); if(!snap.exists)return null;
+        const d=snap.data(); let a=(d.attendees||[]).filter(u=>u!==S.meId), w=(d.waitlist||[]).slice();
+        const up={attendees:a}; let pro=null;
+        if((d.date||'')>todayISO()){          // 모임 전날까지만 자동 참석 (당일은 빈자리만 열림)
+          while(w.length&&a.length<(d.cap||MEET_CAP)){
+            const u=w.shift(); if(a.includes(u))continue;
+            a.push(u); pro=pro||u; up['promoted.'+u]=Date.now();
+          }
+          up.attendees=a; up.waitlist=w;
+        }
+        tx.update(ref,up);
+        return pro||'';
+      });
+      const pm=p&&S.members[p];
+      toast(pm?`참석을 취소했어요 · 대기 1번 ${pm.name}님이 참석하게 됐어요`:'참석을 취소했어요');
+    }catch(e){console.error(e);toast('취소에 실패했어요');}
   }});
 }
 function openMeetSheet(id){
@@ -2179,8 +2237,11 @@ function openMeetSheet(id){
   const by=S.members[x.createdBy];
   const btn=st==='past'?`<button class="btn ghost" disabled>지난 모임이에요</button>`
     :st==='in'?`<button class="btn ghost" id="msLeave">✓ 참석 취소</button>`
-    :st==='full'?`<button class="btn" disabled style="background:#E6DFD3">마감 ${a.length}/${cap}</button>`
+    :st==='full'?`<button class="btn wait" id="msWait">👥 대기 신청하기</button><div class="mt-wnote">앞에서 취소하면 순서대로 <b>자동 참석</b>돼요 · 모임 당일엔 빈자리 알림만 가요</div>`
+    :st==='wait'?`<button class="btn wait on" id="msUnwait">✓ 대기 ${myWaitNo(x)}번 · 대기 취소</button><div class="mt-wnote">앞에서 취소하면 순서대로 <b>자동 참석</b>돼요 · 못 오게 되면 대기도 꼭 취소해 주세요</div>`
     :`<button class="btn" id="msJoin">참석하기</button>`;
+  const wl=meetWait(x), qhtml=(st!=='past'&&wl.length)?`<div style="font-size:13px;font-weight:800;margin:12px 2px 0">대기 ${wl.length}명</div>
+    <div class="mt-qlist">${wl.map((u,i)=>`<span class="${u===S.meId?'me':''}">${i+1} · ${u===S.meId?'나':escT((S.members[u]||{}).name||'멤버')}</span>`).join('')}</div>`:'';
   $('#sheet').innerHTML=`
     <div style="display:flex;gap:14px;align-items:center;margin:4px 0 14px">
       <div class="mt-date" style="width:62px;height:66px;${st==='past'?'background:#EFEBE4;color:var(--soft)':''}"><span>${+x.date.slice(5,7)}월</span><b style="font-size:26px">${+x.date.slice(8,10)}</b><span>${wdOf(x.date)}</span></div>
@@ -2193,6 +2254,7 @@ function openMeetSheet(id){
     <div style="display:flex;align-items:baseline;justify-content:space-between"><b style="font-size:14px">참석자</b><span style="font-size:13px;font-weight:800;color:var(--honey-d)">${a.length} / ${cap}명 · 선착순</span></div>
     <div class="mt-seats">${seats}</div>
     ${by?`<div style="font-size:12px;color:var(--soft);text-align:right;margin:2px 0 12px">등록 · ${escT(by.name)}</div>`:''}
+    ${qhtml}
     ${btn}
     ${isStaff()?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="btn ghost" id="msEdit">수정</button><button class="btn ghost" id="msDel" style="color:#d6493f">삭제</button></div>`:''}
     <button class="btn ghost" id="msClose" style="margin-top:8px">닫기</button>`;
@@ -2200,6 +2262,8 @@ function openMeetSheet(id){
   $('#msClose').onclick=closeOv;
   $('#msJoin')&&($('#msJoin').onclick=async()=>{closeOv();await joinMeet(id);});
   $('#msLeave')&&($('#msLeave').onclick=()=>{closeOv();leaveMeet(id);});
+  $('#msWait')&&($('#msWait').onclick=()=>{closeOv();waitMeet(id,true);});
+  $('#msUnwait')&&($('#msUnwait').onclick=()=>{closeOv();waitMeet(id,false);});
   $('#msEdit')&&($('#msEdit').onclick=()=>openMeetForm(x));
   $('#msDel')&&($('#msDel').onclick=()=>confirmDialog({title:'일정 삭제',body:'이 모임 일정을 삭제할까요?<br>참석 신청 내역도 함께 사라져요',okText:'삭제',danger:true,
     onOk:async()=>{try{await meetCol().doc(id).delete();toast('일정을 삭제했어요');}catch(e){console.error(e);toast('삭제에 실패했어요');}}}));
@@ -2940,7 +3004,9 @@ function noticeItems(){
     meetList().filter(x=>(x.date||'')>=t).slice(0,NTC_MEET_MAX).forEach(x=>{
       const a=(x.attendees||[]).length, cap=x.cap||MEET_CAP;
       const day=x.date===t?'오늘':`${+x.date.slice(5,7)}/${+x.date.slice(8,10)}(${wdOf(x.date)})`;
-      const st=(x.attendees||[]).includes(S.meId)?'참석 예정':a>=cap?'마감':`참석 ${a}/${cap}`;
+      const waitNo=myWaitNo(x);
+      if(waitNo&&a<cap){out.unshift({k:'fee',ic:'🔔',go:'meet',html:`<b>${day} ${escT(meetTitle(x).replace(/^(📚|💬) /,''))}</b> 빈자리 ${cap-a}석 · 지금 참석할 수 있어요`});return;}
+      const st=(x.attendees||[]).includes(S.meId)?'참석 예정':waitNo?`대기 ${waitNo}번`:a>=cap?'마감':`참석 ${a}/${cap}`;
       out.push({k:'meet',ic:'📅',go:'meet',html:`<b>${day}${x.time?' '+fmtTime(x.time):''}</b> ${escT(meetTitle(x).replace(/^(📚|💬) /,''))} · ${st}`});
     });
   }catch(e){}
@@ -3632,7 +3698,7 @@ function prizeOf(d,uid){const i=(d.winners||[]).indexOf(uid);return i<0?null:(dr
 function lastDayISO(ym){const y=+ym.slice(0,4),m=+ym.slice(5,7);return `${ym}-${String(new Date(y,m,0).getDate()).padStart(2,'0')}`;}
 function canDrawYm(ym){const t=todayISO();return ym<t.slice(0,7)||(ym===t.slice(0,7)&&t>=lastDayISO(ym));}
 let drawYm=null, _drState=null, _ldGen=0, _ldFrame=0;
-function defaultDrawYm(){const t=todayISO();return +t.slice(8,10)>=25?t.slice(0,7):ymAdd(t.slice(0,7),-1);}
+function defaultDrawYm(){return todayISO().slice(0,7);}   // 항상 이번 달 (지난달은 ‹ 로 이동)
 
 /* 공 크기·처음 자리 (인원이 많으면 공이 작아져요) */
 function ldLayout(n){
@@ -5548,6 +5614,12 @@ function notifEvents(){
       if(w)ev.push({id:'vw_'+ym,type:'vote',name:'지정도서 선정',text:`${mo}월 지정도서는 «${w.title}»이에요`,ts:new Date(y,mo-1,VOTE_LAST_DAY+1).getTime()});
     });
   })();
+  // 8) 👥 대기하다 자동으로 참석이 확정된 모임
+  (S.meets||[]).forEach(x=>{
+    const at=x.promoted&&x.promoted[S.meId];
+    if(at&&(x.attendees||[]).includes(S.meId)&&(x.date||'')>=todayISO())
+      ev.push({id:'mp_'+x.id,type:'meet',name:'참석 확정',text:`${+x.date.slice(5,7)}/${+x.date.slice(8,10)} ${meetTitle(x).replace(/^(📚|💬) /,'')} · 대기에서 자동으로 참석이 확정됐어요`,ts:at});
+  });
   // 5) (모임장만) 회비 '입금했어요'
   if(isOwner()&&Array.isArray(S.feeReq)){
     S.feeReq.forEach(f=>ev.push({id:'f_'+f.ym+'_'+f.uid,type:'fee',name:f.name||'멤버',text:`${+String(f.ym).slice(5,7)}월 회비 ${won(FEE_AMOUNT)}`,ts:f.reportedAt||0}));
@@ -5588,7 +5660,7 @@ function scanNotifications(){
   // 가장 최근 이벤트가 (안읽음이고) 직전에 알린 것보다 새로우면 토스트
   if(top && (top.ts||0)>t && (top.ts||0)>_notifTopTs){
     _notifTopTs=top.ts||0;
-    const msg=top.type==='vote'?`📚 ${top.text}`:top.type==='draw'?`🍀 ${top.text}`
+    const msg=top.type==='meet'?`🎉 ${top.text}`:top.type==='vote'?`📚 ${top.text}`:top.type==='draw'?`🍀 ${top.text}`
              :top.type==='fee'?`${top.name}님이 «${top.text}» 입금했대요 💳`
              :top.type==='gift'?`${top.name}님이 «${top.text}» 교환을 신청했어요 🎁`
              :top.type==='post'?`${top.name}님이 새 문장을 올렸어요 ✨`
@@ -5610,8 +5682,8 @@ function openNotifSheet(){
   const rows=evs.length?evs.map(ev=>{
     const uid=ev.uid||'';
     const unread=(ev.ts||0)>t; // 마지막 확인 이후면 안읽음 강조
-    const icon=ev.type==='vote'?'📚':ev.type==='draw'?'🍀':ev.type==='fee'?'💳':ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
-    const ttl=(ev.type==='draw'||ev.type==='vote')?'':ev.type==='fee'?'님 회비 입금':ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
+    const icon=ev.type==='meet'?'🎉':ev.type==='vote'?'📚':ev.type==='draw'?'🍀':ev.type==='fee'?'💳':ev.type==='gift'?'🎁':ev.type==='post'?'✨':ev.type==='comment'?'💬':'📚';
+    const ttl=(ev.type==='draw'||ev.type==='vote'||ev.type==='meet')?'':ev.type==='fee'?'님 회비 입금':ev.type==='gift'?'님 교환 신청':ev.type==='post'?'님의 새 문장':ev.type==='comment'?'님이 내 글에 댓글':'님 완독';
     const subDef=ev.type==='done'?'책장에 꽂혔어요':'피드에서 확인해요';
     return `
     <div class="nti ${unread?'unread':''}" data-type="${ev.type}" data-uid="${uid}" data-pid="${ev.pid||''}">
@@ -5630,7 +5702,7 @@ function openNotifSheet(){
     closeOv();
     if(el.dataset.type==='gift'){ openGiftAdmin(); return; }
     if(el.dataset.type==='fee'){ feeAdminYm=null; openFeeAdmin(); return; }
-    if(el.dataset.type==='draw'||el.dataset.type==='vote'){ go('home'); return; }
+    if(el.dataset.type==='draw'||el.dataset.type==='vote'||el.dataset.type==='meet'){ go('home'); return; }
     if(el.dataset.type==='done'){
       const uid=el.dataset.uid;
       if(uid&&S.members[uid]){S.viewId=uid;go('shelf');return;}
