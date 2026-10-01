@@ -55,6 +55,7 @@ input{font-family:inherit}
 .ntc .ntc-n{flex:none;font-size:10.5px;font-weight:700;color:#B5773F;background:rgba(255,255,255,.65);border-radius:10px;padding:2px 7px}
 .ntc.k-gift{background:#FCE8EC;color:#8A3346}.ntc.k-gift .ntc-tx b{color:#6B1F31}.ntc.k-gift .ntc-n{color:#C0607A}
 .ntc.k-done{background:var(--moss-s);color:#2F6B4D}.ntc.k-done .ntc-tx b{color:#1F4F37}.ntc.k-done .ntc-n{color:#5FA17E}
+.ntc.k-fee{background:#EEE9F4;color:#5B4485}.ntc.k-fee .ntc-tx b{color:#3F2D63}.ntc.k-fee .ntc-n{color:#7A5EA8}
 .ntc.k-meet{background:#E9EEF7;color:#2F4E7A}.ntc.k-meet .ntc-tx b{color:#1D365A}.ntc.k-meet .ntc-n{color:#5C7DAA}
 /* viewing banner */
 .viewbar{display:none;align-items:center;gap:8px;margin:0 14px 6px;padding:9px 12px;border-radius:14px;
@@ -2855,6 +2856,7 @@ function refreshHeader(){
 }
 
 /* ---------- 📢 공지 배너 (모든 탭 상단 · 한 줄 · 여러 개면 4초마다 넘어감) ----------
+   · 💳 회비: 매달 1~5일, 아직 안 낸 본인에게만 (입금했어요 누르면 사라짐)
    · 🗳️ 지정도서 투표: 투표 기간(짝수 달 1~2일) 동안
    · 📅 독서모임 일정: 모임 날짜가 지나기 전까지 (가까운 순 3개)
    · 🎁 선물 교환 신청: 12시간 — participants/{uid}.giftNews (본인 기록에 남김 → 모두 읽기 가능)
@@ -2864,6 +2866,10 @@ let _ntcItems=[], _ntcIdx=0, _ntcTimer=null, _ntcKey='';
 function noticeItems(){
   if(!S||!S.members)return [];
   const out=[], now=Date.now(), t=todayISO();
+  try{   // 💳 회비 — 1~5일, 아직 입금(확인 중 포함)·면제가 아닌 본인에게만
+    const ym=feeYm(), st=feeStatus(S.meId,ym,(S.myFees||{})[ym]);
+    if(st.state==='due')out.push({k:'fee',ic:'💳',go:'fee',html:`<b>${+ym.slice(5)}월 회비</b>는 ${FEE_DUE_DAY}일까지 입금해 주세요 · 상점 탭 회비 카드`});
+  }catch(e){}
   try{   // 🗳️ 투표
     const ym=voteTargetYm();
     if(votePhase(ym)==='open'&&nomsOf(ym).length){
@@ -2915,6 +2921,7 @@ function renderNotice(){
 }
 function noticeTap(){   // 투표·일정 공지 → 홈 탭의 해당 카드로
   const it=_ntcItems[_ntcIdx]; if(!it||!it.go)return;
+  if(it.go==='fee'){go('dress');return;}   // 상점 탭 회비 카드
   go('home');
   setTimeout(()=>{const el=document.querySelector(it.go==='vote'?'#s-home .bn-card':'#s-home .mt-card');
     if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},60);
@@ -3532,6 +3539,7 @@ function startFeeWatch(){
   if(!_feeUnsub){
     try{_feeUnsub=col.where('uid','==',S.meId).onSnapshot(qs=>{
       S.myFees={}; qs.forEach(d=>{const x=d.data();S.myFees[x.ym]=x;});
+      renderNotice();
       if(tab==='dress'&&!$('#ov').classList.contains('on'))renderDress();
     },e=>console.warn('fees(me)',e));}catch(e){}
   }
