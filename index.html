@@ -2058,11 +2058,17 @@ function meetTitle(x){
 }
 function meetPrepHTML(x,st){
   if(!meetHasPrep(x)||st==='past')return '';
-  const own=!!safeUrl(x.notionUrl), inn=st==='in';
+  const own=!!safeUrl(x.notionUrl), inn=st==='in', topic=x.type==='topic';
+  const where=own?'이번 모임 페이지':'꾸독 독서 모임 아카이빙의 이번 모임 페이지';
+  const head=topic?(inn?'모임 전에 내 생각을 적어주세요':'참석하면 내 생각을 미리 적어와요')
+                  :(inn?'모임 전에 발제문을 써주세요':'참석하면 발제문을 미리 써와요');
+  const body=topic
+    ?`정답은 없어요. 주제에 대한 내 생각과 이유를 ${where} 표에 <b style="display:inline;font-size:12.5px">100자 이상</b> 자유롭게 적어주세요.<br>모임에서는 서로 적은 생각을 바탕으로 <b style="display:inline;font-size:12.5px">1시간 정도</b> 이야기 나눠요.`
+    :`${where}의 발제 표에서 빈 줄 하나에 이름을 쓰고 채워주세요.<br>모임 <b style="display:inline;font-size:12.5px">2일 전까지</b> 써주시면 운영진이 토론 질문을 골라요.`;
   return `<div class="mt-write ${inn?'':'soft'}">
-    <b>✏️ ${inn?'모임 전에 발제문을 써주세요':'참석하면 발제문을 미리 써와요'}</b>
-    <p>${own?'이번 모임 페이지의 발제 표에서 빈 줄 하나에 이름을 쓰고 채워주세요.':'꾸독 독서 모임 아카이빙에서 이번 모임 페이지를 찾아 발제 표를 채워주세요.'}<br>모임 <b style="display:inline;font-size:12.5px">2일 전까지</b> 써주시면 운영진이 토론 질문을 골라요.</p>
-    <a href="${meetPrepUrl(x)}" target="_blank" rel="noopener">📝 노션에서 발제문 쓰기 ↗</a>
+    <b>✏️ ${head}</b>
+    <p>${body}</p>
+    <a href="${meetPrepUrl(x)}" target="_blank" rel="noopener">📝 ${topic?'노션에 내 생각 적기':'노션에서 발제문 쓰기'} ↗</a>
   </div>`;
 }   // 주제·자독·지독 모두 '모임 참여'로 셈
 function debateCount(uid){const t=todayISO();return meetList().filter(x=>isDebate(x.type)&&x.date<=t&&(x.attendees||[]).includes(uid)).length;}
@@ -2217,7 +2223,7 @@ function openMeetForm(x){
       <div class="searchres" id="mfsres" style="display:none"></div></div>
     <div class="field" id="mfTopicWrap" style="display:${_mtType==='topic'?'':'none'}"><label for="mfTopic">대화 주제</label>
       <input id="mfTopic" maxlength="40" placeholder="예: AI는 진짜 친구인가" value="${esc2(x&&x.topic||'')}" autocomplete="off" style="${inp}"></div>
-    <div class="field" id="mfUrlWrap" style="display:${_mtType==='off'?'none':''}"><label for="mfUrl">📝 발제문 노션 페이지 링크 <span style="font-weight:400">(선택)</span></label>
+    <div class="field" id="mfUrlWrap" style="display:${_mtType==='off'?'none':''}"><label for="mfUrl">📝 노션 페이지 링크 <span style="font-weight:400">(선택)</span></label>
       <input id="mfUrl" type="url" inputmode="url" placeholder="https://app.notion.com/p/..." value="${esc2(x&&x.notionUrl||'')}" autocomplete="off" style="${inp}">${urlHint}</div>
     <div class="field"><label for="mfNote">발제문 · 안내 · 장소 <span style="font-weight:400">(선택)</span></label>
       <textarea id="mfNote" rows="3" maxlength="800" style="width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;background:#FCFBF8;resize:vertical;font-family:inherit">${x?escT(x.note||''):''}</textarea></div>
