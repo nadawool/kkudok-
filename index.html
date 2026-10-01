@@ -1827,8 +1827,15 @@ const isOwner=()=>!!(S.ownerId&&S.meId&&S.ownerId===S.meId);
 async function saveMyId(){
   try{await window.storage.set('myid',S.meId,false);}catch(e){}
 }
+let _lastSavedJSON='';
 async function save(){ // persists only the current user's own record
-  try{if(S&&S.meId&&S.members[S.meId])await window.storage.set('member:'+S.meId,JSON.stringify(S.members[S.meId]),true);}catch(e){}
+  // 내 기록이 저장될 때마다 앱을 켜둔 모든 사람이 1번씩 읽음 → 바뀐 게 없으면 저장하지 않음
+  try{if(S&&S.meId&&S.members[S.meId]){
+    const js=JSON.stringify(S.members[S.meId]);
+    if(js===_lastSavedJSON)return;
+    await window.storage.set('member:'+S.meId,js,true);
+    _lastSavedJSON=js;
+  }}catch(e){}
 }
 async function claimOwnerIfEmpty(id){
 if(window._fb){
@@ -2029,11 +2036,14 @@ function feedListHTML(list){
     :feedSavedOnly
     ?'아직 저장한 문장이 없어요 🔖<br>마음에 드는 문장에 책갈피를 눌러보세요'
     :'아직 공유된 문장이 없어요 ✨<br>첫 문장을 공유해보세요'}</div>`;
-  return list.length?list.map(feedCard).join(''):empty;
+  const more=(!_allPostsLoaded&&!feedNeedsAll()&&list.length)?`<button class="btn ghost" id="fdMore" style="margin:6px 0 10px">${_allPostsLoading?'불러오는 중…':'이전 글 더 보기'}</button>`:'';
+  const loading=(!_allPostsLoaded&&feedNeedsAll())?`<div class="shelf-empty" style="padding:10px">예전 글까지 찾는 중이에요…</div>`:'';
+  return (list.length?list.map(feedCard).join('')+more:(loading||empty));
 }
 // 검색어 입력 즉시반영 — 검색창은 그대로 두고 목록(#fdList)만 다시 그림 (포커스 유지)
 function applyFeedSearch(v){
   feedSearch=v;
+  ensureAllPostsFor(()=>applyFeedSearch(feedSearch));
   const L=$('#fdList'); if(L)L.innerHTML=feedListHTML(feedFilteredList());
   const clr=$('#fdSearchClr'); if(clr)clr.style.display=feedSearch.trim()?'grid':'none';
   bindFeed();
@@ -2570,6 +2580,7 @@ function openNomForm(ym,id){   // 운영진 전용: 후보 등록/수정
 }
 
 function renderFeed(){
+  ensureAllPostsFor(renderFeed);
   // 쓰던 댓글(인라인 입력창) 백업 → 리렌더로 입력창이 날아가도 복원
   const _ae=document.activeElement; let _keep=null;
   if(_ae && _ae.classList && _ae.classList.contains('fd-cinp'))
@@ -2698,6 +2709,7 @@ function feedCommentBlock(c,p){
   return feedComment(c,p,false)+repliesHtml;
 }
 function bindFeed(){
+  const mb=$('#fdMore'); if(mb)mb.onclick=()=>{ mb.textContent='불러오는 중…'; mb.disabled=true; loadAllPosts().then(()=>{ if(tab==='feed')renderFeed(); }); };
   const sb=$('#fdSearch');
   if(sb)sb.oninput=()=>applyFeedSearch(sb.value);
   $('#fdSearchClr')&&($('#fdSearchClr').onclick=()=>{feedSearch='';renderFeed();const s=$('#fdSearch');if(s)s.focus();});
@@ -5517,8 +5529,8 @@ $('#onbStart').onclick=async()=>{
 /* ---------- 접속 표시(presence) + 알림(notifications) ---------- */
 window._online=window._online||new Set();
 window._presenceAt=window._presenceAt||{};
-const ONLINE_WINDOW=150000;  // 마지막 신호 150초 이내면 접속 중
-const HEARTBEAT=60000;       // 60초마다 접속 신호 (읽기 절약)
+const ONLINE_WINDOW=420000;  // 마지막 신호 7분 이내면 접속 중 (신호 3분 간격 + 여유)
+const HEARTBEAT=180000;      // 3분마다 접속 신호 (신호 1번 = 앱을 켜둔 모든 사람에게 읽기 1번씩 → 간격을 늘려 절약)
 
 function recomputeOnline(){
   const map=window._presenceAt||{},now=Date.now(),on=new Set();
@@ -5542,17 +5554,20 @@ function startPresence(){
   window._presenceStarted=true;
   const {db,roomId}=window._fb;
   const presCol=db.collection('rooms').doc(roomId).collection('presence');
-  const beat=()=>{ if(S&&S.meId) presCol.doc(S.meId).set({at:Date.now()},{merge:true}).catch(()=>{}); };
+  const beat=()=>{ if(S&&S.meId){ window._lastBeat=Date.now(); presCol.doc(S.meId).set({at:Date.now()},{merge:true}).catch(()=>{}); } };
   beat();
   recomputeOnline();   // 내 접속을 즉시 반영(스냅샷 도착 전에도 내 점 표시)
-  window._presHB=setInterval(beat,HEARTBEAT);
+  window._presHB=setInterval(()=>{ if(!document.hidden) beat(); },HEARTBEAT);   // 화면을 보고 있을 때만 신호
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) beat(); });
-  window.addEventListener('focus',beat);
+  window.addEventListener('focus',()=>{ if(Date.now()-(window._lastBeat||0)>60000) beat(); });
   window.addEventListener('pagehide',()=>{ try{ if(S&&S.meId) presCol.doc(S.meId).set({at:0},{merge:true}); }catch(e){} });
-  presCol.onSnapshot(qs=>{
-    const map={}; qs.forEach(d=>{ map[d.id]=(d.data()&&d.data().at)||0; });
-    window._presenceAt=map; recomputeOnline();
-  },e=>console.warn('presence snapshot',e));
+  window._presListen=()=>{ if(window._presUnsub)return;
+    window._presUnsub=presCol.onSnapshot(qs=>{
+      const map={}; qs.forEach(d=>{ map[d.id]=(d.data()&&d.data().at)||0; });
+      window._presenceAt=map; recomputeOnline();
+    },e=>console.warn('presence snapshot',e));
+  };
+  window._presListen();
   window._presTick=setInterval(recomputeOnline,20000);   // 신호 끊긴 멤버 자동 오프라인 처리
   if(!window._readTick)window._readTick=setInterval(tickReadings,1000); // 📖 독서 시간 1초마다 갱신
 }
@@ -5724,7 +5739,7 @@ function openNotifSheet(){
     go('shelf');
   });
   // 알림을 열어 봤으니 "마지막 확인 시각"을 지금으로 저장 → 모든 기기에서 안읽음이 사라짐
-  const m=me(); if(m){ m.notifSeenTs=Date.now(); _notifTopTs=m.notifSeenTs; save(); }
+  const m=me(); if(m&&evs.some(e=>(e.ts||0)>(m.notifSeenTs||0))){ m.notifSeenTs=Date.now(); _notifTopTs=m.notifSeenTs; save(); }   // 새 알림이 있을 때만 저장
   updateBellBadge();
 }
 
@@ -5732,6 +5747,45 @@ function openNotifSheet(){
 
 /* ---------- boot ---------- */
 let _rtUnsub=null;
+const POST_LIVE=60;            // 실시간으로 받는 최근 글 수
+let _allPostsLoaded=false, _allPostsLoading=null;
+function loadAllPosts(){       // 예전 글까지 한 번만 불러오기 (필요할 때만)
+  if(_allPostsLoaded)return Promise.resolve();
+  if(_allPostsLoading)return _allPostsLoading;
+  if(!window._fb)return Promise.resolve();
+  const col=window._fb.db.collection('rooms').doc(window._fb.roomId).collection('posts');
+  _allPostsLoading=col.get().then(qs=>{
+    if(!S)return; if(!Array.isArray(S.posts))S.posts=[];
+    const have=new Set(S.posts.map(p=>p&&p.id));
+    qs.forEach(d=>{ if(have.has(d.id))return; const p=d.data()||{}; if(!p.id)p.id=d.id; S.posts.push(p); });
+    _allPostsLoaded=true;
+  }).catch(e=>console.warn('loadAllPosts',e)).finally(()=>{_allPostsLoading=null;});
+  return _allPostsLoading;
+}
+function feedNeedsAll(){ return !!((feedSearch||'').trim()||feedSavedOnly||feedMineOnly||feedSort==='popular'); }
+function ensureAllPostsFor(rerun){ if(_allPostsLoaded||!feedNeedsAll())return; loadAllPosts().then(()=>{ if(tab==='feed')rerun(); }); }
+
+/* 💤 앱을 백그라운드로 내리거나 다른 탭으로 가서 5분이 지나면 실시간 연결을 잠시 끊음
+   (켜둔 채 방치된 탭/폰이 다른 사람들의 변경을 계속 읽어서 생기는 비용 절약)
+   다시 화면을 보면 그대로 이어 붙임 (재연결 때 바뀐 것만 다시 읽음) */
+const RT_PAUSE_AFTER=5*60*1000;
+let _rtPauseT=null, _rtPaused=false;
+function pauseRealtime(){
+  if(_rtPaused)return; _rtPaused=true;
+  try{ if(_rtUnsub){_rtUnsub();_rtUnsub=null;} }catch(e){}
+  try{ if(window._presUnsub){window._presUnsub();window._presUnsub=null;} }catch(e){}
+}
+function resumeRealtime(){
+  clearTimeout(_rtPauseT); _rtPauseT=null;
+  if(!_rtPaused)return; _rtPaused=false;
+  subscribeRealtime();
+  if(window._presListen)window._presListen();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ clearTimeout(_rtPauseT); _rtPauseT=setTimeout(()=>{ if(document.hidden)pauseRealtime(); },RT_PAUSE_AFTER); }
+  else resumeRealtime();
+});
+window.addEventListener('focus',resumeRealtime);
 
 function subscribeRealtime(){
   if(!window._fb||_rtUnsub)return;
@@ -5772,13 +5826,21 @@ function subscribeRealtime(){
     rerender();
   }, e=>console.warn('participants snapshot',e));
 
-  // 피드 글: 바뀐 문서만 갱신 (좋아요·댓글 하나 = 1 읽기)
-  const u3=roomRef.collection('posts').onSnapshot(qs=>{
+  // 피드 글: 최근 POST_LIVE개만 실시간 (앱 열 때 전체 글을 읽지 않음) · 바뀐 문서만 갱신
+  //  · 예전 글은 '이전 글 더 보기'·검색·저장한 글·내 글·인기순을 쓸 때 한 번만 불러옴 (loadAllPosts)
+  const u3=roomRef.collection('posts').orderBy('createdAt','desc').limit(POST_LIVE).onSnapshot(qs=>{
     if(!S)return; if(!Array.isArray(S.posts))S.posts=[];
+    let minTs=Infinity; qs.docs.forEach(d=>{const c=(d.data()||{}).createdAt||0; if(c<minTs)minTs=c;});
+    if(qs.size<POST_LIVE)_allPostsLoaded=true;   // 글이 POST_LIVE개보다 적으면 이미 전부 받은 것
     qs.docChanges().forEach(ch=>{
       const id=ch.doc.id;
       const i=S.posts.findIndex(p=>p&&p.id===id);
-      if(ch.type==='removed'){ if(i>=0)S.posts.splice(i,1); return; }
+      if(ch.type==='removed'){
+        // 새 글이 올라와 '최근 N개' 범위 밖으로 밀려난 글은 지우지 않고 그대로 둠 (실제 삭제만 지움)
+        const old=(ch.doc.data()||{}).createdAt||0;
+        if(qs.size>=POST_LIVE&&old<=minTs)return;
+        if(i>=0)S.posts.splice(i,1); return;
+      }
       try{ const p=ch.doc.data()||{}; if(!p.id)p.id=id; if(i>=0)S.posts[i]=p; else S.posts.push(p); }catch(e){}
     });
     rerender();
