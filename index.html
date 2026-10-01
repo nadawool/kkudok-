@@ -2036,7 +2036,7 @@ function applyFeedSearch(v){
    · 참석: 누구나 · 정원 8명 선착순 · 취소하면 뒷사람이 자동으로 앞당겨짐
    · 토론(지정·자유독서) 10회 이상 참여 → 회비 면제 대상 + 👑 토론왕 배지 */
 const MEET_CAP=8, DEBATE_GOAL=10;
-const MEET_TYPES={topic:'주제 대화',free:'자유독서 (자독)',assigned:'지정독서 (지독)',off:'오프모임'};
+const MEET_TYPES={topic:'주제 토크',free:'자유독서 (자독)',assigned:'지정독서 (지독)',off:'오프모임'};
 const MEET_SHORT={topic:'주제',free:'자독',assigned:'지독',off:'오프'};
 let meetY=null, meetM=null;
 function meetCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('meetups'):null;}
@@ -2050,7 +2050,7 @@ const ARCHIVE_URL='https://app.notion.com/p/3eb8cb37f41281d68755eba74f7df124';
 function meetHasPrep(x){return x&&x.type!=='off';}
 function safeUrl(u){u=(u||'').trim();return /^https:\/\/[^\s"'<>]+$/i.test(u)?u:'';}
 function meetPrepUrl(x){return safeUrl(x&&x.notionUrl)||ARCHIVE_URL;}
-/* 카드·배너에 보일 모임 제목: 지정독서=책 제목 · 주제대화=주제 · 그 외=모임 종류 */
+/* 카드·배너에 보일 모임 제목: 지정독서=책 제목 · 주제 토크=주제 · 그 외=모임 종류 */
 function meetTitle(x){
   if(x.type==='assigned'&&x.bookTitle)return '📚 '+x.bookTitle;
   if(x.type==='topic'&&x.topic)return '💬 '+x.topic;
@@ -2063,7 +2063,7 @@ function meetPrepHTML(x,st){
   const head=topic?(inn?'모임 전에 내 생각을 적어주세요':'참석하면 내 생각을 미리 적어와요')
                   :(inn?'모임 전에 발제문을 써주세요':'참석하면 발제문을 미리 써와요');
   const body=topic
-    ?`정답은 없어요. 주제에 대한 내 생각과 이유를 ${where} 표에 <b style="display:inline;font-size:12.5px">100자 이상</b> 자유롭게 적어주세요.<br>모임에서는 서로 적은 생각을 바탕으로 <b style="display:inline;font-size:12.5px">1시간 정도</b> 이야기 나눠요.`
+    ?`정답은 없어요. 주제에 대한 내 생각과 이유를 ${where} 표에 <b style="display:inline;font-size:12.5px">300자 이상</b> 자유롭게 적어주세요.<br>모임에서는 서로 적은 생각을 바탕으로 <b style="display:inline;font-size:12.5px">1시간 정도</b> 이야기 나눠요.`
     :`${where}의 발제 표에서 빈 줄 하나에 이름을 쓰고 채워주세요.<br>모임 <b style="display:inline;font-size:12.5px">2일 전까지</b> 써주시면 운영진이 토론 질문을 골라요.`;
   return `<div class="mt-write ${inn?'':'soft'}">
     <b>✏️ ${head}</b>
@@ -2221,7 +2221,7 @@ function openMeetForm(x){
     <div class="field" id="mfBookWrap" style="display:${_mtType==='assigned'?'':'none'}"><label for="mfBook">지정도서</label>
       <input id="mfBook" placeholder="제목 2글자만 입력해도 검색돼요" value="${esc2(_mtBook.t)}" autocomplete="off" style="${inp}">
       <div class="searchres" id="mfsres" style="display:none"></div></div>
-    <div class="field" id="mfTopicWrap" style="display:${_mtType==='topic'?'':'none'}"><label for="mfTopic">대화 주제</label>
+    <div class="field" id="mfTopicWrap" style="display:${_mtType==='topic'?'':'none'}"><label for="mfTopic">토크 주제</label>
       <input id="mfTopic" maxlength="40" placeholder="예: AI는 진짜 친구인가" value="${esc2(x&&x.topic||'')}" autocomplete="off" style="${inp}"></div>
     <div class="field" id="mfUrlWrap" style="display:${_mtType==='off'?'none':''}"><label for="mfUrl">📝 노션 페이지 링크 <span style="font-weight:400">(선택)</span></label>
       <input id="mfUrl" type="url" inputmode="url" placeholder="https://app.notion.com/p/..." value="${esc2(x&&x.notionUrl||'')}" autocomplete="off" style="${inp}">${urlHint}</div>
@@ -2253,7 +2253,7 @@ function openMeetForm(x){
     if(!date){toast('날짜를 골라주세요');return;}
     if(_mtType==='assigned'&&!(_mtBook.t||'').trim()){toast('지정도서를 입력해주세요');return;}
     const topic=$('#mfTopic').value.trim(), urlRaw=$('#mfUrl').value.trim();
-    if(_mtType==='topic'&&!topic){toast('대화 주제를 입력해주세요');return;}
+    if(_mtType==='topic'&&!topic){toast('토크 주제를 입력해주세요');return;}
     if(urlRaw&&!safeUrl(urlRaw)){toast('링크는 https:// 로 시작해야 해요');return;}
     const col=meetCol(); if(!col){toast('지금은 등록할 수 없어요');return;}
     const id=x?x.id:('mt'+Date.now().toString(36));
@@ -3394,7 +3394,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=drawHomeHTML()+attHTML+readsHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=drawHomeHTML()+attHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+timeHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
