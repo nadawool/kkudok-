@@ -643,7 +643,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .dsub .t.on{background:var(--honey);color:#fff}
 .item .chk{position:absolute;top:5px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--honey);color:#fff;font-size:12px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(242,153,74,.45);z-index:5}
 /* bottom tabs */
-.tabs{position:sticky;bottom:0;display:flex;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:20;
+.tabs{position:sticky;bottom:0;display:flex;background:rgba(255,255,255,.98);z-index:20;transform:translateZ(0);
   border-top:1px solid var(--line);padding:7px 6px calc(7px + env(safe-area-inset-bottom))}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;color:var(--soft);font-size:10.5px;font-weight:700}
 .tab svg{width:23px;height:23px}
@@ -1777,15 +1777,69 @@ function earnDaily(m,key,amount){
   m.cashLog[key]=today;                    // '오늘 받음'으로 기록
   return true;                             // 적립 성공
 }
-function avatarStack(m,zoom){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
-  ensureItems(m); ensureHairFilters();
+/* 🖼️ 아바타 합성 캐시 (모바일 사파리 버벅임·먹통 대책)
+   예전: 아바타 1개 = 700x1000 PNG 7~10장을 겹쳐 그림 + 머리에 SVG 필터 → 홈 탭에 아바타가 수십 개라
+         아이폰 사파리 메모리가 넘치고(탭이 새로 로딩됨), 실시간 갱신 때마다 다시 그리느라 화면이 멈춤.
+   지금: 같은 차림이면 한 번만 캔버스에 작게 합쳐 그림 1장(blob URL)으로 재사용. 머리 색도 캔버스에서 미리 입힘.
+         합성이 끝나기 전 첫 화면은 예전 방식으로 보이고, 끝나는 즉시 1장짜리로 바뀜. 실패하면 예전 방식 유지. */
+const _avCache=new Map(), _avKey=new Map(), _imgCache=new Map(); let _avSeq=0;
+function _loadImg(src){
+  if(!_imgCache.has(src))_imgCache.set(src,new Promise((ok,no)=>{const im=new Image();im.decoding='async';im.onload=()=>ok(im);im.onerror=no;im.src=src;}));
+  return _imgCache.get(src);
+}
+function _hairTint(im,W,H,hex){   // ensureHairFilters 의 SVG 필터와 같은 계산
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.drawImage(im,0,0,W,H);const d=x.getImageData(0,0,W,H),p=d.data;
+  const n=_hx2n(hex),mr=((n>>16)&255)/255,mg=((n>>8)&255)/255,mb=(n&255)/255,k=0.3,dr=mr*k,dg=mg*k,db=mb*k;
+  const cl=v=>v<0?0:v>1?1:v;
+  for(let i=0;i<p.length;i+=4){
+    if(!p[i+3])continue;
+    const r=cl(50*p[i]/255-0.4),g=cl(80*p[i+1]/255-0.5),b=cl(80*p[i+2]/255-0.5);
+    const a=p[i+3]/255,t=a*3,kk=Math.min(2,Math.floor(t)),av=kk===0?0:kk===1?(t-1):1;   // tableValues 0 0 1 1
+    p[i]=255*(dr+r*(mr-dr));p[i+1]=255*(dg+g*(mg-dg));p[i+2]=255*(db+b*(mb-db));p[i+3]=255*av;
+  }
+  x.putImageData(d,0,0);return c;
+}
+function _avCompose(key,layers,W){
+  const H=Math.round(W/AV_AR);
+  return Promise.all(layers.map(l=>_loadImg(l.src))).then(ims=>{
+    const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+    ims.forEach((im,i)=>{const hx=layers[i].hex;x.drawImage(hx?_hairTint(im,W,H,hx):im,0,0,W,H);});
+    return new Promise(ok=>c.toBlob(b=>ok(b?URL.createObjectURL(b):null),'image/png'));
+  }).then(url=>{
+    _avCache.set(key,url||false);
+    if(url)document.querySelectorAll('.avstack[data-avk="'+key+'"]').forEach(el=>{
+      el.innerHTML=`<img src="${url}" alt="" decoding="async">`;el.removeAttribute('data-avk');});
+  }).catch(()=>_avCache.set(key,false));
+}
+function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
+  ensureItems(m);
+  const layers=[{src:BASE_IMG}];
+  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
+    if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});}
+    else layers.push({src:im});
+  });
+  ACC_TYPES.forEach(t=>{ accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });
+  const cls=`avstack${zoom?' '+zoom:''}`;
+  if(!layered&&typeof document!=='undefined'&&window.HTMLCanvasElement){
+    const W=zoom==='uz'?420:350, sig=W+'|'+layers.map(l=>l.src+(l.hid?'#'+l.hid:'')).join('|');
+    let key=_avKey.get(sig); if(!key){key='a'+(++_avSeq);_avKey.set(sig,key);}
+    const done=_avCache.get(key);
+    if(done)return `<div class="${cls}"><img src="${done}" alt="" decoding="async"></div>`;
+    if(done===undefined){_avCache.set(key,null);_avCompose(key,layers,W);}
+    if(done!==false)return `<div class="${cls}" data-avk="${key}">${_avLayers(m)}</div>`;
+  }
+  return `<div class="${cls}">${_avLayers(m)}</div>`;
+}
+function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 화면 · 큰 미리보기용
+  ensureHairFilters();
   let h=`<img src="${BASE_IMG}" alt="">`;
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
     else h+=`<img src="${im}" alt="">`;
   });
   ACC_TYPES.forEach(t=>{ accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
-  return `<div class="avstack${zoom?' '+zoom:''}">${h}</div>`;
+  return h;
 }
 
 /* ---------- avatar render ---------- */
@@ -1796,7 +1850,7 @@ function avatarSVG(ck,items){ // items: {slot:id}
   return `<svg viewBox="0 0 100 ${b.V.toFixed(1)}">${inner}</svg>`;
 }
 function avatarHTML(m,size){ // full-body avatar (dress preview, profile card)
-  return `<div class="avatar" style="--ar:${AV_AR}">${avatarStack(m)}</div>`;
+  return `<div class="avatar" style="--ar:${AV_AR}">${avatarStack(m,'',true)}</div>`;   // 큰 전신은 선명하게 원본 겹치기
 }
 function avatarTiny(m){ // small circular avatar — head-zoom
   const bg=m.bg?`background:${m.bg};`:'';
@@ -5372,7 +5426,12 @@ function hairColorRow(m){ // 헤어 색상 칩 (기본 + 5색)
 
 /* ---------- overlay ---------- */
 function openOv(){const sh=$('#sheet');sh.style.transform='';sh.classList.remove('snap','dragging');$('#ov').style.background='';$('#ov').classList.add('on');}
-function closeOv(){$('#ov').classList.remove('on');}
+function closeOv(){$('#ov').classList.remove('on');
+  if(window._rtPending&&S){window._rtPending=false;setTimeout(()=>{if($('#ov').classList.contains('on'))return;
+    const r={home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab];
+    try{refreshHeader();if(r)r();}catch(e){console.warn(e);}},250);}
+}
+['touchstart','touchmove','scroll','wheel'].forEach(ev=>window.addEventListener(ev,()=>{window._lastTouch=Date.now();},{passive:true,capture:true}));
 /* 📱 시트를 아래로 스와이프하면 닫기 (모든 팝업 공통)
    · 시트가 맨 위까지 스크롤된 상태에서 아래로 끌 때만 동작 (안쪽 내용 스크롤은 그대로)
    · 90px 이상 끌거나 빠르게 튕기면 닫힘, 아니면 제자리로 */
@@ -5875,9 +5934,13 @@ function subscribeRealtime(){
   // 짧은 시간에 여러 변경이 몰리면 한 번으로 합쳐서 렌더(디바운스).
   let _timer=null;
   const rerender=()=>{
-    if($('#ov').classList.contains('on'))return;            // 오버레이 열려 있으면 갱신 보류
+    if($('#ov').classList.contains('on')){window._rtPending=true;return;}   // 오버레이 열려 있으면 보류 → 닫을 때 반영
     clearTimeout(_timer);
     _timer=setTimeout(function run(){
+      // 손가락으로 누르거나 스크롤하는 중에 화면을 통째로 다시 그리면 터치가 씹히고 멈춘 것처럼 보임 → 손 뗀 뒤로 미룸
+      if(Date.now()-(window._lastTouch||0)<900){_timer=setTimeout(run,600);return;}
+      if($('#ov').classList.contains('on')){window._rtPending=true;return;}
+      window._rtPending=false;
       // 인라인 댓글 입력 중이면(입력창 포커스) 다 쓸 때까지 피드 전체 렌더를 미룸
       const ae=document.activeElement;
       if(ae && ae.classList && ae.classList.contains('fd-cinp')){
