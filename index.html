@@ -999,6 +999,12 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .mg-acts{margin-left:auto;display:flex;gap:6px;flex:none;align-items:center}
 .mg-acts .kickbtn{margin-left:0}
 .mg-gift{background:#FFF1D6;color:#C8881F;font-weight:700;font-size:13px;padding:7px 10px;border-radius:20px;flex:none}
+.mg-hid{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.mg-hid summary{font-size:13px;font-weight:800;color:var(--soft);cursor:pointer;padding:4px 2px;list-style:none}
+.mg-hid summary::-webkit-details-marker{display:none}
+.mg-hid summary::after{content:' ▾'}
+.mg-hid[open] summary::after{content:' ▴'}
+.mg-unhide{background:var(--honey);color:#fff;font-weight:800;font-size:12px;padding:7px 11px;border-radius:20px;flex:none}
 .ownerbadge{font-size:10.5px;color:var(--honey-d);font-weight:800;margin-left:5px}
 .syncbtn{margin-left:auto;background:#F4EFE6;border-radius:20px;padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--soft);flex:none}
 </style>
@@ -1876,6 +1882,11 @@ let S=null;
 function me(){return S.members[S.meId];}
 function view(){return S.members[S.viewId]||me();}
 const isMe=()=>S.viewId===S.meId;
+/* 🙈 숨김 멤버: 활동 안 하는 멤버를 잠시 목록에서 빼둠 (기록은 그대로 보관)
+   participants/{uid}.hidden=true · hiddenAt  /  해제하면 rejoinedAt=해제한 날 → 회비·출석은 재가입일 기준 */
+const isHidden=m=>!!(m&&m.hidden);
+function activeMembers(){return Object.values(S.members).filter(m=>!isHidden(m));}
+function joinDate(m){const r=m&&m.rejoinedAt,c=m&&m.createdAt;return (r&&(!c||r>c))?r:(c||'');}
 const isOwner=()=>!!(S.ownerId&&S.meId&&S.ownerId===S.meId);
 
 async function saveMyId(){
@@ -3087,7 +3098,7 @@ function noticeItems(){
     });
   }catch(e){}
   const ev=[];   // 🎁 선물 교환 · 🏅 완주 (12시간 · 최신순)
-  Object.values(S.members).forEach(m=>{
+  activeMembers().forEach(m=>{
     if(!m||!m.name)return;
     (m.giftNews||[]).forEach(g=>{if(g&&g.at&&now-g.at<NTC_TTL)ev.push({at:g.at,k:'gift',ic:g.icon||'🎁',
       html:`<b>${escT(m.name)}</b>님이 ${escT(g.item||'선물')} 교환 🎁`});});
@@ -3151,7 +3162,7 @@ const MQ_APPLE_OFF='<span class="mqa off">🍎</span>';      // 빈 칸 (흐리�
 /* 중간 가입자: 1~14일 가입 → 그 달부터 / 15일 이후 가입 → 다음 달부터 (출석·회비 공통) */
 const JOIN_CUTOFF_DAY=14;
 function joinStartYm(m){
-  const c=m&&m.createdAt; if(!c||!/^\d{4}-\d{2}-\d{2}/.test(c))return '0000-00';   // 가입일 기록이 없으면 기존 멤버로 봄
+  const c=joinDate(m); if(!c||!/^\d{4}-\d{2}-\d{2}/.test(c))return '0000-00';   // 가입일 기록이 없으면 기존 멤버로 봄
   return +c.slice(8,10)<=JOIN_CUTOFF_DAY?c.slice(0,7):ymAdd(c.slice(0,7),1);
 }
 function isNewbieMonth(m){return todayISO().slice(0,7)<joinStartYm(m);}   // 15일 이후 가입자의 '연습 기간'(가입한 달)
@@ -3165,7 +3176,10 @@ function monthQuota(m){
   const need=Math.max(0,MONTH_GOAL-got);
   let state,head,sub;
   const startYm=ruleStartYm(m);
-  if(ym<startYm){
+  if(isHidden(m)){
+    state='pre'; head='지금은 쉬는 중이에요';
+    sub='모임장이 다시 열어주면 그날부터 출석·회비가 다시 시작돼요';
+  }else if(ym<startYm){
     state='pre'; head=`${+startYm.slice(5)}월 1일부터 월 ${MONTH_GOAL}일 필수 출석이 시작돼요`;
     sub=ym<MQ_START?`이번 달 기록은 연습이에요 · 지금까지 ${got}일`:`이번 달은 연습 기간 · 출첵은 그대로 되고 회비·캐시는 다음 달 1일부터 · 지금까지 ${got}일`;
   }else if(got>=MONTH_GOAL){
@@ -3442,7 +3456,7 @@ function renderHome(){
   refreshHeader();
   S.viewId=S.meId;
   const today=todayISO(), year=new Date().getFullYear();
-  const members=Object.values(S.members);
+  const members=activeMembers();
   const total=members.length;
   const here=m=>new Set(m.reads).has(today);
 
@@ -3592,7 +3606,7 @@ function monthStatusHTML(members){
 const FEE_AMOUNT=10000, FEE_DUE_DAY=5, FEE_START='2026-10';
 const FEE_HALF=5000, FEE_HALF_FROM=8;   // 가입 첫 달: 1~7일 가입 1만원 · 8~14일 가입 5천원 · 15일~ 면제(다음 달부터)
 function feeAmt(uid,ym){
-  const c=((S.members||{})[uid]||{}).createdAt||'';
+  const c=joinDate((S.members||{})[uid]);
   if(/^\d{4}-\d{2}-\d{2}/.test(c)&&c.slice(0,7)===ym){const d=+c.slice(8,10);if(d>=FEE_HALF_FROM&&d<=JOIN_CUTOFF_DAY)return FEE_HALF;}
   return FEE_AMOUNT;
 }
@@ -3611,8 +3625,10 @@ function meetExemptYm(uid){
 function feeStatus(uid,ym,doc){
   if(ym<FEE_START)return {state:'pre'};
   if(isStaffId(uid))return {state:'exempt',reason:uid===S.ownerId?'모임장 면제':'운영진 면제'};
-  const js=joinStartYm(S.members[uid]);
-  if(ym<js)return {state:'exempt',reason:`신규 가입 · ${+js.slice(5)}월부터 회비`};
+  const mm=S.members[uid], js=joinStartYm(mm);
+  if(doc&&doc.status==='paid'&&(isHidden(mm)||ym<js))return {state:'paid',doc};   // 쉬기 전에 낸 달은 그대로 완료
+  if(isHidden(mm))return {state:'exempt',reason:'🙈 쉬는 중'};
+  if(ym<js)return {state:'exempt',reason:mm&&mm.rejoinedAt?`재가입 · ${+js.slice(5)}월부터 회비`:`신규 가입 · ${+js.slice(5)}월부터 회비`};
   if(meetExemptYm(uid)===ym)return {state:'exempt',reason:'🗣️ 모임 10회 달성 · 1회 면제'};
   if(doc&&doc.status==='paid')return {state:'paid',doc};
   if(doc&&doc.status==='reported')return {state:'reported',doc};
@@ -3690,7 +3706,7 @@ async function openFeeAdmin(){
   try{const qs=await col.where('ym','==',ym).get(); qs.forEach(d=>{const x=d.data();docs[x.uid]=x;});}
   catch(e){console.error(e);$('#sheet').innerHTML=`<h3>회비 관리</h3><p style="text-align:center;color:var(--soft);font-size:13px">불러오지 못했어요. Firestore 규칙(fees)을 확인해주세요.</p><button class="btn ghost" id="faX">닫기</button>`;$('#faX').onclick=closeOv;return;}
   const ord={reported:0,late:1,due:2,paid:3,exempt:4};
-  const list=Object.values(S.members).map(m=>({m,st:feeStatus(m.id,ym,docs[m.id])})).sort((a,b)=>(ord[a.st.state]-ord[b.st.state])||cmpJoin(a.m,b.m));
+  const list=activeMembers().map(m=>({m,st:feeStatus(m.id,ym,docs[m.id])})).sort((a,b)=>(ord[a.st.state]-ord[b.st.state])||cmpJoin(a.m,b.m));
   const cnt=k=>list.filter(r=>k.includes(r.st.state)).length;
   const paidN=cnt(['paid']);
   const sumOf=k=>list.filter(r=>k.includes(r.st.state)).reduce((t,r)=>t+feeAmt(r.m.id,ym),0);
@@ -3786,7 +3802,7 @@ const DRAW_PRIZE_INFO={
 };
 const LD_COLORS=['#f6d2b8','#ece2bf','#d9e8d2','#f1d6cf','#f6e6c2','#d5e6e2','#e6dcf0','#f3dbe3'];
 function drawCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('draws'):null;}
-function drawEntrants(ym){return Object.values(S.members).filter(m=>monthCount(m,ym)>=MONTH_GOAL);}
+function drawEntrants(ym){return activeMembers().filter(m=>monthCount(m,ym)>=MONTH_GOAL);}
 function rndInt(n){   // 암호학적 난수 + 거부 샘플링 → 모든 사람이 정확히 같은 확률
   try{const lim=Math.floor(0x100000000/n)*n, a=new Uint32Array(1);do{crypto.getRandomValues(a);}while(a[0]>=lim);return a[0]%n;}
   catch(e){return Math.floor(Math.random()*n);}
@@ -4174,7 +4190,7 @@ const r=set.has(iso)&&iso<=today,t=iso===today,tap=false; // 캘린더 클릭 �
     h+=`<div class="cell ${r?'read':''} ${t?'today':''} ${tap?'tap':''}" data-d="${iso}"><span>${d}</span></div>`;}
   $('#grid').innerHTML=h;
   if(isMe())$('#grid').querySelectorAll('.tap').forEach(c=>c.onclick=()=>toggleRead(c.dataset.d));
-  $('#peerCals')&&($('#peerCals').innerHTML=Object.values(S.members).filter(x=>x.id!==S.meId).map(miniCalHTML).join(''));
+  $('#peerCals')&&($('#peerCals').innerHTML=activeMembers().filter(x=>x.id!==S.meId).map(miniCalHTML).join(''));
   $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-cal').forEach(el=>el.onclick=()=>{S.viewId=el.dataset.id;go('shelf');});
   $('#peerCals')&&$('#peerCals').querySelectorAll('.peer-del').forEach(b=>b.onclick=(e)=>{e.stopPropagation();removePeer(b.dataset.del);});
 }
@@ -4304,7 +4320,7 @@ function openFilterSheet(){
 }
 function openMemberPicker(){
   $('#sheet').innerHTML=`<h3>누구의 책장을 볼까요?</h3>
-    <div>${Object.values(S.members).map(m=>`
+    <div>${activeMembers().map(m=>`
       <div class="row-m" data-id="${m.id}">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.meId?' <span style="font-size:11px;color:var(--honey-d)">(나)</span>':''}</div>
@@ -4767,7 +4783,7 @@ function openReviewSheet(book){
 function renderClub(){
   refreshHeader();
   const now=new Date(),y=now.getFullYear(),mo=now.getMonth();
-  const ranked=Object.values(S.members).map(m=>({m,done:monthDone(m,y,mo),days:monthReadDays(m,y,mo)}))
+  const ranked=activeMembers().map(m=>({m,done:monthDone(m,y,mo),days:monthReadDays(m,y,mo)}))
     .sort((a,b)=>b.done-a.done||b.days-a.days);
   const top=ranked[0];
   const medal=['🥇','🥈','🥉'];
@@ -4805,8 +4821,8 @@ $('#backMe')&&($('#backMe').onclick=()=>{S.viewId=S.meId;go(tab);});
 /* ---------- member management (모임장 전용) ---------- */
 function openManageSheet(){
   $('#sheet').innerHTML=`<h3>멤버 관리</h3>
-    <div class="hint" style="text-align:center;margin:-6px 0 14px">⭐운영진 지정 · 🍎출첵 처리 · 💰캐시 지급 · 🎁아이템 잠금해제 · 내보내기 (모임장 전용)</div>
-    <div>${Object.values(S.members).map(m=>`
+    <div class="hint" style="text-align:center;margin:-6px 0 14px">⭐운영진 지정 · 🍎출첵 처리 · 💰캐시 지급 · 🎁아이템 잠금해제 · 🙈숨기기 · 내보내기 (모임장 전용)</div>
+    <div>${activeMembers().map(m=>`
       <div class="row-m" data-id="${m.id}" style="cursor:default">
         <div class="av">${avatarTiny(m)}</div>
         <div><div class="nm">${m.name}${m.id===S.ownerId?'<span class="ownerbadge">👑모임장</span>':''}</div>
@@ -4816,9 +4832,18 @@ function openManageSheet(){
           <button class="mg-gift mgcheck" data-id="${m.id}" title="출첵 처리">🍎</button>
           <button class="mg-gift mgcash" data-id="${m.id}" title="캐시 지급">💰</button>
           <button class="mg-gift mgitem" data-id="${m.id}" title="아이템 잠금해제">🎁</button>
+          ${m.id!==S.ownerId?`<button class="mg-gift mghide" data-id="${m.id}" title="숨기기" style="background:#F4EFE6">🙈</button>`:''}
           ${m.id!==S.ownerId?`<button class="kickbtn" data-id="${m.id}">내보내기</button>`:''}
         </div>
       </div>`).join('')}</div>
+    ${(()=>{const hid=Object.values(S.members).filter(isHidden).sort((a,b)=>(b.hiddenAt||'').localeCompare(a.hiddenAt||''));
+      if(!hid.length)return '';
+      return `<details class="mg-hid"><summary>🙈 숨긴 멤버 ${hid.length}명</summary>
+        ${hid.map(m=>`<div class="row-m" style="cursor:default">
+          <div class="av" style="opacity:.55">${avatarTiny(m)}</div>
+          <div><div class="nm">${escT(m.name)}</div><div class="sub">${m.hiddenAt?mdLabel(m.hiddenAt)+' 숨김':'숨김'}</div></div>
+          <div class="mg-acts"><button class="mg-unhide" data-id="${m.id}">다시 열기</button></div>
+        </div>`).join('')}</details>`;})()}
     <button class="btn ghost" id="mgClose" style="margin-top:8px">닫기</button>`;
   openOv();
   $('#mgClose').onclick=closeOv;
@@ -4827,6 +4852,8 @@ function openManageSheet(){
     confirmDialog({title:on?'운영진 해제':'운영진 지정',body:`${mm?escT(mm.name):''}님을 운영진${on?'에서 해제':'으로 지정'}할까요?${on?'':'<br>모임 일정 등록 · 행운의 뽑기 · 회비 면제가 적용돼요'}`,
       okText:on?'해제':'지정',danger:on,onOk:()=>toggleStaff(b.dataset.id)});});
   $('#sheet').querySelectorAll('.mgcheck').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerCheckIn(b.dataset.id);});
+  $('#sheet').querySelectorAll('.mghide').forEach(b=>b.onclick=e=>{e.stopPropagation();setHidden(b.dataset.id,true);});
+  $('#sheet').querySelectorAll('.mg-unhide').forEach(b=>b.onclick=e=>{e.stopPropagation();setHidden(b.dataset.id,false);});
   $('#sheet').querySelectorAll('.mgcash').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveCash(b.dataset.id);});
   $('#sheet').querySelectorAll('.mgitem').forEach(b=>b.onclick=e=>{e.stopPropagation();ownerGiveItem(b.dataset.id);});
   $('#sheet').querySelectorAll('.kickbtn').forEach(b=>b.onclick=async(e)=>{
@@ -4837,6 +4864,32 @@ function openManageSheet(){
   });
 }
 
+/* 🙈 모임장 전용: 멤버 숨기기 / 다시 열기 (필드만 바꿈 · 기록은 그대로) */
+function setHidden(id,on){
+  if(!isOwner()||id===S.ownerId)return;
+  const m=S.members[id]; if(!m||!window._fb)return;
+  if(on&&(S.staff||[]).includes(id)){toast('운영진은 ⭐ 해제 후 숨길 수 있어요');return;}
+  const t=todayISO(), d=+t.slice(8,10), mon=+t.slice(5,7), nextMon=mon%12+1;
+  const rule=d<=JOIN_CUTOFF_DAY
+    ?`오늘(${mon}/${d}) 다시 열면 <b>${mon}월부터</b> 회비 ${won(d>=FEE_HALF_FROM?FEE_HALF:FEE_AMOUNT)} · 출석 ${MONTH_GOAL}일이 적용돼요`
+    :`오늘(${mon}/${d}) 다시 열면 ${mon}월은 면제, <b>${nextMon}월부터</b> 회비·출석이 적용돼요`;
+  confirmDialog({
+    title:on?`${escT(m.name)}님 숨기기`:`${escT(m.name)}님 다시 열기`,
+    body:on?'홈·출석 현황·랭킹·회비·행운의 뽑기에서 빠져요.<br>책장·캐시·꾸미기·피드 글은 그대로 남아요.'
+           :`재가입일 기준으로 다시 시작해요.<br>${rule}`,
+    okText:on?'숨기기':'다시 열기',danger:on,
+    onOk:async()=>{
+      const up=on?{hidden:true,hiddenAt:t}:{hidden:false,rejoinedAt:t};
+      try{
+        await window._fb.db.collection('rooms').doc(window._fb.roomId).collection('participants').doc(id).update(up);
+        Object.assign(m,up);
+        toast(on?`${m.name}님을 숨겼어요 🙈`:`${m.name}님을 다시 열었어요 👋`);
+      }catch(e){console.error(e);toast(fbErrMsg(e,on?'숨기기':'다시 열기'));return;}
+      ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[tab])();
+      openManageSheet();
+    }
+  });
+}
 /* 모임장 → 다른 멤버 문서에 직접 반영(공유 컬렉션이라 운영자 권한으로 쓰기 가능) */
 async function saveMember(m){
   try{ await window.storage.set('member:'+m.id, JSON.stringify(m), true); }catch(e){}
@@ -4905,7 +4958,7 @@ function renderStats(){
   const md=monthDone(m,statY,statM),mr=monthReadDays(m,statY,statM),total=doneBooks(m).length;
   // per-member rows
   const isMonth=statMode==='month';
-  const rows=Object.values(S.members).map(mm=>{
+  const rows=activeMembers().map(mm=>{
     const days=isMonth?monthReadDays(mm,statY,statM):yearReadDays(mm,statY);
     const done=isMonth?monthDone(mm,statY,statM):yearDone(mm,statY);
     return {mm,days,done};
@@ -5681,7 +5734,7 @@ function recomputeOnline(){
   // 접속자가 바뀌면 홈탭 '오늘 출석한 멤버' 순서 갱신(접속 중인 사람 왼쪽으로)
   if(changed&&tab==='home') reorderHomeAttendees();
   // 모임 탭 접속 인원수 갱신
-  if(tab==='club'){ const co=$('#s-club .club-online'); if(co){ const n=Array.from(on).filter(id=>S.members&&S.members[id]).length; co.textContent='● '+n+'명 접속'; } }
+  if(tab==='club'){ const co=$('#s-club .club-online'); if(co){ const n=Array.from(on).filter(id=>S.members&&S.members[id]&&!isHidden(S.members[id])).length; co.textContent='● '+n+'명 접속'; } }
 }
 function applyPresenceDots(){
   const on=window._online||new Set();
@@ -5733,7 +5786,7 @@ function notifEvents(){
     }
   });
   // 2) 다른 사람이 완독한 책
-  Object.values(S.members).forEach(m=>{
+  activeMembers().forEach(m=>{
     if(m.id===meId)return;
     (m.books||[]).forEach(b=>{
       if(b&&b.end) ev.push({id:'d_'+m.id+'::'+b.id,type:'done',uid:m.id,
