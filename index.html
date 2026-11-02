@@ -4039,10 +4039,10 @@ async function claimDrawCash(){
   });
   if(changed){await save();refreshHeader();toast(`🍀 행운의 뽑기 당첨! +${got}캐시가 들어왔어요 💰`);}
 }
-/* 홈 맨 위: 최근 추첨 결과 (추첨 후 14일간) */
+/* 홈 맨 위: 최근 추첨 결과 (추첨 후 48시간) */
 function drawHomeHTML(){
   const d=(S.draws||[]).slice().sort((a,b)=>(b.drawnAt||0)-(a.drawnAt||0))[0];
-  if(!d||Date.now()-(d.drawnAt||0)>14*864e5)return '';
+  if(!d||Date.now()-(d.drawnAt||0)>48*36e5)return '';
   const mon=+d.ym.slice(5,7);
   const wins=d.winners.map(id=>{const m=S.members[id], info=DRAW_PRIZE_INFO[prizeOf(d,id)]||DRAW_PRIZE_INFO.coffee;
     return m?`<div class="dr-win"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div><b>${escT(m.name)}</b><span>${info.icon} ${info.short}</span></div>`:'';}).join('');
