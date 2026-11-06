@@ -1513,14 +1513,17 @@ function byNewest(list,dateOnly){
    rooms/{room}/config/items 문서의 meta 맵 → items.js의 applyItemMeta로 적용. 다음 실행 때 바로 쓰도록 기기에 캐시 */
 const ITEM_META_LS='kkudok::itemMeta';
 try{const c=localStorage.getItem(ITEM_META_LS);if(c)applyItemMeta(JSON.parse(c));}catch(e){}
-async function loadItemMeta(){
-  if(!window._fb)return;
+let _itemMetaUnsub=null;
+function loadItemMeta(){ // 실시간 — 대시보드에서 저장하면 켜져 있는 앱에도 바로 반영
+  if(!window._fb||_itemMetaUnsub)return;
   try{
-    const snap=await window._fb.db.collection('rooms').doc(window._fb.roomId).collection('config').doc('items').get();
-    const meta=(snap.exists&&snap.data().meta)||{}, js=JSON.stringify(meta);
-    if(js===localStorage.getItem(ITEM_META_LS))return;          // 바뀐 게 없으면 그대로
-    localStorage.setItem(ITEM_META_LS,js); applyItemMeta(meta);
-    if(typeof tab!=='undefined'&&tab==='dress'&&$('#s-dress'))renderDress();
+    _itemMetaUnsub=window._fb.db.collection('rooms').doc(window._fb.roomId).collection('config').doc('items').onSnapshot(snap=>{
+      const meta=(snap.exists&&snap.data().meta)||{}, js=JSON.stringify(meta);
+      if(js===localStorage.getItem(ITEM_META_LS))return;        // 바뀐 게 없으면 그대로
+      try{localStorage.setItem(ITEM_META_LS,js);}catch(e){}
+      applyItemMeta(meta);
+      if(typeof tab!=='undefined'&&tab==='dress'&&$('#s-dress')&&!$('#ov').classList.contains('on'))refreshDressPreview();
+    },e=>console.warn('itemMeta',e));
   }catch(e){console.warn('itemMeta',e);}
 }
 /* ----- 아이템 썸네일: 아이템 그림이 있는 부분만 자동으로 잘라 크게 + 몸은 흐리게 깔기 -----

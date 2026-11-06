@@ -127,12 +127,11 @@ ITEM_BASE.forEach(b=>{const it=b.it;
 let SAVED={};             // 마지막으로 저장된 meta (변경 감지용)
 const sel=new Set();
 
-function curFromMeta(meta){
-  ORDER.forEach(id=>{const d=DEF[id], o=meta[id]||{};
-    CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
-      d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0,
-      o:typeof o.o==='number'?o.o:null};});
-}
+function curOne(id,o){const d=DEF[id]; o=o||{};
+  CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
+    d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0,
+    o:typeof o.o==='number'?o.o:null};}
+function curFromMeta(meta){ORDER.forEach(id=>curOne(id,meta[id]));}
 function metaOf(id){ // 기본값과 다른 것만
   const d=DEF[id], c=CUR[id], o={};
   if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
@@ -140,7 +139,8 @@ function metaOf(id){ // 기본값과 다른 것만
   return o;
 }
 function buildMeta(){const m={};ORDER.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)m[id]=o;});return m;}
-const isChanged=id=>JSON.stringify(metaOf(id))!==JSON.stringify(SAVED[id]||{});
+const canon=o=>JSON.stringify(Object.keys(o||{}).sort().map(k=>[k,o[k]]));   // 키 순서와 무관하게 비교 (Firestore는 순서를 바꿔서 돌려줌)
+const isChanged=id=>canon(metaOf(id))!==canon(SAVED[id]);
 const isNew=id=>{const d=CUR[id].d;return !!d&&(Date.now()-new Date(d+'T00:00:00+09:00').getTime())<14*864e5;};
 
 /* ---- 썸네일 (앱과 같은 계산) ---- */
@@ -298,10 +298,14 @@ function bindTools(){
 }
 async function save(){
   const b=$('#save'); b.disabled=true; b.textContent='저장 중…';
-  const meta=buildMeta();
+  const ids=ORDER.filter(isChanged), upd={updatedAt:Date.now(),by:firebase.auth().currentUser.uid};
+  ids.forEach(id=>{const o=metaOf(id);upd['meta.'+id]=Object.keys(o).length?o:firebase.firestore.FieldValue.delete();});
   try{
-    await cfgRef.set({meta,updatedAt:Date.now(),by:firebase.auth().currentUser.uid});
-    SAVED=JSON.parse(JSON.stringify(meta)); render(); toastMsg('저장했어요. 멤버들은 앱을 다시 열면 반영돼요');
+    const snap=await cfgRef.get();
+    if(snap.exists) await cfgRef.update(upd);
+    else { const meta={}; ids.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)meta[id]=o;}); await cfgRef.set({meta,updatedAt:upd.updatedAt,by:upd.by}); }
+    ids.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)SAVED[id]=JSON.parse(JSON.stringify(o));else delete SAVED[id];});
+    render(); toastMsg(`${ids.length}개 저장했어요 · 멤버 앱에도 바로 반영돼요`);
   }catch(e){console.error(e);alert('저장하지 못했어요. Firestore 규칙(config)을 확인해주세요.\n'+(e.message||e));refreshBar();}
 }
 function toastMsg(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#232220;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:50';document.body.appendChild(d);setTimeout(()=>d.remove(),2200);}
@@ -324,6 +328,20 @@ firebase.auth().onAuthStateChanged(async user=>{
     SAVED=JSON.parse(JSON.stringify(meta)); curFromMeta(meta);
     $('#tools').style.display=''; $('#save').style.display='';
     bindTools(); bindMain(); bindDrag(); render();
+    // 다른 탭·기기(폰 등)에서 저장하면 실시간으로 받아오기 — 내가 수정 중인(저장 안 한) 아이템은 그대로 둠
+    let first=true;
+    cfgRef.onSnapshot(s=>{
+      if(first){first=false;return;}
+      if(s.metadata.hasPendingWrites)return;
+      const m=(s.exists&&s.data().meta)||{}; let n=0;
+      ORDER.forEach(id=>{
+        if(isChanged(id))return;                       // 저장 안 한 내 수정은 유지
+        if(canon(m[id])===canon(SAVED[id]))return;
+        if(m[id])SAVED[id]=JSON.parse(JSON.stringify(m[id]));else delete SAVED[id];
+        curOne(id,SAVED[id]); n++;
+      });
+      if(n){render();toastMsg(`다른 곳에서 저장한 ${n}개를 불러왔어요`);}
+    },e=>console.warn('config watch',e));
   }catch(e){console.error(e);showMsg('불러오지 못했어요: '+esc(e.message||e));}
 });
 </script>
