@@ -3387,7 +3387,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=drawHomeHTML()+attHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=feeHomeHTML()+drawHomeHTML()+attHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -3400,6 +3400,7 @@ function renderHome(){
   bindMeetCard();
   bindVoteCard();
   bindDrawHome();
+  bindMyFee();
   applyPresenceDots();
 }
 /* 홈 — 얼굴 둘레 월간 출석 링 */
@@ -3493,6 +3494,13 @@ function myFeeHTML(){
       :`<button class="btn" id="feeReport">입금했어요</button><div class="fee-note">매달 ${FEE_DUE_DAY}일까지 · 입금 후 눌러주세요</div>`}
     <div class="fee-note" style="text-align:right"><span id="feeHist" style="cursor:pointer;color:var(--honey-d);font-weight:700">지난 내역 ›</span></div>
   </div>`;
+}
+/* 홈 맨 위 회비 카드 — 아직 안 낸 달만(입금 전·미납·확인 중). 완료·면제면 숨김(내역은 ⚙️ 설정창) */
+function feeHomeHTML(){
+  if(!S.myFees)return '';                                   // 내 회비 기록을 불러오기 전엔 숨김(깜빡임 방지)
+  const st=feeStatus(S.meId,feeYm(),S.myFees[feeYm()]);
+  if(st.state==='exempt'||st.state==='paid')return '';
+  return `<div class="home-sec">${myFeeHTML()}</div>`;
 }
 function bindMyFee(){
   $('#feeCopy')&&($('#feeCopy').onclick=async()=>{const a=S.feeAccount||{};try{await navigator.clipboard.writeText(`${a.bank||''} ${a.number||''}`.trim());toast('계좌번호를 복사했어요');}catch(e){toast(a.number||'');}});
@@ -3605,7 +3613,7 @@ function startFeeWatch(){
     try{_feeUnsub=col.where('uid','==',S.meId).onSnapshot(qs=>{
       S.myFees={}; qs.forEach(d=>{const x=d.data();S.myFees[x.ym]=x;});
       renderNotice();
-      if(tab==='dress'&&!$('#ov').classList.contains('on'))renderDress();
+      if(tab==='home'&&!$('#ov').classList.contains('on'))renderHome();
     },e=>console.warn('fees(me)',e));}catch(e){}
   }
   if(!_feeAdminUnsub&&isOwner()){
@@ -4896,9 +4904,6 @@ function renderDress(){
       <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일</div>
     </div>
   </div>
-  ${myFeeHTML()}
-  ${isOwner()?`<button class="gf-admin" id="feeAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>💳 회비 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 나만 보여요</small></b><span id="feeAdminN">확인 ${(S.feeReq||[]).length}건</span></button>`:''}
-  ${isAdmin()?`<button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 14px"><b>📦 교환 신청 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 모임장만 보여요</small></b><span id="gfAdminN">…</span></button>`:''}
   <div class="dtool" id="dtool">${DTOOLS.map(([k,l])=>`<div class="tb ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div class="dcat fixed" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
@@ -4907,10 +4912,6 @@ function renderDress(){
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#dtool').querySelectorAll('.tb').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
-  $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
-  $('#feeAdmin')&&($('#feeAdmin').onclick=()=>{feeAdminYm=null;openFeeAdmin();});
-  bindMyFee();
-  refreshAdminBadge();
   drawItems();
 }
 /* 아이템 착용/구매 시 화면 전체(renderDress)를 다시 그리면 스크롤이 맨 위(캐릭터 미리보기)로 튀어
@@ -5310,7 +5311,11 @@ function drawItems(){
   $('#items').querySelectorAll('.item[data-slot]').forEach(el=>el.onclick=async()=>{
     const slot=el.dataset.slot,id=el.dataset.id||null;
     if(id&&(el.classList.contains('locked')||dressSlot==='fav')){ openTryOn({it:pItem(slot,id),slot}); return; } // 잠금(또는 찜 탭)=입어보기 시트
-    if(m.items[slot]===id||(!id&&!m.items[slot]))return;
+    if(!id&&!m.items[slot])return;
+    if(id&&m.items[slot]===id){                          // 입고 있는 걸 한 번 더 누르면 벗기
+      if(['eyes','mouth','hair'].includes(slot))return;  // 눈·입·헤어는 항상 착용
+      m.items[slot]=null; await save(); refreshDressPreview(); return;
+    }
     m.items[slot]=id; await save(); refreshDressPreview();
   });
   $('#items').querySelectorAll('.item[data-acc]').forEach(el=>el.onclick=async()=>{
@@ -5585,6 +5590,13 @@ function openProfileSheet(){
       <button class="btn ghost" id="pfHome">내 글 보기</button>
       <button class="btn" id="pfSave">저장</button>
     </div>
+    <button class="btn ghost" id="pfFee" style="margin-top:10px">💳 내 회비 내역</button>
+    ${isOwner()?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="hint" style="margin-bottom:7px">👑 모임장 전용 · 관리</div>
+      <button class="gf-admin" id="feeAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>💳 회비 관리</b><span id="feeAdminN">확인 ${(S.feeReq||[]).length}건</span></button>
+      <button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>📦 교환 신청 관리</b><span id="gfAdminN">…</span></button>
+      <a class="gf-admin" href="admin.html" target="_blank" rel="noopener" style="width:100%;box-sizing:border-box;margin:0;text-decoration:none;color:#fff;display:flex"><b>🛍️ 아이템 관리 대시보드</b><span>열기 ↗</span></a>
+    </div>`:''}
     ${isOwner()?`<button class="btn ghost" id="pfManage" style="margin-top:10px">⚙️ 멤버 관리 (내보내기)</button>`:''}
     ${isOwner()?`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
       <div class="hint" style="margin-bottom:7px">🔐 운영자 전용 · 데이터 백업</div>
@@ -5599,6 +5611,10 @@ function openProfileSheet(){
   $('#pfHome').onclick=()=>{closeOv();feedMineOnly=true;feedSavedOnly=false;go('feed');};
   $('#pfLogout').onclick=logout;
   $('#pfManage')&&($('#pfManage').onclick=openManageSheet);
+  $('#pfFee').onclick=openFeeHistory;
+  $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
+  $('#feeAdmin')&&($('#feeAdmin').onclick=()=>{feeAdminYm=null;openFeeAdmin();});
+  if(isOwner())refreshAdminBadge();
   if($('#pfBackup'))$('#pfBackup').onclick=downloadBackup;
   if($('#pfRestore')){
     $('#pfRestore').onclick=()=>$('#pfRestoreFile').click();
