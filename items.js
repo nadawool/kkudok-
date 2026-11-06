@@ -400,7 +400,8 @@ const ACC_TYPES=[
     {id:'neckwarm_007',name:'목도리7',img:CHARP+'acc/neckwarm/acc_neckwarm_007.png',cost:5,d:'2026-11-06'},
   ]},
   // 얼굴 추가요소(수염·주근깨) — 악세사리 저장구조를 재사용하되 '얼굴' 탭에서만 노출
-  {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'}]},
+  {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'},
+    {id:'christmas_item_001',name:'산타수염',img:CHARP+'face/christmas_item_001.png',cost:3,d:'2026-11-07'}]},
   {key:'freckle',name:'주근깨',items:[{id:'face_etc_002',name:'주근깨',img:CHARP+'face/face_etc_002.png'}]},
 ];
 
