@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>꾸독 · 아이템 관리</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBFAF7;--ink:#232220;--soft:#9B978F;--line:#EFE9DF;--honey:#F2994A;--honey-s:#FCEBD8;--chg:#FFF3E3}
+*{box-sizing:border-box}
+html,body{margin:0;background:#EDE7DC;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(--ink)}
+button,input,select{font-family:inherit;font-size:13px}
+button{cursor:pointer;border:none;border-radius:10px;padding:8px 12px;background:#F4EFE6;color:var(--ink);font-weight:700}
+button.pri{background:var(--honey);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+input,select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink);min-width:0}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 14px 120px}
+.top{position:sticky;top:0;z-index:20;background:#EDE7DC;padding:12px 0 10px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hd h1{font-size:19px;font-weight:900;margin:0;flex:1}
+.who{font-size:12px;color:var(--soft)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.bar label{font-size:12.5px;color:var(--soft);display:flex;align-items:center;gap:4px}
+.bulk{display:none;margin-top:8px;padding:10px;border-radius:12px;background:var(--honey-s);gap:8px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.bulk.on{display:flex}
+.bulk b{color:#8A4A12}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin-top:8px}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px;display:grid;grid-template-columns:84px minmax(0,1fr);gap:4px 10px;position:relative}
+.card.sel{border-color:var(--honey)}
+.card.chg{background:var(--chg)}
+.card.hid .th{opacity:.35}
+.th{width:84px;height:84px;border-radius:10px;background:#F7F3EC;grid-row:span 4;cursor:pointer}
+.card .id{font-size:10.5px;color:var(--soft);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.card .row{display:flex;gap:6px;align-items:center}
+.card .row input[type=text]{flex:1}
+.card .row input[type=number]{width:62px}
+.card .row select{flex:1}
+.card .row input[type=date]{flex:1}
+.card .ck{position:absolute;top:8px;left:8px;width:18px;height:18px;z-index:2}
+.tune{grid-column:1/-1;display:none;gap:4px 8px;grid-template-columns:auto 1fr auto;align-items:center;font-size:12px;color:var(--soft);padding-top:6px;border-top:1px dashed var(--line);margin-top:4px}
+.tune.on{display:grid}
+.tune input[type=range]{width:100%}
+.mini{font-size:11.5px;padding:4px 8px;border-radius:8px}
+.tag{font-size:10px;font-weight:900;color:#fff;background:var(--honey);border-radius:6px;padding:0 5px}
+.msg{background:#fff;border-radius:14px;padding:28px;text-align:center;line-height:1.7;margin-top:40px}
+.save{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;box-shadow:0 6px 20px rgba(60,45,30,.25);padding:13px 22px;font-size:15px;border-radius:30px}
+.count{font-size:12.5px;color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="hd"><h1>🛍️ 꾸독 아이템 관리</h1><span class="who" id="who"></span><button id="logout" class="mini" style="display:none">로그아웃</button></div>
+    <div id="tools" style="display:none">
+      <div class="bar">
+        <select id="fCat"></select>
+        <input id="fQ" type="search" placeholder="이름·id 검색" style="flex:1;min-width:120px">
+        <label><input type="checkbox" id="fNew">NEW만</label>
+        <label><input type="checkbox" id="fChg">바뀐 것만</label>
+        <label><input type="checkbox" id="fHid">숨김만</label>
+        <span class="count" id="cnt"></span>
+      </div>
+      <div class="bar">
+        <button class="mini" id="selAll">보이는 것 전체 선택</button>
+        <button class="mini" id="selNone">선택 해제</button>
+      </div>
+      <div class="bulk" id="bulk">
+        <b id="bulkN"></b>
+        <span>캐시</span><input type="number" id="bC" min="0" style="width:70px"><button class="mini" id="bCgo">적용</button>
+        <span>NEW 날짜</span><input type="date" id="bD"><button class="mini" id="bDgo">적용</button><button class="mini" id="bDx">NEW 해제</button>
+        <span>카테고리</span><select id="bCat"></select><button class="mini" id="bCatgo">적용</button>
+        <button class="mini" id="bHide">숨기기</button><button class="mini" id="bShow">보이기</button>
+      </div>
+    </div>
+  </div>
+  <div id="main"><div class="msg">불러오는 중…</div></div>
+</div>
+<button class="pri save" id="save" style="display:none" disabled>저장할 변경 없음</button>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyCy7kxT5HU6lMGcJH9wMhopoDi30vOiSrE",
+    authDomain: "kkudok-4a4fd.firebaseapp.com",
+    projectId: "kkudok-4a4fd",
+    storageBucket: "kkudok-4a4fd.firebasestorage.app",
+    messagingSenderId: "678344637815",
+    appId: "1:678344637815:web:38cc20db0ff96f7e42f572"
+  });
+</script>
+<script src="items.js"></script>
+<script>
+/* 꾸독 아이템 관리 대시보드 (모임장 전용)
+   - items.js 의 기본값 위에 Firestore rooms/{room}/config/items.meta 로 덮어쓰기만 저장 (기본값과 다른 항목만)
+   - 앱(index.html)은 접속할 때 이 meta를 읽어 이름·캐시·카테고리·NEW·숨김·썸네일을 반영 */
+const $=s=>document.querySelector(s);
+const ROOM=(new URLSearchParams(location.search).get('room')||'main').trim()||'main';
+const db=firebase.firestore(), cfgRef=db.collection('rooms').doc(ROOM).collection('config').doc('items');
+const BASE_IMG=CHARP+'base_body.png';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---- 카테고리 목록 ---- */
+const SLOT_NAMES={eyes:'얼굴 · 눈',mouth:'얼굴 · 입',hair:'헤어',cloth_top:'의상 · 상의',dress:'의상 · 원피스',cloth_bottom:'의상 · 하의',outer:'의상 · 아우터',shoes:'소품 · 신발',bag:'소품 · 가방'};
+const FACE_EXTRA=['beard','freckle'];
+const CATS=[];
+['cloth_top','dress','cloth_bottom','outer','shoes','bag'].forEach(k=>CATS.push([k,SLOT_NAMES[k]]));
+ACC_TYPES.forEach(t=>{ if(!FACE_EXTRA.includes(t.key)) CATS.push(['acc:'+t.key,'소품 · '+t.name]); });
+['eyes','mouth'].forEach(k=>CATS.push([k,SLOT_NAMES[k]]));
+ACC_TYPES.forEach(t=>{ if(FACE_EXTRA.includes(t.key)) CATS.push(['acc:'+t.key,'얼굴 · '+t.name]); });
+CATS.push(['hair',SLOT_NAMES.hair]);
+const catName=k=>(CATS.find(c=>c[0]===k)||[k,k])[1];
+const THUMB_CATS=k=>!['eyes','mouth','hair','acc:beard','acc:freckle'].includes(k);
+
+/* ---- 상태: 기본값(def) + 현재값(cur) ---- */
+const DEF={}, CUR={}, ORDER=[];
+ITEM_BASE.forEach(b=>{const it=b.it;
+  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,img:it.img};
+  ORDER.push(it.id);});
+let SAVED={};             // 마지막으로 저장된 meta (변경 감지용)
+const sel=new Set();
+
+function curFromMeta(meta){
+  ORDER.forEach(id=>{const d=DEF[id], o=meta[id]||{};
+    CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
+      d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0};});
+}
+function metaOf(id){ // 기본값과 다른 것만
+  const d=DEF[id], c=CUR[id], o={};
+  if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
+  if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty;
+  return o;
+}
+function buildMeta(){const m={};ORDER.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)m[id]=o;});return m;}
+const isChanged=id=>JSON.stringify(metaOf(id))!==JSON.stringify(SAVED[id]||{});
+const isNew=id=>{const d=CUR[id].d;return !!d&&(Date.now()-new Date(d+'T00:00:00+09:00').getTime())<14*864e5;};
+
+/* ---- 썸네일 (앱과 같은 계산) ---- */
+const _img=new Map();
+const load=src=>{if(!_img.has(src))_img.set(src,new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=src;}));return _img.get(src);};
+const _box=new Map();
+async function drawThumb(cv,id){
+  const c=CUR[id], d=DEF[id];
+  try{
+    const [b,im]=await Promise.all([load(BASE_IMG),load(d.img)]);
+    const g=cv.getContext('2d'), O=cv.width; g.clearRect(0,0,O,O);
+    if(!THUMB_CATS(c.cat)){ // 얼굴/헤어류: 얼굴 쪽 확대
+      const k=O/200; g.drawImage(b,O/2-175*k,-40*k,350*k,500*k); g.drawImage(im,O/2-175*k,-40*k,350*k,500*k); return; }
+    const W=350,H=500;
+    if(!_box.has(d.img)){const t=document.createElement('canvas');t.width=W;t.height=H;const x=t.getContext('2d');x.drawImage(im,0,0,W,H);
+      const px=x.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;
+      for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){if(px[(y*W+xx)*4+3]>20){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}}
+      if(x1<0){x0=0;y0=0;x1=W;y1=H;} _box.set(d.img,[x0,y0,x1,y1]);}
+    const [x0,y0,x1,y1]=_box.get(d.img);
+    const sz=Math.max(x1-x0,y1-y0,W*0.28)*1.22/(c.tz||1), cx=(x0+x1)/2-c.tx*sz, cy=(y0+y1)/2-c.ty*sz;
+    const k=O/sz, ox=O/2-cx*k, oy=O/2-cy*k;
+    g.globalAlpha=.32;g.drawImage(b,ox,oy,W*k,H*k);g.globalAlpha=1;g.drawImage(im,ox,oy,W*k,H*k);
+  }catch(e){}
+}
+
+/* ---- 화면 ---- */
+const catOpts=v=>CATS.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${n}</option>`).join('');
+function visibleIds(){
+  const fc=$('#fCat').value, q=$('#fQ').value.trim().toLowerCase();
+  return ORDER.filter(id=>{const c=CUR[id];
+    if(fc&&c.cat!==fc)return false;
+    if(q&&!(c.n.toLowerCase().includes(q)||id.toLowerCase().includes(q)))return false;
+    if($('#fNew').checked&&!isNew(id))return false;
+    if($('#fChg').checked&&!Object.keys(metaOf(id)).length&&!isChanged(id))return false;
+    if($('#fHid').checked&&!c.h)return false;
+    return true;})
+  .sort((a,b)=>{const da=CUR[a].d,db=CUR[b].d;return da===db?ORDER.indexOf(a)-ORDER.indexOf(b):(da<db?1:-1);});
+}
+let io=null;
+function cardHTML(id){const c=CUR[id];
+  return `<div class="card ${sel.has(id)?'sel':''} ${isChanged(id)?'chg':''} ${c.h?'hid':''}" data-id="${id}">
+    <input type="checkbox" class="ck" ${sel.has(id)?'checked':''}>
+    <canvas class="th" width="168" height="168" title="눌러서 썸네일 조정"></canvas>
+    <div class="id"><span>${esc(id)}</span><span>${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
+    <div class="row"><input type="text" data-f="n" value="${esc(c.n)}" placeholder="이름"><input type="number" data-f="c" min="0" value="${c.c}" title="캐시 (0=무료)"></div>
+    <div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>
+    <div class="row"><input type="date" data-f="d" value="${esc(c.d)}" title="올린 날짜 (14일간 NEW·신상)"><button class="mini" data-act="hide">${c.h?'보이기':'숨김'}</button><button class="mini" data-act="reset" title="기본값으로">↺</button></div>
+    <div class="tune"><span>확대</span><input type="range" data-f="tz" min="0.5" max="2.5" step="0.05" value="${c.tz}"><span>${c.tz.toFixed(2)}</span>
+      <span>좌우</span><input type="range" data-f="tx" min="-0.5" max="0.5" step="0.02" value="${c.tx}"><span>${c.tx.toFixed(2)}</span>
+      <span>상하</span><input type="range" data-f="ty" min="-0.5" max="0.5" step="0.02" value="${c.ty}"><span>${c.ty.toFixed(2)}</span></div>
+  </div>`;}
+function render(){
+  const ids=visibleIds();
+  $('#cnt').textContent=`${ids.length}개`;
+  $('#main').innerHTML=`<div class="grid">${ids.map(cardHTML).join('')}</div>`;
+  if(io)io.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);drawThumb(e.target,e.target.closest('.card').dataset.id);}}),{rootMargin:'300px'});
+  $('#main').querySelectorAll('canvas.th').forEach(cv=>io.observe(cv));
+  refreshBar();
+}
+function refreshCard(id){const el=$(`.card[data-id="${CSS.escape(id)}"]`);if(!el)return;
+  const c=CUR[id]; el.classList.toggle('chg',isChanged(id)); el.classList.toggle('hid',c.h); el.classList.toggle('sel',sel.has(id));
+  el.querySelector('.id span:last-child').innerHTML=`${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}`;
+  el.querySelector('[data-act="hide"]').textContent=c.h?'보이기':'숨김';
+  ['n','c','cat','d'].forEach(f=>{const i=el.querySelector(`[data-f="${f}"]`);if(i&&document.activeElement!==i)i.value=c[f];});
+  drawThumb(el.querySelector('canvas.th'),id); refreshBar();}
+function refreshBar(){
+  const n=ORDER.filter(isChanged).length, b=$('#save');
+  b.disabled=!n; b.style.display=n?'':'none'; b.textContent=`변경 ${n}개 저장`;
+  $('#bulk').classList.toggle('on',sel.size>0); $('#bulkN').textContent=`${sel.size}개 선택`;
+}
+function bindMain(){
+  $('#main').addEventListener('input',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id, f=el.dataset.f; if(!f)return;
+    const c=CUR[id];
+    if(f==='n')c.n=el.value; else if(f==='c')c.c=Math.max(0,parseInt(el.value||'0',10)||0);
+    else if(f==='cat')c.cat=el.value; else if(f==='d')c.d=el.value;
+    else {c[f]=parseFloat(el.value); el.nextElementSibling.textContent=c[f].toFixed(2);}
+    if(f==='n'&&!c.n.trim()){}                     // 빈 이름은 저장 시 기본 이름 사용
+    refreshCard(id);});
+  $('#main').addEventListener('change',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
+    if(el.classList.contains('ck')){el.checked?sel.add(id):sel.delete(id); refreshCard(id);}});
+  $('#main').addEventListener('click',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
+    if(el.matches('canvas.th')){card.querySelector('.tune').classList.toggle('on');return;}
+    const act=el.dataset.act;
+    if(act==='hide'){CUR[id].h=!CUR[id].h;refreshCard(id);}
+    if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:1,tx:0,ty:0});
+      card.querySelectorAll('.tune input').forEach(r=>{r.value=CUR[id][r.dataset.f];r.nextElementSibling.textContent=CUR[id][r.dataset.f].toFixed(2);});refreshCard(id);}
+  });
+}
+function bulk(fn){sel.forEach(id=>fn(CUR[id]));render();}
+function bindTools(){
+  $('#fCat').innerHTML=`<option value="">전체 카테고리</option>`+catOpts('');
+  $('#bCat').innerHTML=catOpts('outer');
+  ['fCat','fNew','fChg','fHid'].forEach(k=>$('#'+k).onchange=render);
+  let t; $('#fQ').oninput=()=>{clearTimeout(t);t=setTimeout(render,200);};
+  $('#selAll').onclick=()=>{visibleIds().forEach(id=>sel.add(id));render();};
+  $('#selNone').onclick=()=>{sel.clear();render();};
+  $('#bCgo').onclick=()=>{const v=parseInt($('#bC').value,10);if(isNaN(v)||v<0)return alert('캐시를 숫자로 적어주세요');bulk(c=>c.c=v);};
+  $('#bDgo').onclick=()=>{const v=$('#bD').value;if(!v)return alert('날짜를 골라주세요');bulk(c=>c.d=v);};
+  $('#bDx').onclick=()=>bulk(c=>c.d='');
+  $('#bCatgo').onclick=()=>bulk(c=>c.cat=$('#bCat').value);
+  $('#bHide').onclick=()=>bulk(c=>c.h=true);
+  $('#bShow').onclick=()=>bulk(c=>c.h=false);
+  $('#save').onclick=save;
+  window.addEventListener('beforeunload',e=>{if(ORDER.some(isChanged)){e.preventDefault();e.returnValue='';}});
+}
+async function save(){
+  const b=$('#save'); b.disabled=true; b.textContent='저장 중…';
+  const meta=buildMeta();
+  try{
+    await cfgRef.set({meta,updatedAt:Date.now(),by:firebase.auth().currentUser.uid});
+    SAVED=JSON.parse(JSON.stringify(meta)); render(); toastMsg('저장했어요. 멤버들은 앱을 다시 열면 반영돼요');
+  }catch(e){console.error(e);alert('저장하지 못했어요. Firestore 규칙(config)을 확인해주세요.\n'+(e.message||e));refreshBar();}
+}
+function toastMsg(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#232220;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:50';document.body.appendChild(d);setTimeout(()=>d.remove(),2200);}
+
+/* ---- 로그인 · 모임장 확인 ---- */
+function showMsg(h){$('#main').innerHTML=`<div class="msg">${h}</div>`;}
+firebase.auth().onAuthStateChanged(async user=>{
+  if(!user){
+    showMsg(`모임장 계정으로 로그인해주세요<br><br><button class="pri" id="login">Google로 로그인</button>`);
+    $('#login').onclick=()=>firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message));
+    return;
+  }
+  $('#who').textContent=user.email||''; $('#logout').style.display=''; $('#logout').onclick=()=>firebase.auth().signOut();
+  try{
+    const room=await db.collection('rooms').doc(ROOM).get();
+    if(!room.exists||room.data().leader!==user.uid){showMsg('모임장만 들어올 수 있는 페이지예요 🙅');return;}
+    let meta={};
+    try{const s=await cfgRef.get();meta=(s.exists&&s.data().meta)||{};}
+    catch(e){showMsg('설정을 불러오지 못했어요.<br>Firestore 규칙에 <b>config</b> 권한을 추가해주세요.<br><small>'+esc(e.message||e)+'</small>');return;}
+    SAVED=JSON.parse(JSON.stringify(meta)); curFromMeta(meta);
+    $('#tools').style.display=''; $('#save').style.display='';
+    bindTools(); bindMain(); render();
+  }catch(e){console.error(e);showMsg('불러오지 못했어요: '+esc(e.message||e));}
+});
+</script>
+</body>
+</html>
