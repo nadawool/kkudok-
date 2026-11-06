@@ -284,6 +284,9 @@ const ITEMS={
     {id:'totebag_011', name:'토트백11', img:CHARP+'bag/totebag_011.png', cost:7},
     {id:'totebag_012', name:'토트백12', img:CHARP+'bag/totebag_012.png', cost:7},
     {id:'totebag_013', name:'토트백13', img:CHARP+'bag/totebag_013.png', cost:7},
+    // ▼ 크리스마스 가방
+    {id:'christmas_bag_001',name:'크리스마스가방1',img:CHARP+'bag/christmas_bag_001.png',cost:35,d:'2026-11-07'},
+    {id:'christmas_bag_002',name:'크리스마스가방2',img:CHARP+'bag/christmas_bag_002.png',cost:35,d:'2026-11-07'},
   ],
 };
 
@@ -421,6 +424,8 @@ const BGS=[
   {id:'bg_dsky',  hex:'#95C2DA',name:'진하늘', cost:1},
   {id:'bg_green', hex:'#55A67E',name:'그린', cost:1},
   {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
+  // ▼ 이미지 배경 (1200×1500, 투명 PNG면 base 색이 바탕으로 깔림)
+  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07'},
 ];
 
 
@@ -444,7 +449,7 @@ function applyItemMeta(meta){
     if(typeof o.d==='string'){ if(o.d)it.d=o.d; else delete it.d; }
     if(o.h)it.hidden=true;
     ['tz','tx','ty','o'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
-    if(b.cat==='bg'){ if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&!it.img&&it.id!=='bg_none')it.hex=o.hex; BGS.push(it); return; }
+    if(b.cat==='bg'){ if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&it.id!=='bg_none'){ if(it.img)it.base=o.hex; else it.hex=o.hex; } BGS.push(it); return; }
     let cat=(typeof o.cat==='string'&&o.cat)||b.cat;
     if(cat==='dress'){it.dress=true;cat='cloth_top';}
     else if(cat==='cloth_top'){it.dress=false;}

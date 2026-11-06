@@ -126,7 +126,7 @@ const HEXOK=/^#[0-9a-fA-F]{6}$/;
 const DEF={}, CUR={}, ORDER=[];
 ITEM_BASE.forEach(b=>{const it=b.it;
   if(it.id==='bg_none')return;                         // '기본'(배경 없음)은 항상 맨 앞 · 관리 대상 아님
-  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img,hex:it.hex||'',base:it.base||''};
+  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img,hex:it.img?(it.base||'#FFFFFF'):(it.hex||''),base:it.base||''};
   ORDER.push(it.id);});
 /* 대시보드에서 새로 만든 컬러 배경 (meta[id].add) → 목록에 추가 */
 function addCustomDefs(meta){Object.keys(meta||{}).forEach(id=>{const o=meta[id];
@@ -145,7 +145,7 @@ function metaOf(id){ // 기본값과 다른 것만 (새로 만든 배경은 전�
   const d=DEF[id], c=CUR[id], o={};
   if(d.custom){ if(c.del)return {};
     const r={add:1,hex:c.hex,n:c.n,c:c.c}; if(c.d)r.d=c.d; if(c.h)r.h=true; if(typeof c.o==='number')r.o=c.o; return r; }
-  if(c.cat==='bg'&&c.hex!==d.hex&&!d.img)o.hex=c.hex;
+  if(c.cat==='bg'&&c.hex!==d.hex)o.hex=c.hex;   // 컬러=색 / 이미지=바탕색
   if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
   if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty; if(typeof c.o==='number')o.o=c.o;
   return o;
@@ -163,7 +163,7 @@ async function drawThumb(cv,id){
   const c=CUR[id], d=DEF[id];
   if(c.cat==='bg'){const g=cv.getContext('2d'),O=cv.width; g.clearRect(0,0,O,O);
     if(d.img){try{const im=await load(d.img);const k=Math.max(O/im.naturalWidth,O/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;
-      g.fillStyle=d.base||'#fff';g.fillRect(0,0,O,O);g.drawImage(im,(O-w)/2,(O-h)/2,w,h);}catch(e){}}
+      g.fillStyle=c.hex||d.base||'#fff';g.fillRect(0,0,O,O);g.drawImage(im,(O-w)/2,(O-h)/2,w,h);}catch(e){}}
     else{g.fillStyle=c.hex||'#fff';g.fillRect(0,0,O,O);}
     if(c.del){g.strokeStyle='#C0504D';g.lineWidth=6;g.beginPath();g.moveTo(10,10);g.lineTo(O-10,O-10);g.stroke();}
     return;}
@@ -250,7 +250,7 @@ function cardHTML(id){const c=CUR[id], d0=DEF[id];
     <div class="id"><span>${$('#fCat').value?`<span class="no">${catList(c.cat).indexOf(id)+1}</span>`:''}${esc(id)}</span><span class="flags">${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
     <div class="row"><input type="text" data-f="n" value="${esc(c.n)}" placeholder="이름"><input type="number" data-f="c" min="0" value="${c.c}" title="캐시 (0=무료)"></div>
     ${c.cat==='bg'
-      ?`<div class="row">${d0.img?'<span style="font-size:12px;color:var(--soft)">🖼️ 이미지 배경</span>':`<input type="color" data-f="hex" value="${esc(c.hex||'#ffffff')}" style="width:44px;height:32px;padding:2px"><input type="text" data-f="hex" value="${esc(c.hex)}" maxlength="7" style="width:90px">`}
+      ?`<div class="row">${d0.img?`<span style="font-size:12px;color:var(--soft)">🖼️ 바탕색</span><input type="color" data-f="hex" value="${esc(c.hex||'#ffffff')}" style="width:44px;height:32px;padding:2px">`:`<input type="color" data-f="hex" value="${esc(c.hex||'#ffffff')}" style="width:44px;height:32px;padding:2px"><input type="text" data-f="hex" value="${esc(c.hex)}" maxlength="7" style="width:90px">`}
         ${d0.custom?`<button class="mini" data-act="del" style="margin-left:auto;color:#C0504D">${c.del?'삭제 취소':'삭제'}</button>`:''}</div>`
       :`<div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>`}
     <div class="row"><input type="date" data-f="d" value="${esc(c.d)}" title="올린 날짜 (14일간 NEW·신상)"><button class="mini" data-act="hide">${c.h?'보이기':'숨김'}</button><button class="mini" data-act="reset" title="기본값으로">↺</button></div>
