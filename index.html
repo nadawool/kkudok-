@@ -5056,10 +5056,12 @@ function allItemsFlat(){
   const out=[];
   Object.keys(ITEMS).forEach(slot=>{ (ITEMS[slot]||[]).forEach(it=>out.push({it,slot})); }); // 눈·입·헤어·상의·하의
   ACC_TYPES.forEach(t=>{ (t.items||[]).forEach(it=>out.push({it,accKey:t.key})); });          // 악세사리·수염·주근깨
+  BGS.forEach(it=>{ if(it.id!=='bg_none')out.push({it,bg:true}); });                       // 배경(바탕·소품) — 신상·찜·MY에도 나오게
   return out;
 }
 // 펼친 목록의 아이템 1개 → 올바른 슬롯/악세사리 data를 붙여 타일 생성 (클릭=착용/구매 그대로 동작)
 function flatTile(m,en){
+  if(en.bg)return bgTileHTML(m,en.it);
   const it=en.it, zoom=(en.slot==='cloth_top'||en.slot==='cloth_bottom'||en.slot==='outer')?null:'hz';
   if(en.slot){
     const eq=m.items[en.slot]===it.id;
@@ -5249,6 +5251,34 @@ function startGiftWatch(){
   }catch(e){console.error(e);}
 }
 
+/* 배경 타일 (바탕=하나 / 소품=여러 개 겹치기) — 배경 탭·신상·찜·MY 공용 */
+function bgTileHTML(m,bg){
+  const on=bg.deco?decoList(m).includes(bg.id):baseBgVal(m)===bgVal(bg);
+  const locked=itemLocked(m,bg), cost=itemCost(bg);
+  return `<div class="itembox">
+    <div class="item bgtile ${on?'eq':''} ${locked?'locked buyable':''}" data-bgid="${bg.id}">
+      ${bgThumbHTML(bg)}
+      ${on?'<div class="chk">✓</div>':''}
+      ${isNewItem(bg)?'<span class="newb">NEW</span>':''}
+      ${inCart(bg.id)?'<span class="cartb">🛒</span>':''}
+    </div>
+    <div class="inm">${escT(bg.name||'')}</div>
+    ${locked?`<div class="ptag"><span class="coin">C</span>${cost}</div>`:''}
+  </div>`;
+}
+function bindBgTiles(m){
+  $('#items').querySelectorAll('.bgtile[data-bgid]').forEach(el=>el.onclick=async()=>{
+    const bg=bgById(el.dataset.bgid); if(!bg)return;
+    if(el.classList.contains('locked')||(dressSlot==='fav'&&bg.id!=='bg_none')){ openTryOn({it:bg,bg:true}); return; } // 잠금(또는 찜 탭)=입어보기
+    if(bg.deco){
+      let a=decoList(m); a=a.includes(bg.id)?a.filter(x=>x!==bg.id):a.concat(bg.id);
+      m.bgDeco=a; if(!baseBgVal(m))m.bg=null;
+    }else{
+      const v=bgVal(bg); if(baseBgVal(m)===v)return; m.bgDeco=decoList(m); m.bg=v||null;
+    }
+    await save(); refreshDressPreview();
+  });
+}
 function drawItems(){
   const m=me(); $('#dsub').innerHTML=''; refreshCartBar();
   if(dressSlot==='gift'){
@@ -5264,35 +5294,11 @@ function drawItems(){
     const none=BGS.find(b=>b.id==='bg_none');
     const bases=(none?[none]:[]).concat(byNewest(BGS.filter(b=>b.id!=='bg_none'&&!b.deco)));
     const decos=byNewest(BGS.filter(b=>b.deco));
-    const myDeco=decoList(m), myBase=baseBgVal(m);
-    const tileOf=(bg,on,kind)=>{
-      const locked=itemLocked(m,bg), cost=itemCost(bg);
-      return `<div class="itembox">
-        <div class="item bgtile ${on?'eq':''} ${locked?'locked buyable':''}" data-bgid="${bg.id}" data-kind="${kind}">
-          ${bgThumbHTML(bg)}
-          ${on?'<div class="chk">✓</div>':''}
-          ${isNewItem(bg)?'<span class="newb">NEW</span>':''}
-          ${inCart(bg.id)?'<span class="cartb">🛒</span>':''}
-        </div>
-        <div class="inm">${escT(bg.name||'')}</div>
-        ${locked?`<div class="ptag"><span class="coin">C</span>${cost}</div>`:''}
-      </div>`;
-    };
-    $('#items').innerHTML=`<div class="dsec">바탕 <small style="font-weight:600">· 하나만 골라요</small></div>`
-      +bases.map(bg=>tileOf(bg,myBase===bgVal(bg),'base')).join('')
-      +(decos.length?`<div class="dsec">배경 소품 <small style="font-weight:600">· 여러 개 겹쳐 올릴 수 있어요 (다시 누르면 빼기)</small></div>`
-        +decos.map(bg=>tileOf(bg,myDeco.includes(bg.id),'deco')).join(''):'');
-    $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
-      const bg=bgById(el.dataset.bgid); if(!bg)return;
-      if(el.classList.contains('locked')){ openTryOn({it:bg,bg:true}); return; }   // 잠금=입어보기(캐시 부족해도 미리보기·장바구니)
-      if(el.dataset.kind==='deco'){
-        let a=decoList(m); a=a.includes(bg.id)?a.filter(x=>x!==bg.id):a.concat(bg.id);
-        m.bgDeco=a; if(!baseBgVal(m))m.bg=null;
-      }else{
-        const v=bgVal(bg); if(baseBgVal(m)===v)return; m.bgDeco=decoList(m); m.bg=v||null;
-      }
-      await save(); refreshDressPreview();
-    });
+    $('#items').innerHTML=(decos.length?`<div class="dsec">배경 소품 <small style="font-weight:600">· 여러 개 겹쳐 올릴 수 있어요 (다시 누르면 빼기)</small></div>`
+        +decos.map(bg=>bgTileHTML(m,bg)).join(''):'')
+      +`<div class="dsec">바탕 <small style="font-weight:600">· 하나만 골라요</small></div>`
+      +bases.map(bg=>bgTileHTML(m,bg)).join('');
+    bindBgTiles(m);
     return;
   }
   if(dressSlot==='hair'){ $('#items').innerHTML=hairColorRow(m)+`<div class="dsec">스타일</div>`+slotGrid(m,'hair','hz'); }
@@ -5365,6 +5371,7 @@ function drawItems(){
   }
 
   // 클릭 핸들러
+  bindBgTiles(m);   // 신상·찜·MY 안의 배경 타일
   // 하트(찜) 토글 — 착용/구매로 안 번지게 stopPropagation
   $('#items').querySelectorAll('.favbtn').forEach(el=>el.onclick=async(e)=>{
     e.stopPropagation();
