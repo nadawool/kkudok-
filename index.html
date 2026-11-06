@@ -642,7 +642,11 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .cart-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .cart-row .ct{width:46px;height:46px;border-radius:10px;overflow:hidden;position:relative;background:#F7F3EC;flex:0 0 46px}
 .cart-row .ct .th{position:absolute;inset:0;width:100%;height:100%}
-.cart-row b{flex:1;font-size:14px}
+.cart-row{cursor:pointer}
+.cart-row b{flex:1;font-size:14px;display:flex;flex-direction:column}
+.cart-row b small{font-size:11px;font-weight:700;color:var(--honey-d)}
+.cart-row.off .ct,.cart-row.off b{opacity:.45}
+.cart-row.off b small{color:var(--soft)}
 .cart-row .ptag{margin:0}
 .cart-row .x{width:28px;height:28px;border-radius:50%;background:#F4EFE6;font-size:13px;color:var(--soft)}
 .cart-sum{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:800;margin:12px 2px 4px}
@@ -5435,13 +5439,13 @@ function openTryOn(en){
         ${locked?`<button class="btn ghost cart" id="toCart">${inCart(it.id)?'🛒 담김 ✓':'🛒 담기'}</button>`:''}
         <button class="btn ${locked&&have<cost?'ghost':''}" id="toGo">${!locked?'입기':have<cost?`${cost-have}캐시 부족`:`${cost}캐시 구매`}</button>
       </div>
-      ${locked&&CART.length?`<div class="hint" style="text-align:center;margin-top:8px">장바구니에 ${CART.length}개 · 여러 개를 한 번에 살 수 있어요</div>`:''}
+      ${locked&&(cartLoad(),CART.length)?`<div class="hint" style="text-align:center;margin-top:8px">장바구니에 ${CART.length}개 · 여러 개를 한 번에 살 수 있어요</div>`:''}
       <button class="btn ghost" id="toX" style="margin-top:8px">닫기</button>`;
     $('#toX').onclick=closeOv;
     $('#toFav').onclick=async()=>{toggleFav(it.id);await save();draw();if(tab==='dress'&&dressSlot==='fav')drawItems();};
     $('#toCart')&&($('#toCart').onclick=()=>{
-      if(inCart(it.id)){CART=CART.filter(c=>c.id!==it.id);toast('장바구니에서 뺐어요');}
-      else{CART.push({id:it.id,slot:en.slot,accKey:en.accKey,bg:!!en.bg});toast(`장바구니에 담았어요 (${CART.length}개)`);}
+      if(inCart(it.id)){cartSet(CART.filter(c=>c.id!==it.id));toast('장바구니에서 뺐어요');}
+      else{cartSet(CART.concat({id:it.id,slot:en.slot,accKey:en.accKey,bg:!!en.bg}));toast(`장바구니에 담았어요 (${CART.length}개)`);}
       closeOv(); if(tab==='dress')drawItems();
     });
     $('#toGo').onclick=async()=>{
@@ -5450,19 +5454,25 @@ function openTryOn(en){
         m.cash=(m.cash||0)-cost;
         m.items.owned=m.items.owned||[]; if(!m.items.owned.includes(it.id))m.items.owned.push(it.id);
       }
-      _equipEn(m,en); CART=CART.filter(c=>c.id!==it.id); await save(); closeOv();
+      _equipEn(m,en); if(inCart(it.id))cartSet(CART.filter(c=>c.id!==it.id)); await save(); closeOv();
       toast(locked?`${it.name} 구매 완료! 🎉`:`${it.name} 착용`); refreshDressPreview();
     };
   };
   draw(); openOv();
 }
-/* 🛒 장바구니 — 여러 아이템을 담아서 한 번에 구매 (이 기기에서 앱을 켜둔 동안만 유지)
-   CART = [{id, slot} 또는 {id, accKey}] · 같은 부위 아이템은 모두 사지만, 입는 건 나중에 담은 것 */
-let CART=[];
-function inCart(id){return CART.some(c=>c.id===id);}
-function cartEn(c){const it=c.bg?BGS.find(b=>b.id===c.id):c.slot?pItem(c.slot,c.id):accItem(c.accKey,c.id);return it?{it,slot:c.slot,accKey:c.accKey,bg:!!c.bg}:null;}
-function cartList(){ // 지금 살 수 있는 것만 (이미 샀거나 사라진 아이템은 빼기)
-  const m=me(); CART=CART.filter(c=>{const e=cartEn(c);return e&&itemLocked(m,e.it);});
+/* 🛒 장바구니 — 여러 아이템을 담아서 한 번에 구매
+   · 이 기기에 저장(localStorage, 멤버별) → 앱을 다시 열어도 직접 빼거나 사기 전까지 그대로
+   · CART = [{id, slot|accKey|bg, off}] · off=true면 장바구니 미리보기에서 벗은 상태 */
+let CART=[], _cartFor=null;
+const cartKey=()=>'kkudok::cart::'+(S&&S.meId||'');
+function cartLoad(){ if(!S||!S.meId||_cartFor===S.meId)return; _cartFor=S.meId;
+  try{const a=JSON.parse(localStorage.getItem(cartKey())||'[]');CART=Array.isArray(a)?a:[];}catch(e){CART=[];} }
+function cartSet(a){CART=a;try{localStorage.setItem(cartKey(),JSON.stringify(CART));}catch(e){}}
+function inCart(id){cartLoad();return CART.some(c=>c.id===id);}
+function cartEn(c){const it=c.bg?BGS.find(b=>b.id===c.id):c.slot?pItem(c.slot,c.id):accItem(c.accKey,c.id);return it?{it,slot:c.slot,accKey:c.accKey,bg:!!c.bg,off:!!c.off}:null;}
+function cartList(){ // 지금 살 수 있는 것만 (이미 샀거나 상점에서 사라진 아이템만 자동으로 빠짐)
+  cartLoad(); const m=me(), keep=CART.filter(c=>{const e=cartEn(c);return e&&itemLocked(m,e.it);});
+  if(keep.length!==CART.length)cartSet(keep);
   return CART.map(cartEn);
 }
 function refreshCartBar(){ // 상점 오른쪽 위 '🛒 장바구니' 버튼에 담은 개수 표시
@@ -5475,25 +5485,27 @@ function openCart(){
   const m=me(); ensureItems(m);
   const list=cartList(); if(!list.length){closeOv();refreshCartBar();return;}
   const tot=list.reduce((a,e)=>a+itemCost(e.it),0), have=m.cash||0;
-  const pv=JSON.parse(JSON.stringify(m)); list.forEach(e=>_equipEn(pv,e));
+  const pv=JSON.parse(JSON.stringify(m)); list.forEach(e=>{if(!e.off)_equipEn(pv,e);});   // 벗은(off) 건 미리보기에서 빼기
   const parts=list.map(e=>e.bg?(e.it.deco?'deco:'+e.it.id:'bg'):(e.slot||('acc:'+e.accKey))), dup=parts.length!==new Set(parts).size;
   $('#sheet').innerHTML=`<h3>🛒 장바구니</h3>
     <div class="to-av" style="background:${memberBg(pv,'#FBF8F3')}">${avatarHTML(pv)}</div>
-    <div>${list.map(e=>`<div class="cart-row"><div class="ct">${e.bg?bgThumbHTML(e.it).replace('class="bgswatch"','class="th"'):useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
-      <b>${escT(e.it.name)}</b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
+    <div class="hint" style="text-align:center;margin:-4px 0 6px">아이템을 누르면 입었다 벗었다 해볼 수 있어요</div>
+    <div>${list.map(e=>`<div class="cart-row ${e.off?'off':''}" data-wear="${e.it.id}"><div class="ct">${e.bg?bgThumbHTML(e.it).replace('class="bgswatch"','class="th"'):useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
+      <b>${escT(e.it.name)}<small>${e.off?'벗음':'입는 중'}</small></b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
     ${dup?`<div class="hint" style="margin-top:8px">같은 부위 아이템은 모두 구매되고, 입는 건 마지막에 담은 것이에요</div>`:''}
     <div class="cart-sum"><span>합계 C ${tot}</span><small>보유 ${have.toLocaleString()}캐시 → ${have>=tot?`구매 후 ${(have-tot).toLocaleString()}캐시`:`<b style="color:#B8321F">${tot-have}캐시 부족</b>`}</small></div>
     <button class="btn ${have<tot?'ghost':''}" id="cartBuy">${have<tot?`${tot-have}캐시 더 모으면 살 수 있어요`:`${list.length}개 모두 구매하고 입기`}</button>
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="cartClr">비우기</button><button class="btn ghost" id="cartX">닫기</button></div>`;
   openOv();
-  $('#sheet').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{CART=CART.filter(c=>c.id!==b.dataset.rm);if(tab==='dress')drawItems();openCart();});
-  $('#cartClr').onclick=()=>{CART=[];closeOv();if(tab==='dress')drawItems();};
+  $('#sheet').querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();cartSet(CART.filter(c=>c.id!==b.dataset.rm));if(tab==='dress')drawItems();openCart();});
+  $('#sheet').querySelectorAll('[data-wear]').forEach(r=>r.onclick=()=>{cartSet(CART.map(c=>c.id===r.dataset.wear?Object.assign({},c,{off:!c.off}):c));openCart();});
+  $('#cartClr').onclick=()=>{cartSet([]);closeOv();if(tab==='dress')drawItems();};
   $('#cartX').onclick=closeOv;
   $('#cartBuy').onclick=async()=>{
     if((m.cash||0)<tot){toast(`캐시가 ${tot-(m.cash||0)} 부족해요 (${tot}캐시 필요)`);return;}
     m.cash=(m.cash||0)-tot; m.items.owned=m.items.owned||[];
-    list.forEach(e=>{if(!m.items.owned.includes(e.it.id))m.items.owned.push(e.it.id);_equipEn(m,e);});
-    CART=[]; await save(); closeOv();
+    list.forEach(e=>{if(!m.items.owned.includes(e.it.id))m.items.owned.push(e.it.id);if(!e.off)_equipEn(m,e);}); // 전부 구매, 입은 것만 착용
+    cartSet([]); await save(); closeOv();
     toast(`${list.length}개 구매 완료! 🎉`); refreshDressPreview();
   };
 }
