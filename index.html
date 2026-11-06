@@ -5317,7 +5317,8 @@ function drawItems(){
   }
   else if(dressSlot==='new'){
     // 신상: 최근 NEW_DAYS일 안에 올린 아이템만, 최신순
-    const list=byNewest(allItemsFlat().map(en=>Object.assign(en.it,{_en:en})).filter(isNewItem),true).map(it=>it._en);
+    const list=byNewest(allItemsFlat().filter(en=>!en.bg||en.it.deco)   // 배경은 소품만 (바탕 컬러·이미지는 신상에 안 띄움)
+      .map(en=>Object.assign(en.it,{_en:en})).filter(isNewItem),true).map(it=>it._en);
     $('#items').innerHTML = list.length ? list.map(en=>flatTile(m,en)).join('')
       : `<div class="dempty">최근 2주 동안 새로 나온 아이템이 없어요<br>다음 신상을 기다려주세요 ✨</div>`;
   }
