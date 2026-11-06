@@ -424,8 +424,9 @@ const BGS=[
   {id:'bg_dsky',  hex:'#95C2DA',name:'진하늘', cost:1},
   {id:'bg_green', hex:'#55A67E',name:'그린', cost:1},
   {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
-  // ▼ 이미지 배경 (1200×1500, 투명 PNG면 base 색이 바탕으로 깔림 · tz/tx/ty = 상점 타일 썸네일 확대·이동)
-  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:4,tx:-0.22,ty:0.08},
+  // ▼ 이미지 배경 (1200×1500 · tz/tx/ty = 상점 타일 썸네일 확대·이동)
+  //   deco:true = 배경 소품(투명 PNG) → 바탕 위에 여러 개 겹쳐 올림 / 없으면 바탕(하나만, base=로딩·투명 부분 색)
+  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:4,tx:-0.22,ty:0.08,deco:true},
 ];
 
 
@@ -449,7 +450,8 @@ function applyItemMeta(meta){
     if(typeof o.d==='string'){ if(o.d)it.d=o.d; else delete it.d; }
     if(o.h)it.hidden=true;
     ['tz','tx','ty','o'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
-    if(b.cat==='bg'){ if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&it.id!=='bg_none'){ if(it.img)it.base=o.hex; else it.hex=o.hex; } BGS.push(it); return; }
+    if(b.cat==='bg'){ if(it.img&&typeof o.deco==='boolean')it.deco=o.deco;
+      if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&it.id!=='bg_none'){ if(it.img)it.base=o.hex; else it.hex=o.hex; } BGS.push(it); return; }
     let cat=(typeof o.cat==='string'&&o.cat)||b.cat;
     if(cat==='dress'){it.dress=true;cat='cloth_top';}
     else if(cat==='cloth_top'){it.dress=false;}
