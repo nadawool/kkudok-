@@ -1430,6 +1430,13 @@ const DCATS=[['bg','배경 색상']]; // 의상·악세사리는 추후 PNG 아�
 const ACC_SLOTS=['hat','eye','neck','face','hand'];
 /* 배경 목록은 items.js 의 BGS (컬러·이미지). m.bg 저장값: 컬러='#RRGGBB' / 이미지='img:배경id' → 화면에는 bgCss()로 */
 function bgVal(bg){return bg?(bg.img?'img:'+bg.id:(bg.hex||'')):'';}
+/* 배경 타일 썸네일: 컬러=색 칸 / 이미지=확대(tz)·이동(tx,ty) 반영한 미리보기 (대시보드에서 조정, 아이템 썸네일과 같은 방향) */
+function bgThumbHTML(bg){
+  if(!bg||!bg.img)return `<div class="bgswatch" style="background:${bgCss(bgVal(bg))||'#FFFFFF'}"></div>`;
+  const z=bg.tz||1, ar=bg.ar||1.25, w=100*z, h=w*ar;
+  const l=50-(0.5-(bg.tx||0))*w, t=50-(0.5-(bg.ty||0))*h;
+  return `<div class="bgswatch" style="background:${bg.base||'#FBF8F3'};position:relative;overflow:hidden"><img src="${bg.img}" alt="" style="position:absolute;width:${w}%;left:${l}%;top:${t}%;max-width:none"></div>`;
+}
 function bgCss(v){
   if(!v)return '';
   if(v.indexOf('img:')===0){const b=BGS.find(x=>x.id===v.slice(4));return b&&b.img?`url(${b.img}) center/cover no-repeat ${b.base||'#FBF8F3'}`:'';}
@@ -5244,7 +5251,7 @@ function drawItems(){
       const cost=itemCost(bg);         // 가격(캐시). cost가 없으면 0=무료
       return `<div class="itembox">
         <div class="item bgtile ${sel?'eq':''} ${locked?'locked buyable':''}" data-bg="${esc2(v)}">
-          <div class="bgswatch" style="background:${bgCss(v)||'#FFFFFF'}"></div>
+          ${bgThumbHTML(bg)}
           ${sel?'<div class="chk">✓</div>':''}
           ${isNewItem(bg)?'<span class="newb">NEW</span>':''}
           ${inCart(bg.id)?'<span class="cartb">🛒</span>':''}
@@ -5437,7 +5444,7 @@ function openCart(){
   const parts=list.map(e=>e.bg?'bg':(e.slot||('acc:'+e.accKey))), dup=parts.length!==new Set(parts).size;
   $('#sheet').innerHTML=`<h3>🛒 장바구니</h3>
     <div class="to-av" style="background:${bgCss(pv.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
-    <div>${list.map(e=>`<div class="cart-row"><div class="ct">${e.bg?`<div class="th" style="background:${bgCss(bgVal(e.it))||'#fff'}"></div>`:useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
+    <div>${list.map(e=>`<div class="cart-row"><div class="ct">${e.bg?bgThumbHTML(e.it).replace('class="bgswatch"','class="th"'):useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
       <b>${escT(e.it.name)}</b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
     ${dup?`<div class="hint" style="margin-top:8px">같은 부위 아이템은 모두 구매되고, 입는 건 마지막에 담은 것이에요</div>`:''}
     <div class="cart-sum"><span>합계 C ${tot}</span><small>보유 ${have.toLocaleString()}캐시 → ${have>=tot?`구매 후 ${(have-tot).toLocaleString()}캐시`:`<b style="color:#B8321F">${tot-have}캐시 부족</b>`}</small></div>

@@ -126,7 +126,7 @@ const HEXOK=/^#[0-9a-fA-F]{6}$/;
 const DEF={}, CUR={}, ORDER=[];
 ITEM_BASE.forEach(b=>{const it=b.it;
   if(it.id==='bg_none')return;                         // '기본'(배경 없음)은 항상 맨 앞 · 관리 대상 아님
-  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img,hex:it.img?(it.base||'#FFFFFF'):(it.hex||''),base:it.base||''};
+  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:it.tz||1,tx:it.tx||0,ty:it.ty||0,o:null,img:it.img,hex:it.img?(it.base||'#FFFFFF'):(it.hex||''),base:it.base||''};
   ORDER.push(it.id);});
 /* 대시보드에서 새로 만든 컬러 배경 (meta[id].add) → 목록에 추가 */
 function addCustomDefs(meta){Object.keys(meta||{}).forEach(id=>{const o=meta[id];
@@ -138,7 +138,7 @@ const sel=new Set();
 
 function curOne(id,o){const d=DEF[id]; if(!d)return; o=o||{};
   CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
-    d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0,
+    d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:d.tz, tx:typeof o.tx==='number'?o.tx:d.tx, ty:typeof o.ty==='number'?o.ty:d.ty,
     o:typeof o.o==='number'?o.o:null, hex:(typeof o.hex==='string'&&HEXOK.test(o.hex))?o.hex:d.hex, del:false};}
 function curFromMeta(meta){ORDER.forEach(id=>curOne(id,meta[id]));}
 function metaOf(id){ // 기본값과 다른 것만 (새로 만든 배경은 전부)
@@ -147,7 +147,7 @@ function metaOf(id){ // 기본값과 다른 것만 (새로 만든 배경은 전�
     const r={add:1,hex:c.hex,n:c.n,c:c.c}; if(c.d)r.d=c.d; if(c.h)r.h=true; if(typeof c.o==='number')r.o=c.o; return r; }
   if(c.cat==='bg'&&c.hex!==d.hex)o.hex=c.hex;   // 컬러=색 / 이미지=바탕색
   if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
-  if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty; if(typeof c.o==='number')o.o=c.o;
+  if(c.tz!==d.tz)o.tz=c.tz; if(c.tx!==d.tx)o.tx=c.tx; if(c.ty!==d.ty)o.ty=c.ty; if(typeof c.o==='number')o.o=c.o;
   return o;
 }
 function buildMeta(){const m={};ORDER.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)m[id]=o;});return m;}
@@ -162,8 +162,8 @@ const _box=new Map();
 async function drawThumb(cv,id){
   const c=CUR[id], d=DEF[id];
   if(c.cat==='bg'){const g=cv.getContext('2d'),O=cv.width; g.clearRect(0,0,O,O);
-    if(d.img){try{const im=await load(d.img);const k=Math.max(O/im.naturalWidth,O/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;
-      g.fillStyle=c.hex||d.base||'#fff';g.fillRect(0,0,O,O);g.drawImage(im,(O-w)/2,(O-h)/2,w,h);}catch(e){}}
+    if(d.img){try{const im=await load(d.img);const w=O*(c.tz||1),h=w*im.naturalHeight/im.naturalWidth;   // 앱 상점 타일과 같은 계산
+      g.fillStyle=c.hex||d.base||'#fff';g.fillRect(0,0,O,O);g.drawImage(im,O/2-(0.5-c.tx)*w,O/2-(0.5-c.ty)*h,w,h);}catch(e){}}
     else{g.fillStyle=c.hex||'#fff';g.fillRect(0,0,O,O);}
     if(c.del){g.strokeStyle='#C0504D';g.lineWidth=6;g.beginPath();g.moveTo(10,10);g.lineTo(O-10,O-10);g.stroke();}
     return;}
@@ -254,7 +254,7 @@ function cardHTML(id){const c=CUR[id], d0=DEF[id];
         ${d0.custom?`<button class="mini" data-act="del" style="margin-left:auto;color:#C0504D">${c.del?'삭제 취소':'삭제'}</button>`:''}</div>`
       :`<div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>`}
     <div class="row"><input type="date" data-f="d" value="${esc(c.d)}" title="올린 날짜 (14일간 NEW·신상)"><button class="mini" data-act="hide">${c.h?'보이기':'숨김'}</button><button class="mini" data-act="reset" title="기본값으로">↺</button></div>
-    <div class="tune" ${c.cat==='bg'?'data-nobg':''}><span>확대</span><input type="range" data-f="tz" min="0.5" max="2.5" step="0.05" value="${c.tz}"><span>${c.tz.toFixed(2)}</span>
+    <div class="tune" ${c.cat==='bg'?'data-nobg':''}><span>확대</span><input type="range" data-f="tz" min="0.5" max="${c.cat==='bg'?6:2.5}" step="0.05" value="${c.tz}"><span>${c.tz.toFixed(2)}</span>
       <span>좌우</span><input type="range" data-f="tx" min="-0.5" max="0.5" step="0.02" value="${c.tx}"><span>${c.tx.toFixed(2)}</span>
       <span>상하</span><input type="range" data-f="ty" min="-0.5" max="0.5" step="0.02" value="${c.ty}"><span>${c.ty.toFixed(2)}</span></div>
   </div>`;}
@@ -296,11 +296,11 @@ function bindMain(){
   $('#main').addEventListener('change',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
     if(el.classList.contains('ck')){el.checked?sel.add(id):sel.delete(id); refreshCard(id);}});
   $('#main').addEventListener('click',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
-    if(el.matches('canvas.th')){if(CUR[id].cat==='bg')return;card.querySelector('.tune').classList.toggle('on');return;}
+    if(el.matches('canvas.th')){if(CUR[id].cat==='bg'&&!DEF[id].img)return;card.querySelector('.tune').classList.toggle('on');return;}
     if(el.dataset.act==='del'){CUR[id].del=!CUR[id].del;refreshCard(id);render();return;}
     const act=el.dataset.act;
     if(act==='hide'){CUR[id].h=!CUR[id].h;refreshCard(id);}
-    if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:1,tx:0,ty:0,hex:d.hex});
+    if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:d.tz,tx:d.tx,ty:d.ty,hex:d.hex});
       card.querySelectorAll('.tune input').forEach(r=>{r.value=CUR[id][r.dataset.f];r.nextElementSibling.textContent=CUR[id][r.dataset.f].toFixed(2);});refreshCard(id);}
   });
 }
