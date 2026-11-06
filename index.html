@@ -623,8 +623,9 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .dcat.fixed .c{background:none;border-radius:0;padding:9px 0 8px;text-align:center;font-size:13.5px;color:var(--soft);border-bottom:2.5px solid transparent;margin-bottom:-1px;cursor:pointer}
 .dcat.fixed .c.on{background:none;color:var(--honey);border-bottom-color:var(--honey)}
 .dsub .t{white-space:nowrap;padding:7px 0;font-size:12.5px}
-.to-av{border-radius:20px;padding:14px 0 6px;margin-bottom:12px;display:flex;justify-content:center}
-.to-av .avatar{max-width:170px;width:100%}
+/* 입어보기·장바구니 미리보기 = 상점 캐릭터 카드 윗부분과 같은 비율(362×300)·같은 캐릭터 위치 → 이미지 배경이 똑같이 보임 */
+.to-av{border-radius:20px;margin-bottom:12px;position:relative;aspect-ratio:362/300;overflow:hidden;background-size:auto 164.7%!important;background-position:center top!important}
+.to-av .avatar{position:absolute;left:50%;top:8.3%;width:51.9%;max-width:none;transform:translateX(-50%);margin:0}
 .to-nm{text-align:center;font-size:18px;font-weight:900}
 .to-nm .newb{position:static;display:inline-block;vertical-align:3px;margin-left:6px;background:var(--honey);color:#fff;font-size:10px;font-weight:900;padding:1px 6px;border-radius:6px}
 .to-pr{display:flex;justify-content:center;align-items:center;gap:5px;font-size:14px;font-weight:800;margin:6px 0 14px;color:var(--ink)}
