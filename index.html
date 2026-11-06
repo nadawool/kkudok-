@@ -412,7 +412,17 @@ input{font-family:inherit}
 @keyframes ldVeil{from{opacity:0}to{opacity:1}}
 @keyframes ldCeleIn{0%{opacity:0;transform:translateY(35px) scale(.5) rotate(-8deg)}60%{opacity:1;transform:translateY(-8px) scale(1.07) rotate(2deg)}100%{transform:none}}
 @media(prefers-reduced-motion:reduce){.ld-machine.intense .ld-cap,.ld-machine.intense .ld-base,.ld-machine.intense .ld-globe,.ld-draw,.ld-ball.pick,.ld-mini,.ld-reward.glow,.ld-cele-card{animation:none!important}.ld-confetti,.ld-ring,.ld-spark{display:none}}
-.dr-home{background:#232220;color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 26px rgba(35,34,32,.22)}
+.dr-now{background:#fff;border-radius:20px;padding:14px 16px;box-shadow:0 2px 10px rgba(60,45,30,.06);cursor:pointer}
+.dr-now .hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dr-now .hd b{font-size:15px;font-weight:900}
+.dr-now .dd{font-size:11.5px;font-weight:800;color:var(--honey-d);background:var(--honey-s);border-radius:20px;padding:3px 9px;white-space:nowrap}
+.dr-now .sub{font-size:12px;color:var(--soft);margin:4px 0 10px;font-weight:600}
+.dr-now .bar{height:8px;border-radius:8px;background:#F4EFE6;overflow:hidden}
+.dr-now .bar i{display:block;height:100%;background:var(--honey);border-radius:8px}
+.dr-now .me{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-top:6px}
+.dr-now .me span{color:var(--soft);font-weight:700}
+.dr-now .go{margin-top:10px;width:100%;padding:10px;border-radius:12px;background:var(--ink);color:#fff;font-weight:800;font-size:13px}
+.dr-home{cursor:pointer;background:#232220;color:#fff;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 26px rgba(35,34,32,.22)}
 .dr-wins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .dr-win{display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.07);border-radius:16px;padding:12px 4px}
 .dr-win .av{width:52px;height:52px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 2px #FCEBD8}
@@ -3389,6 +3399,7 @@ function renderHome(){
   $('#s-home').querySelectorAll('.att-m').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   bindMeetCard();
   bindVoteCard();
+  bindDrawHome();
   applyPresenceDots();
 }
 /* 홈 — 얼굴 둘레 월간 출석 링 */
@@ -3652,7 +3663,7 @@ function ldBallHTML(m,i,R,x,y,hidden){
 function ldIcon(prize){return prize==='cash10'?'<i class="ld-coin">C</i>':'<i class="ld-cup"></i>';}
 
 function openDrawSheet(){
-  if(!isStaff())return;   // 모임장 + 운영진
+  const staff=isStaff();   // 보기는 모두 · 추첨·발표는 모임장 + 운영진
   if(!drawYm)drawYm=defaultDrawYm();
   const ym=drawYm, mon=+ym.slice(5,7), t=todayISO();
   const done=(S.draws||[]).find(d=>d.ym===ym);
@@ -3669,11 +3680,12 @@ function openDrawSheet(){
       <b>${DRAW_PRIZE_INFO[p].label}</b>
       <span class="ld-winner ${m?'won':''}">${m?escT(m.name)+' 님 당첨':['첫 번째 행운','두 번째 행운','세 번째 행운'][k]}</span></div>`;
   }).join('');
-  const btnTxt=done?'완료<small>DONE</small>':!ents.length?'없음<small>EMPTY</small>':!ready?'말일<small>WAIT</small>':full?'완료<small>DONE</small>':st.busy?'두근<small>DRAWING</small>':`뽑기<small>${st.winners.length?`${st.winners.length+1} / ${need}`:'PUSH'}</small>`;
-  const btnOff=done||!ents.length||!ready||full||st.busy;
+  const btnTxt=done?'완료<small>DONE</small>':!ents.length?'없음<small>EMPTY</small>':!ready?'말일<small>WAIT</small>':!staff?'대기<small>WAIT</small>':full?'완료<small>DONE</small>':st.busy?'두근<small>DRAWING</small>':`뽑기<small>${st.winners.length?`${st.winners.length+1} / ${need}`:'PUSH'}</small>`;
+  const btnOff=!staff||done||!ents.length||!ready||full||st.busy;
   const status=done?`${mon}월 추첨이 끝났어요 · 결과가 발표됐어요`
     :!ents.length?`${mon}월에 ${MONTH_GOAL}일 이상 출석한 멤버가 없어요`
-    :!ready?`매월 말일에 추첨이 가능해요 · 지금 ${ents.length}명 응모 중`
+    :!ready?`매월 말일에 추첨해요 · 지금 ${ents.length}명 응모 중`
+    :!staff?`${ents.length}명 응모 완료 · 운영진이 곧 추첨해요`
     :full?'모두 뽑았어요 · 아래 버튼으로 결과를 발표해요'
     :`${ents.length}명의 꾸준함이 모였어요 · 버튼을 눌러 행운을 뽑아요`;
   $('#sheet').innerHTML=`<div class="ld">
@@ -3691,7 +3703,7 @@ function openDrawSheet(){
     <div class="ld-status" id="ldStatus">${status}</div>
     <div class="ld-rewards"><div class="ld-rhead">이달의 행운 추첨<small>총 ${need||3}명 · 중복 당첨 없이</small></div>
       <div class="ld-grid">${slots}</div></div>
-    ${!done&&full&&ents.length?`<button class="btn" id="drSave" style="margin-top:14px">🎉 결과 저장하고 발표하기</button>`:''}
+    ${staff&&!done&&full&&ents.length?`<button class="btn" id="drSave" style="margin-top:14px">🎉 결과 저장하고 발표하기</button>`:''}
     <p class="ld-note">결과는 한 번만 저장돼요 · 커피 쿠폰은 당첨자 MY 탭에 '교환 대기중'으로,<br>10캐시는 당첨자 앱에 자동으로 들어가요</p>
   </div><button class="btn ghost" id="drX" style="margin-top:10px">닫기</button>`;
   openOv();
@@ -3699,7 +3711,7 @@ function openDrawSheet(){
   $('#drX').onclick=()=>{if(st.busy)return;_ldGen++;closeOv();};
   $('#drPrev').onclick=()=>{if(st.busy)return;drawYm=ymAdd(drawYm,-1);openDrawSheet();};
   $('#drNext').onclick=()=>{if(st.busy)return;drawYm=ymAdd(drawYm,1);openDrawSheet();};
-  $('#drGo').onclick=()=>ldDrawOne(ents,need,prizes);
+  $('#drGo').onclick=()=>{if(staff)ldDrawOne(ents,need,prizes);};
   $('#drSave')&&($('#drSave').onclick=()=>saveDraw(ym,ents.map(m=>m.id),st.winners.slice()));
 }
 function ldFit(){ // 머신(350px)을 시트 너비에 맞춰 줄이기
@@ -3844,15 +3856,35 @@ async function claimDrawCash(){
   });
   if(changed){await save();refreshHeader();toast(`🍀 행운의 뽑기 당첨! +${got}캐시가 들어왔어요 💰`);}
 }
-/* 홈 맨 위: 최근 추첨 결과 (추첨 후 48시간) */
+/* 홈 맨 위 🍀 행운의 뽑기 — 모든 멤버에게 보임 (추첨 버튼은 운영진만)
+   · 추첨 후 48시간: 당첨자 카드 / 그 외: 이번 달 응모 현황(응모 인원·내 출석 진행·말일까지 D-day) */
+function drawNowHTML(){
+  const t=todayISO(), ym=t.slice(0,7), mon=+ym.slice(5,7);
+  const done=(S.draws||[]).find(d=>d.ym===ym);
+  const n=drawEntrants(ym).length, m=me(), c=m?monthCount(m,ym):0, inn=c>=MONTH_GOAL;
+  const left=daysBetween(t,lastDayISO(ym));
+  const dd=done?'추첨 완료':left<=0?'오늘 추첨':`추첨 D-${left}`;
+  return `<div class="home-sec"><div class="dr-now" id="drHome">
+    <div class="hd"><b>🍀 ${mon}월 행운의 뽑기</b><span class="dd">${dd}</span></div>
+    <div class="sub">${MONTH_GOAL}일 이상 출석하면 자동 응모 · 지금 ${n}명 응모 중 · 말일에 3명 추첨</div>
+    <div class="bar"><i style="width:${Math.min(100,c/MONTH_GOAL*100).toFixed(0)}%"></i></div>
+    <div class="me">${inn?'🎉 응모 완료!':`나 ${c}일`}<span>${inn?`${c}일 출석`:`${MONTH_GOAL-c}일 더 출석하면 응모`}</span></div>
+    ${isStaff()&&!done?`<button class="go" id="drHomeGo">${left<=0?'🎰 지금 추첨하기':'추첨 화면 보기'} <small style="opacity:.6;font-weight:600">· 운영진</small></button>`:''}
+  </div></div>`;
+}
+function bindDrawHome(){
+  const open=()=>{drawYm=null;_drState=null;openDrawSheet();};
+  $('#drHome')&&($('#drHome').onclick=open);
+}
+/* 홈 맨 위: 최근 추첨 결과 (추첨 후 48시간) — 없으면 이번 달 응모 현황 */
 function drawHomeHTML(){
   const d=(S.draws||[]).slice().sort((a,b)=>(b.drawnAt||0)-(a.drawnAt||0))[0];
-  if(!d||Date.now()-(d.drawnAt||0)>48*36e5)return '';
+  if(!d||Date.now()-(d.drawnAt||0)>48*36e5)return drawNowHTML();
   const mon=+d.ym.slice(5,7);
   const wins=d.winners.map(id=>{const m=S.members[id], info=DRAW_PRIZE_INFO[prizeOf(d,id)]||DRAW_PRIZE_INFO.coffee;
     return m?`<div class="dr-win"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div><b>${escT(m.name)}</b><span>${info.icon} ${info.short}</span></div>`:'';}).join('');
   const meWon=d.winners.includes(S.meId), myPrize=meWon?DRAW_PRIZE_INFO[prizeOf(d,S.meId)]:null;
-  return `<div class="home-sec"><div class="dr-home">
+  return `<div class="home-sec"><div class="dr-home" id="drHome">
     <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:16px;font-weight:900">🍀 ${mon}월 행운의 뽑기 당첨자</b><span style="font-size:11.5px;color:#CFC8BC">${mdLabel(isoLocal(new Date(d.drawnAt)))} 추첨</span></div>
     <div class="dr-wins">${wins}</div>
     <div style="font-size:12px;color:${meWon?'#FCEBD8':'#CFC8BC'};text-align:center">${meWon?(myPrize&&myPrize.cash?`🎉 축하해요! +${myPrize.cash}캐시가 자동으로 들어왔어요`:'🎉 축하해요! 상점 → MY 탭에서 확인해요'):`${MONTH_GOAL}일 이상 출석한 ${d.entrants.length}명 중 추첨 · 커피 쿠폰은 월말에 발송돼요`}</div>
@@ -4865,7 +4897,6 @@ function renderDress(){
     </div>
   </div>
   ${myFeeHTML()}
- ${isStaff()?`<button class="gf-admin" id="drAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>🍀 행운의 뽑기 <small style="font-weight:600;opacity:.6;font-size:11px">· 운영진만 보여요</small></b><span>추첨하기</span></button>`:''}
   ${isOwner()?`<button class="gf-admin" id="feeAdmin" style="width:100%;box-sizing:border-box;margin:0 0 8px"><b>💳 회비 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 나만 보여요</small></b><span id="feeAdminN">확인 ${(S.feeReq||[]).length}건</span></button>`:''}
   ${isAdmin()?`<button class="gf-admin" id="gfAdmin" style="width:100%;box-sizing:border-box;margin:0 0 14px"><b>📦 교환 신청 관리 <small style="font-weight:600;opacity:.6;font-size:11px">· 모임장만 보여요</small></b><span id="gfAdminN">…</span></button>`:''}
   <div class="dtool" id="dtool">${DTOOLS.map(([k,l])=>`<div class="tb ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
@@ -4878,7 +4909,6 @@ function renderDress(){
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   $('#gfAdmin')&&($('#gfAdmin').onclick=openGiftAdmin);
   $('#feeAdmin')&&($('#feeAdmin').onclick=()=>{feeAdminYm=null;openFeeAdmin();});
-  $('#drAdmin')&&($('#drAdmin').onclick=()=>{drawYm=null;_drState=null;openDrawSheet();});
   bindMyFee();
   refreshAdminBadge();
   drawItems();
