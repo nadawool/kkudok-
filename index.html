@@ -617,6 +617,8 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .dtool{display:flex;justify-content:flex-end;gap:6px;margin:0 2px 8px}
 .dtool .tb{padding:5px 11px;border-radius:30px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:800;color:var(--soft);cursor:pointer}
 .dtool .tb.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.dtool .tb.has{border-color:var(--honey);color:var(--honey-d)}
+.dtool .tb .cn{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--honey);color:#fff;font-size:10.5px;font-weight:900;margin-left:2px;vertical-align:1px}
 .dcat.fixed{display:grid;grid-template-columns:repeat(6,1fr);gap:0;overflow:visible;border-bottom:1px solid var(--line);padding-bottom:0;margin-bottom:12px;cursor:default}
 .dcat.fixed .c{background:none;border-radius:0;padding:9px 0 8px;text-align:center;font-size:13.5px;color:var(--soft);border-bottom:2.5px solid transparent;margin-bottom:-1px;cursor:pointer}
 .dcat.fixed .c.on{background:none;color:var(--honey);border-bottom-color:var(--honey)}
@@ -4926,14 +4928,14 @@ function renderDress(){
       <div class="gsub" style="text-align:center">🎂생일까지 ${30-ageProg(m)}일</div>
     </div>
   </div>
-  <div class="dtool" id="dtool">${DTOOLS.map(([k,l])=>`<div class="tb ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
+  <div class="dtool" id="dtool">${DTOOLS.map(([k,l])=>`<div class="tb ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}<div class="tb cartb2" id="cartTb">🛒 장바구니</div></div>
   <div class="dcat fixed" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
-  <div class="items" id="items"></div>
-  <div class="cartbar" id="cartbar"></div>`;
+  <div class="items" id="items"></div>`;
   if(dressSlot==='shoes'||dressSlot==='acc')dressSlot='props';   // 예전 탭 이름 호환
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
-  $('#dtool').querySelectorAll('.tb').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
+  $('#dtool').querySelectorAll('.tb[data-s]').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
+  $('#cartTb').onclick=()=>{if(!cartList().length){toast('장바구니가 비었어요 · 아이템을 눌러 🛒 담기');refreshCartBar();return;}openCart();};
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
   drawItems();
 }
@@ -5415,12 +5417,11 @@ function cartList(){ // 지금 살 수 있는 것만 (이미 샀거나 사라진
   const m=me(); CART=CART.filter(c=>{const e=cartEn(c);return e&&itemLocked(m,e.it);});
   return CART.map(cartEn);
 }
-function refreshCartBar(){
-  const el=$('#cartbar'); if(!el)return;
-  const list=cartList(), tot=list.reduce((a,e)=>a+itemCost(e.it),0);
-  el.classList.toggle('on',list.length>0);
-  el.innerHTML=list.length?`<button id="cartGo">🛒 장바구니 ${list.length}개 · 입어보고 사기<span>C ${tot}</span></button>`:'';
-  $('#cartGo')&&($('#cartGo').onclick=openCart);
+function refreshCartBar(){ // 상점 오른쪽 위 '🛒 장바구니' 버튼에 담은 개수 표시
+  const el=$('#cartTb'); if(!el)return;
+  const n=cartList().length;
+  el.innerHTML=`🛒 장바구니${n?` <span class="cn">${n}</span>`:''}`;
+  el.classList.toggle('has',n>0);
 }
 function openCart(){
   const m=me(); ensureItems(m);
