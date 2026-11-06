@@ -44,7 +44,8 @@ input,select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;back
 .mini{font-size:11.5px;padding:4px 8px;border-radius:8px}
 .tag{font-size:10px;font-weight:900;color:#fff;background:var(--honey);border-radius:6px;padding:0 5px}
 .msg{background:#fff;border-radius:14px;padding:28px;text-align:center;line-height:1.7;margin-top:40px}
-.save{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;box-shadow:0 6px 20px rgba(60,45,30,.25);padding:13px 22px;font-size:15px;border-radius:30px}
+.savebar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;display:flex;gap:8px}
+.savebar button{box-shadow:0 6px 20px rgba(60,45,30,.25);padding:13px 20px;font-size:15px;border-radius:30px;white-space:nowrap}
 .count{font-size:12.5px;color:var(--soft)}
 .ordbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:12.5px;color:var(--soft)}
 .card[draggable=true]{cursor:grab}
@@ -81,7 +82,7 @@ input,select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;back
   </div>
   <div id="main"><div class="msg">불러오는 중…</div></div>
 </div>
-<button class="pri save" id="save" style="display:none" disabled>저장할 변경 없음</button>
+<div class="savebar" id="savebar" style="display:none"><button id="undo">변경 취소</button><button class="pri" id="save" disabled>저장</button></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -249,8 +250,9 @@ function refreshCard(id){const el=$(`.card[data-id="${CSS.escape(id)}"]`);if(!el
   drawThumb(el.querySelector('canvas.th'),id); refreshBar();}
 function refreshBar(){
   const n=ORDER.filter(isChanged).length, b=$('#save');
-  b.disabled=!n; b.style.display=n?'':'none'; b.textContent=`변경 ${n}개 저장`;
-  $('#bulk').classList.toggle('on',sel.size>0); $('#bulkN').textContent=`${sel.size}개 선택`;
+  b.disabled=!n; $('#savebar').style.display=n?'flex':'none'; b.textContent=`변경 ${n}개 저장`;
+  const vis=new Set(visibleIds()), n2=[...sel].filter(id=>vis.has(id)).length;
+  $('#bulk').classList.toggle('on',n2>0); $('#bulkN').textContent=`${n2}개 선택`;
 }
 function bindMain(){
   $('#main').addEventListener('input',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id, f=el.dataset.f; if(!f)return;
@@ -279,12 +281,17 @@ function bindDrag(){
   M.addEventListener('drop',e=>{const c=e.target.closest('.card');if(!c||!_dragId)return;e.preventDefault();const d=_dragId;_dragId=null;dropBefore(d,c.dataset.id);});
   M.addEventListener('dragend',()=>{_dragId=null;M.querySelectorAll('.card.drop').forEach(x=>x.classList.remove('drop'));});
 }
-function bulk(fn){sel.forEach(id=>fn(CUR[id]));render();}
+function bulk(fn){ // 지금 화면에 보이는 것 중 체크한 것만
+  const vis=new Set(visibleIds()), ids=[...sel].filter(id=>vis.has(id));
+  if(!ids.length)return toastMsg('적용할 아이템을 체크해주세요');
+  ids.forEach(id=>fn(CUR[id])); render(); toastMsg(`${ids.length}개에 적용했어요 (저장을 눌러야 반영돼요)`);
+}
 function bindTools(){
   $('#fCat').innerHTML=`<option value="">전체 카테고리</option>`+catOpts('');
   $('#bCat').innerHTML=catOpts('outer');
-  ['fCat','fNew','fChg','fHid'].forEach(k=>$('#'+k).onchange=render);
-  let t; $('#fQ').oninput=()=>{clearTimeout(t);t=setTimeout(render,200);};
+  // 보기(카테고리·검색·필터)를 바꾸면 선택을 비움 — 안 보이는 아이템에 일괄 변경이 들어가는 사고 방지
+  ['fCat','fNew','fChg','fHid'].forEach(k=>$('#'+k).onchange=()=>{sel.clear();render();});
+  let t; $('#fQ').oninput=()=>{clearTimeout(t);t=setTimeout(()=>{sel.clear();render();},200);};
   $('#selAll').onclick=()=>{visibleIds().forEach(id=>sel.add(id));render();};
   $('#selNone').onclick=()=>{sel.clear();render();};
   $('#bCgo').onclick=()=>{const v=parseInt($('#bC').value,10);if(isNaN(v)||v<0)return alert('캐시를 숫자로 적어주세요');bulk(c=>c.c=v);};
@@ -294,6 +301,9 @@ function bindTools(){
   $('#bHide').onclick=()=>bulk(c=>c.h=true);
   $('#bShow').onclick=()=>bulk(c=>c.h=false);
   $('#save').onclick=save;
+  $('#undo').onclick=()=>{const n=ORDER.filter(isChanged).length;if(!n)return;
+    if(!confirm(`저장하지 않은 변경 ${n}개를 모두 취소할까요?`))return;
+    ORDER.forEach(id=>{if(isChanged(id))curOne(id,SAVED[id]);});sel.clear();render();toastMsg('저장 전 상태로 되돌렸어요');};
   window.addEventListener('beforeunload',e=>{if(ORDER.some(isChanged)){e.preventDefault();e.returnValue='';}});
 }
 async function save(){
@@ -326,7 +336,7 @@ firebase.auth().onAuthStateChanged(async user=>{
     try{const s=await cfgRef.get();meta=(s.exists&&s.data().meta)||{};}
     catch(e){showMsg('설정을 불러오지 못했어요.<br>Firestore 규칙에 <b>config</b> 권한을 추가해주세요.<br><small>'+esc(e.message||e)+'</small>');return;}
     SAVED=JSON.parse(JSON.stringify(meta)); curFromMeta(meta);
-    $('#tools').style.display=''; $('#save').style.display='';
+    $('#tools').style.display='';
     bindTools(); bindMain(); bindDrag(); render();
     // 다른 탭·기기(폰 등)에서 저장하면 실시간으로 받아오기 — 내가 수정 중인(저장 안 한) 아이템은 그대로 둠
     let first=true;
