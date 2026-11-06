@@ -117,24 +117,35 @@ ACC_TYPES.forEach(t=>{ if(!FACE_EXTRA.includes(t.key)) CATS.push(['acc:'+t.key,'
 ['eyes','mouth'].forEach(k=>CATS.push([k,SLOT_NAMES[k]]));
 ACC_TYPES.forEach(t=>{ if(FACE_EXTRA.includes(t.key)) CATS.push(['acc:'+t.key,'얼굴 · '+t.name]); });
 CATS.push(['hair',SLOT_NAMES.hair]);
+CATS.push(['bg','배경']);
 const catName=k=>(CATS.find(c=>c[0]===k)||[k,k])[1];
 const THUMB_CATS=k=>!['eyes','mouth','hair','acc:beard','acc:freckle'].includes(k);
+const HEXOK=/^#[0-9a-fA-F]{6}$/;
 
 /* ---- 상태: 기본값(def) + 현재값(cur) ---- */
 const DEF={}, CUR={}, ORDER=[];
 ITEM_BASE.forEach(b=>{const it=b.it;
-  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img};
+  if(it.id==='bg_none')return;                         // '기본'(배경 없음)은 항상 맨 앞 · 관리 대상 아님
+  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img,hex:it.hex||'',base:it.base||''};
   ORDER.push(it.id);});
+/* 대시보드에서 새로 만든 컬러 배경 (meta[id].add) → 목록에 추가 */
+function addCustomDefs(meta){Object.keys(meta||{}).forEach(id=>{const o=meta[id];
+  if(DEF[id]||!o||!o.add||!HEXOK.test(o.hex||''))return;
+  DEF[id]={custom:true,n:o.n||'새 배경',c:typeof o.c==='number'?o.c:0,cat:'bg',d:'',h:false,tz:1,tx:0,ty:0,o:null,hex:o.hex};
+  ORDER.push(id);});}
 let SAVED={};             // 마지막으로 저장된 meta (변경 감지용)
 const sel=new Set();
 
-function curOne(id,o){const d=DEF[id]; o=o||{};
+function curOne(id,o){const d=DEF[id]; if(!d)return; o=o||{};
   CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
     d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0,
-    o:typeof o.o==='number'?o.o:null};}
+    o:typeof o.o==='number'?o.o:null, hex:(typeof o.hex==='string'&&HEXOK.test(o.hex))?o.hex:d.hex, del:false};}
 function curFromMeta(meta){ORDER.forEach(id=>curOne(id,meta[id]));}
-function metaOf(id){ // 기본값과 다른 것만
+function metaOf(id){ // 기본값과 다른 것만 (새로 만든 배경은 전부)
   const d=DEF[id], c=CUR[id], o={};
+  if(d.custom){ if(c.del)return {};
+    const r={add:1,hex:c.hex,n:c.n,c:c.c}; if(c.d)r.d=c.d; if(c.h)r.h=true; if(typeof c.o==='number')r.o=c.o; return r; }
+  if(c.cat==='bg'&&c.hex!==d.hex&&!d.img)o.hex=c.hex;
   if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
   if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty; if(typeof c.o==='number')o.o=c.o;
   return o;
@@ -150,6 +161,12 @@ const load=src=>{if(!_img.has(src))_img.set(src,new Promise((ok,no)=>{const i=ne
 const _box=new Map();
 async function drawThumb(cv,id){
   const c=CUR[id], d=DEF[id];
+  if(c.cat==='bg'){const g=cv.getContext('2d'),O=cv.width; g.clearRect(0,0,O,O);
+    if(d.img){try{const im=await load(d.img);const k=Math.max(O/im.naturalWidth,O/im.naturalHeight),w=im.naturalWidth*k,h=im.naturalHeight*k;
+      g.fillStyle=d.base||'#fff';g.fillRect(0,0,O,O);g.drawImage(im,(O-w)/2,(O-h)/2,w,h);}catch(e){}}
+    else{g.fillStyle=c.hex||'#fff';g.fillRect(0,0,O,O);}
+    if(c.del){g.strokeStyle='#C0504D';g.lineWidth=6;g.beginPath();g.moveTo(10,10);g.lineTo(O-10,O-10);g.stroke();}
+    return;}
   try{
     const [b,im]=await Promise.all([load(BASE_IMG),load(d.img)]);
     const g=cv.getContext('2d'), O=cv.width; g.clearRect(0,0,O,O);
@@ -168,7 +185,7 @@ async function drawThumb(cv,id){
 }
 
 /* ---- 화면 ---- */
-const catOpts=v=>CATS.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${n}</option>`).join('');
+const catOpts=(v,all)=>CATS.filter(([k])=>all||k!=='bg').map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${n}</option>`).join('');
 function visibleIds(){
   const fc=$('#fCat').value, q=$('#fQ').value.trim().toLowerCase();
   return ORDER.filter(id=>{const c=CUR[id];
@@ -209,24 +226,35 @@ function dropBefore(dragId,targetId){
   const rest=catList(cat).filter(id=>!moving.includes(id)), at=rest.indexOf(targetId);
   rest.splice(at,0,...moving); commitOrder(rest); render();
 }
+function addColorBg(){ // 새 컬러 배경 — 저장을 눌러야 앱에 생겨요
+  const id='bgc_'+Date.now().toString(36), t=new Date(Date.now()+9*36e5).toISOString().slice(0,10);
+  DEF[id]={custom:true,n:'새 배경',c:1,cat:'bg',d:'',h:false,tz:1,tx:0,ty:0,o:null,hex:'#FFFFFF'};
+  ORDER.push(id); CUR[id]={n:'새 배경',c:1,cat:'bg',d:t,h:false,tz:1,tx:0,ty:0,o:null,hex:'#FFE4E1',del:false};
+  render(); const el=document.querySelector(`.card[data-id="${id}"]`); if(el){el.scrollIntoView({block:'center'});el.querySelector('[data-f="n"]').select();}
+  toastMsg('이름·색·캐시를 정하고 저장을 눌러주세요');
+}
 function resetOrder(){const cat=$('#fCat').value;if(!cat)return;catList(cat).forEach(id=>{CUR[id].o=null;});render();}
 function ordBarHTML(){
   const cat=$('#fCat').value;
   if(!cat)return '↕️ 진열 순서를 바꾸려면 카테고리를 먼저 골라주세요';
-  return `↕️ ${esc(catName(cat))} 진열 순서 · 체크한 것을 <button class="mini" data-mv="top">⤒ 맨 위로</button><button class="mini" data-mv="up">↑ 위로</button><button class="mini" data-mv="down">↓ 아래로</button><button class="mini" data-mv="bottom">⤓ 맨 아래로</button>
+  const add=cat==='bg'?`<button class="mini pri" id="bgAdd" style="margin-right:6px">＋ 새 컬러 배경</button>`:'';
+  return `${add}↕️ ${esc(catName(cat))} 진열 순서 · 체크한 것을 <button class="mini" data-mv="top">⤒ 맨 위로</button><button class="mini" data-mv="up">↑ 위로</button><button class="mini" data-mv="down">↓ 아래로</button><button class="mini" data-mv="bottom">⤓ 맨 아래로</button>
     <button class="mini" id="ordReset">순서 초기화</button><span>· PC에선 카드를 끌어다 놓아도 돼요</span>`;
 }
 let io=null;
-function cardHTML(id){const c=CUR[id];
+function cardHTML(id){const c=CUR[id], d0=DEF[id];
   const drag=!!$('#fCat').value&&!$('#fQ').value.trim();
   return `<div class="card ${sel.has(id)?'sel':''} ${isChanged(id)?'chg':''} ${c.h?'hid':''}" data-id="${id}" ${drag?'draggable="true"':''}>
     <input type="checkbox" class="ck" ${sel.has(id)?'checked':''}>
     <canvas class="th" width="168" height="168" title="눌러서 썸네일 조정"></canvas>
-    <div class="id"><span>${$('#fCat').value?`<span class="no">${catList(c.cat).indexOf(id)+1}</span>`:''}${esc(id)}</span><span>${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
+    <div class="id"><span>${$('#fCat').value?`<span class="no">${catList(c.cat).indexOf(id)+1}</span>`:''}${esc(id)}</span><span class="flags">${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
     <div class="row"><input type="text" data-f="n" value="${esc(c.n)}" placeholder="이름"><input type="number" data-f="c" min="0" value="${c.c}" title="캐시 (0=무료)"></div>
-    <div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>
+    ${c.cat==='bg'
+      ?`<div class="row">${d0.img?'<span style="font-size:12px;color:var(--soft)">🖼️ 이미지 배경</span>':`<input type="color" data-f="hex" value="${esc(c.hex||'#ffffff')}" style="width:44px;height:32px;padding:2px"><input type="text" data-f="hex" value="${esc(c.hex)}" maxlength="7" style="width:90px">`}
+        ${d0.custom?`<button class="mini" data-act="del" style="margin-left:auto;color:#C0504D">${c.del?'삭제 취소':'삭제'}</button>`:''}</div>`
+      :`<div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>`}
     <div class="row"><input type="date" data-f="d" value="${esc(c.d)}" title="올린 날짜 (14일간 NEW·신상)"><button class="mini" data-act="hide">${c.h?'보이기':'숨김'}</button><button class="mini" data-act="reset" title="기본값으로">↺</button></div>
-    <div class="tune"><span>확대</span><input type="range" data-f="tz" min="0.5" max="2.5" step="0.05" value="${c.tz}"><span>${c.tz.toFixed(2)}</span>
+    <div class="tune" ${c.cat==='bg'?'data-nobg':''}><span>확대</span><input type="range" data-f="tz" min="0.5" max="2.5" step="0.05" value="${c.tz}"><span>${c.tz.toFixed(2)}</span>
       <span>좌우</span><input type="range" data-f="tx" min="-0.5" max="0.5" step="0.02" value="${c.tx}"><span>${c.tx.toFixed(2)}</span>
       <span>상하</span><input type="range" data-f="ty" min="-0.5" max="0.5" step="0.02" value="${c.ty}"><span>${c.ty.toFixed(2)}</span></div>
   </div>`;}
@@ -240,11 +268,12 @@ function render(){
   $('#ordbar').innerHTML=ordBarHTML();
   $('#ordbar').querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>moveSel(b.dataset.mv));
   $('#ordReset')&&($('#ordReset').onclick=resetOrder);
+  $('#bgAdd')&&($('#bgAdd').onclick=addColorBg);
   refreshBar();
 }
 function refreshCard(id){const el=$(`.card[data-id="${CSS.escape(id)}"]`);if(!el)return;
   const c=CUR[id]; el.classList.toggle('chg',isChanged(id)); el.classList.toggle('hid',c.h); el.classList.toggle('sel',sel.has(id));
-  el.querySelector('.id span:last-child').innerHTML=`${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}`;
+  el.querySelector('.id .flags').innerHTML=`${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}`;
   el.querySelector('[data-act="hide"]').textContent=c.h?'보이기':'숨김';
   ['n','c','cat','d'].forEach(f=>{const i=el.querySelector(`[data-f="${f}"]`);if(i&&document.activeElement!==i)i.value=c[f];});
   drawThumb(el.querySelector('canvas.th'),id); refreshBar();}
@@ -259,16 +288,19 @@ function bindMain(){
     const c=CUR[id];
     if(f==='n')c.n=el.value; else if(f==='c')c.c=Math.max(0,parseInt(el.value||'0',10)||0);
     else if(f==='cat')c.cat=el.value; else if(f==='d')c.d=el.value;
+    else if(f==='hex'){let v=el.value.trim();if(v&&v[0]!=='#')v='#'+v;if(!HEXOK.test(v))return;c.hex=v.toUpperCase();
+      card.querySelectorAll('[data-f="hex"]').forEach(i=>{if(i!==el)i.value=c.hex;});}
     else {c[f]=parseFloat(el.value); el.nextElementSibling.textContent=c[f].toFixed(2);}
     if(f==='n'&&!c.n.trim()){}                     // 빈 이름은 저장 시 기본 이름 사용
     refreshCard(id);});
   $('#main').addEventListener('change',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
     if(el.classList.contains('ck')){el.checked?sel.add(id):sel.delete(id); refreshCard(id);}});
   $('#main').addEventListener('click',e=>{const el=e.target, card=el.closest('.card'); if(!card)return; const id=card.dataset.id;
-    if(el.matches('canvas.th')){card.querySelector('.tune').classList.toggle('on');return;}
+    if(el.matches('canvas.th')){if(CUR[id].cat==='bg')return;card.querySelector('.tune').classList.toggle('on');return;}
+    if(el.dataset.act==='del'){CUR[id].del=!CUR[id].del;refreshCard(id);render();return;}
     const act=el.dataset.act;
     if(act==='hide'){CUR[id].h=!CUR[id].h;refreshCard(id);}
-    if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:1,tx:0,ty:0});
+    if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:1,tx:0,ty:0,hex:d.hex});
       card.querySelectorAll('.tune input').forEach(r=>{r.value=CUR[id][r.dataset.f];r.nextElementSibling.textContent=CUR[id][r.dataset.f].toFixed(2);});refreshCard(id);}
   });
 }
@@ -287,7 +319,7 @@ function bulk(fn){ // 지금 화면에 보이는 것 중 체크한 것만
   ids.forEach(id=>fn(CUR[id])); render(); toastMsg(`${ids.length}개에 적용했어요 (저장을 눌러야 반영돼요)`);
 }
 function bindTools(){
-  $('#fCat').innerHTML=`<option value="">전체 카테고리</option>`+catOpts('');
+  $('#fCat').innerHTML=`<option value="">전체 카테고리</option>`+catOpts('',true);
   $('#bCat').innerHTML=catOpts('outer');
   // 보기(카테고리·검색·필터)를 바꾸면 선택을 비움 — 안 보이는 아이템에 일괄 변경이 들어가는 사고 방지
   ['fCat','fNew','fChg','fHid'].forEach(k=>$('#'+k).onchange=()=>{sel.clear();render();});
@@ -297,7 +329,7 @@ function bindTools(){
   $('#bCgo').onclick=()=>{const v=parseInt($('#bC').value,10);if(isNaN(v)||v<0)return alert('캐시를 숫자로 적어주세요');bulk(c=>c.c=v);};
   $('#bDgo').onclick=()=>{const v=$('#bD').value;if(!v)return alert('날짜를 골라주세요');bulk(c=>c.d=v);};
   $('#bDx').onclick=()=>bulk(c=>c.d='');
-  $('#bCatgo').onclick=()=>bulk(c=>c.cat=$('#bCat').value);
+  $('#bCatgo').onclick=()=>bulk(c=>{if(c.cat!=='bg')c.cat=$('#bCat').value;});
   $('#bHide').onclick=()=>bulk(c=>c.h=true);
   $('#bShow').onclick=()=>bulk(c=>c.h=false);
   $('#save').onclick=save;
@@ -315,6 +347,7 @@ async function save(){
     if(snap.exists) await cfgRef.update(upd);
     else { const meta={}; ids.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)meta[id]=o;}); await cfgRef.set({meta,updatedAt:upd.updatedAt,by:upd.by}); }
     ids.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)SAVED[id]=JSON.parse(JSON.stringify(o));else delete SAVED[id];});
+    ORDER.filter(id=>DEF[id].custom&&CUR[id].del).forEach(id=>{ORDER.splice(ORDER.indexOf(id),1);delete DEF[id];delete CUR[id];sel.delete(id);}); // 삭제한 새 배경 정리
     render(); toastMsg(`${ids.length}개 저장했어요 · 멤버 앱에도 바로 반영돼요`);
   }catch(e){console.error(e);alert('저장하지 못했어요. Firestore 규칙(config)을 확인해주세요.\n'+(e.message||e));refreshBar();}
 }
@@ -335,7 +368,7 @@ firebase.auth().onAuthStateChanged(async user=>{
     let meta={};
     try{const s=await cfgRef.get();meta=(s.exists&&s.data().meta)||{};}
     catch(e){showMsg('설정을 불러오지 못했어요.<br>Firestore 규칙에 <b>config</b> 권한을 추가해주세요.<br><small>'+esc(e.message||e)+'</small>');return;}
-    SAVED=JSON.parse(JSON.stringify(meta)); curFromMeta(meta);
+    SAVED=JSON.parse(JSON.stringify(meta)); addCustomDefs(meta); curFromMeta(meta);
     $('#tools').style.display='';
     bindTools(); bindMain(); bindDrag(); render();
     // 다른 탭·기기(폰 등)에서 저장하면 실시간으로 받아오기 — 내가 수정 중인(저장 안 한) 아이템은 그대로 둠
@@ -344,6 +377,7 @@ firebase.auth().onAuthStateChanged(async user=>{
       if(first){first=false;return;}
       if(s.metadata.hasPendingWrites)return;
       const m=(s.exists&&s.data().meta)||{}; let n=0;
+      const before=ORDER.length; addCustomDefs(m); ORDER.slice(before).forEach(id=>{SAVED[id]=JSON.parse(JSON.stringify(m[id]));curOne(id,m[id]);n++;});
       ORDER.forEach(id=>{
         if(isChanged(id))return;                       // 저장 안 한 내 수정은 유지
         if(canon(m[id])===canon(SAVED[id]))return;

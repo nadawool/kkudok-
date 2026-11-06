@@ -594,7 +594,7 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .item .mini .b{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center}
 .item .mini svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .item .nm{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--soft)}
-.item .bgswatch{width:100%;height:100%;border-radius:13px}
+.item .bgswatch{width:100%;height:100%;border-radius:12px}
 .item.bgtile{background:#fff}
 /* 헤어 색상 칩 */
 .haircolors{grid-column:1/-1;display:flex;gap:11px;flex-wrap:wrap;margin:3px 1px 6px}
@@ -1427,24 +1427,13 @@ const SLOTS=[['hat','모자'],['eye','안경'],['neck','목/리본'],['face','�
 /* dress tab simplified to 3 categories */
 const DCATS=[['bg','배경 색상']]; // 의상·악세사리는 추후 PNG 아이템으로 재구성
 const ACC_SLOTS=['hat','eye','neck','face','hand'];
-const BGCOLORS=[
-  {hex:'',name:'기본'},
-  {hex:'#FFF6E8',name:'크림'},
-  {hex:'#FCE7D8',name:'복숭아'},
-  {hex:'#E2F0E8',name:'민트'},
-  {hex:'#E3EEF7',name:'하늘'},
-  {hex:'#ECE6F5',name:'라벤더'},
-  {hex:'#FBE6EE',name:'핑크'},
-  {hex:'#F0E9DA',name:'모래'},
-  {hex:'#ECECEC',name:'연그레이'},
-  {id:'bg_lemon', hex:'#FFEBB8',name:'레몬', cost:1},
-  {id:'bg_orange',hex:'#FFC28C',name:'주황', cost:1},
-  {id:'bg_brown', hex:'#C39983',name:'갈색', cost:1},
-  {id:'bg_dsky',  hex:'#95C2DA',name:'진하늘', cost:1},
-  {id:'bg_green', hex:'#55A67E',name:'그린', cost:1},
-  {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
-  
-];
+/* 배경 목록은 items.js 의 BGS (컬러·이미지). m.bg 저장값: 컬러='#RRGGBB' / 이미지='img:배경id' → 화면에는 bgCss()로 */
+function bgVal(bg){return bg?(bg.img?'img:'+bg.id:(bg.hex||'')):'';}
+function bgCss(v){
+  if(!v)return '';
+  if(v.indexOf('img:')===0){const b=BGS.find(x=>x.id===v.slice(4));return b&&b.img?`url(${b.img}) center/cover no-repeat ${b.base||'#FBF8F3'}`:'';}
+  return v;
+}
 /* 헤어 색상 — 원본(검정) PNG를 SVG 필터로 틴팅. 기본 + 5색 */
 const HAIR_COLORS=[
   {id:'',      name:'기본',  hex:''},        // 원본 검정
@@ -1710,17 +1699,17 @@ function avatarHTML(m,size){ // full-body avatar (dress preview, profile card)
   return `<div class="avatar" style="--ar:${AV_AR}">${avatarStack(m,'',true)}</div>`;   // 큰 전신은 선명하게 원본 겹치기
 }
 function avatarTiny(m){ // small circular avatar — head-zoom
-  const bg=m.bg?`background:${m.bg};`:'';
+  const bg=m.bg?`background:${bgCss(m.bg)};`:'';
   return `<div class="tinyav" style="${bg}">${avatarStack(m,'hz')}</div>`;
 }
 function avatarBust(m){ // 머리~상체 크롭
   if(!m)return '';
-  const bg=m.bg?`background:${m.bg};`:'';
+  const bg=m.bg?`background:${bgCss(m.bg)};`:'';
   return `<div class="bustav" style="${bg}">${avatarStack(m,'bz')}</div>`;
 }
 function avatarUpper(m){ // 상반신까지 보이는 크롭 (출첵 프로필)
   if(!m)return '';
-  const bg=m.bg?`background:${m.bg};`:'';
+  const bg=m.bg?`background:${bgCss(m.bg)};`:'';
   return `<div class="bustav" style="${bg}">${avatarStack(m,'uz')}</div>`;
 }
 
@@ -2163,7 +2152,7 @@ function openMeetSheet(id){
   let seats='';
   for(let i=0;i<cap;i++){
     const m=S.members[a[i]];
-    seats+=m?`<div class="mt-seat"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div><span>${escT(m.name)}</span></div>`
+    seats+=m?`<div class="mt-seat"><div class="av" style="background:${bgCss(m.bg)||'var(--honey-s)'}">${avatarTiny(m)}</div><span>${escT(m.name)}</span></div>`
       :a[i]?`<div class="mt-seat"><div class="av">🙂</div><span>멤버</span></div>`
       :`<div class="mt-seat empty"><div class="av">+</div><span>빈자리</span></div>`;
   }
@@ -2909,7 +2898,7 @@ function refreshHeader(){
   // 프로필 버튼은 헤더에서 제거됨 → 요소가 있을 때만 갱신(혹시 남아있어도 안전)
   const mn=$('#meNm'); if(mn)mn.textContent=m.name;
   const hc=$('#hdCash'); if(hc)hc.textContent=(m.cash||0).toLocaleString(); // 헤더 캐시 잔액
-  const ma=$('#meAv'); if(ma){ ma.innerHTML=avatarBust(m); ma.style.background=m.bg||'var(--card)'; }
+  const ma=$('#meAv'); if(ma){ ma.innerHTML=avatarBust(m); ma.style.background=bgCss(m.bg)||'var(--card)'; }
   const vb=$('#viewbar');
   if(!isMe()){vb.classList.add('on');$('#viewtxt').textContent=view().name+'님의 기록을 보는 중';}
   else vb.classList.remove('on');
@@ -3330,7 +3319,7 @@ function renderHome(){
     <div class="card att-card"><div class="att-row">
       ${ordered.map(m=>`<div class="att-m ${here(m)?'':'gone'} ${m.discordReading?'reading':''}" data-uid="${m.id}">
         <div class="att-avwrap">
-          <div class="att-av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
+          <div class="att-av" style="background:${bgCss(m.bg)||'var(--honey-s)'}">${avatarTiny(m)}</div>
           ${monthCount(m,curYm)>=MONTH_GOAL?'<span class="att-done">완주</span>':''}
           ${here(m)?'<span class="att-apple"><i>🍎</i></span>':''}
           <span class="odot" data-uid="${m.id}"></span>
@@ -3588,7 +3577,7 @@ async function openFeeAdmin(){
       :st.state==='paid'?`<button class="fee-btn done" data-fundo="${m.id}">✓ 완료</button>`
       :st.state==='exempt'?`<span class="fee-btn ex">면제</span>`
       :`<button class="fee-btn unpaid" data-fpay="${m.id}">${st.state==='late'?'미납':'입금 전'}</button>`;
-    return `<div class="fee-row"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div>
+    return `<div class="fee-row"><div class="av" style="background:${bgCss(m.bg)||'var(--honey-s)'}">${avatarTiny(m)}</div>
       <div class="who"><b>${escT(m.name)}</b><small>${sub}</small></div>${btn}</div>`;
   };
   const acc=S.feeAccount||{};
@@ -3924,7 +3913,7 @@ function drawHomeHTML(){
   if(!d||Date.now()-(d.drawnAt||0)>48*36e5)return drawNowHTML();
   const mon=+d.ym.slice(5,7);
   const wins=d.winners.map(id=>{const m=S.members[id], info=DRAW_PRIZE_INFO[prizeOf(d,id)]||DRAW_PRIZE_INFO.coffee;
-    return m?`<div class="dr-win"><div class="av" style="background:${m.bg||'var(--honey-s)'}">${avatarTiny(m)}</div><b>${escT(m.name)}</b><span>${info.icon} ${info.short}</span></div>`:'';}).join('');
+    return m?`<div class="dr-win"><div class="av" style="background:${bgCss(m.bg)||'var(--honey-s)'}">${avatarTiny(m)}</div><b>${escT(m.name)}</b><span>${info.icon} ${info.short}</span></div>`:'';}).join('');
   const meWon=d.winners.includes(S.meId), myPrize=meWon?DRAW_PRIZE_INFO[prizeOf(d,S.meId)]:null;
   return `<div class="home-sec"><div class="dr-home" id="drHome">
     <div style="display:flex;align-items:center;justify-content:space-between"><b style="font-size:16px;font-weight:900">🍀 ${mon}월 행운의 뽑기 당첨자</b><span style="font-size:11.5px;color:#CFC8BC">${mdLabel(isoLocal(new Date(d.drawnAt)))} 추첨</span></div>
@@ -3939,7 +3928,7 @@ function openMemberProfile(id){
   const role=id===S.ownerId?'<span>👑 모임장</span>':isStaffId(id)?'<span>⭐ 운영진</span>':'';
   const king=isDebateKing(id)?`<span>🗣️ 토론왕 · ${debateCount(id)}회</span>`:'';
   $('#sheet').innerHTML=`
-    <div class="card hero mp-hero" style="background:${m.bg||'var(--card)'}">
+    <div class="card hero mp-hero" style="background:${bgCss(m.bg)||'var(--card)'}">
       ${avatarHTML(m)}
       <div class="mp-box">
         <div class="nm">${escT(m.name)}${isMine?' <span style="font-size:13px;color:var(--honey-d)">(나)</span>':''}</div>
@@ -4920,7 +4909,7 @@ function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
   $('#s-dress').innerHTML=`
-  <div class="card hero" style="position:relative;padding-bottom:14px;background:${m.bg||'var(--card)'}">
+  <div class="card hero" style="position:relative;padding-bottom:14px;background:${bgCss(m.bg)||'var(--card)'}">
     <!-- 캐릭터 우측 상단 모서리: 프로필 설정창(이름변경·백업·로그아웃 등)을 여는 ⚙️ -->
     <button class="dress-gear" id="dressGear" aria-label="설정">⚙️</button>
     ${avatarHTML(m)}
@@ -4957,7 +4946,7 @@ function refreshDressPreview(){
   const m=me(); ensureItems(m);
   const hero=host.querySelector('.hero');
   if(hero){
-    hero.style.background=m.bg||'var(--card)';                                  // 배경 변경 반영
+    hero.style.background=bgCss(m.bg)||'var(--card)';                                  // 배경 변경 반영
     const cc=hero.querySelector('.cashcoin');
     if(cc) cc.innerHTML=`<span class="coin">C</span>${(m.cash||0).toLocaleString()}`; // 구매 후 캐시 반영
     const av=hero.querySelector('.avatar');
@@ -5246,26 +5235,30 @@ function drawItems(){
     return;
   }
   if(dressSlot==='bg'){
-    $('#items').innerHTML=BGCOLORS.map(bg=>{
-      const sel=(m.bg||'')===bg.hex;
+    const base=BGS.find(b=>b.id==='bg_none');
+    const list=(base?[base]:[]).concat(byNewest(BGS.filter(b=>b.id!=='bg_none')));
+    $('#items').innerHTML=list.map(bg=>{
+      const v=bgVal(bg), sel=(m.bg||'')===v;
       const locked=itemLocked(m,bg);   // 유료 배경인데 아직 캐시로 안 샀으면 잠금
       const cost=itemCost(bg);         // 가격(캐시). cost가 없으면 0=무료
       return `<div class="itembox">
-        <div class="item bgtile ${sel?'eq':''} ${locked?'locked buyable':''}" data-bg="${bg.hex}">
-          <div class="bgswatch" style="background:${bg.hex||'#FFFFFF'}"></div>
+        <div class="item bgtile ${sel?'eq':''} ${locked?'locked buyable':''}" data-bg="${esc2(v)}">
+          <div class="bgswatch" style="background:${bgCss(v)||'#FFFFFF'}"></div>
           ${sel?'<div class="chk">✓</div>':''}
-          ${locked?'<div class="lockbadge">🔒</div>':''}
+          ${isNewItem(bg)?'<span class="newb">NEW</span>':''}
         </div>
+        <div class="inm">${escT(bg.name||'')}</div>
         ${locked?`<div class="ptag"><span class="coin">C</span>${cost}</div>`:''}
       </div>`;
     }).join('');
     $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
-      const hex=el.dataset.bg||'';
-      const bg=BGCOLORS.find(b=>b.hex===hex);     // 클릭한 배경 데이터 찾기
+      const v=el.dataset.bg||'';
+      const bg=list.find(b=>bgVal(b)===v);         // 클릭한 배경 데이터 찾기
       if(el.classList.contains('locked')){        // 잠금=구매 확인 후 바로 적용
-        tryBuyItem(bg,()=>{m.bg=hex||null;}); return;
+        tryBuyItem(bg,()=>{m.bg=v||null;}); return;
       }
-      m.bg=hex||null; await save(); refreshDressPreview(); // 무료/보유 배경=바로 적용
+      if((m.bg||'')===v)return;
+      m.bg=v||null; await save(); refreshDressPreview(); // 무료/보유 배경=바로 적용
     });
     return;
   }
@@ -5389,7 +5382,7 @@ function openTryOn(en){
   const draw=()=>{
     const fav=isFav(it.id);
     $('#sheet').innerHTML=`
-      <div class="to-av" style="background:${m.bg||'#FBF8F3'}">${avatarHTML(pv)}</div>
+      <div class="to-av" style="background:${bgCss(m.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
       <div class="to-nm">${escT(it.name)}${isNewItem(it)?'<span class="newb">NEW</span>':''}</div>
       <div class="to-pr">${locked?`<span class="ptag"><span class="coin">C</span>${cost}</span><small>· 보유 ${have.toLocaleString()}캐시</small>`:'<small>보유 중인 아이템이에요</small>'}</div>
       <div class="to-btns">
@@ -5440,7 +5433,7 @@ function openCart(){
   const pv=JSON.parse(JSON.stringify(m)); list.forEach(e=>_equipEn(pv,e));
   const parts=list.map(e=>e.slot||('acc:'+e.accKey)), dup=parts.length!==new Set(parts).size;
   $('#sheet').innerHTML=`<h3>🛒 장바구니</h3>
-    <div class="to-av" style="background:${m.bg||'#FBF8F3'}">${avatarHTML(pv)}</div>
+    <div class="to-av" style="background:${bgCss(m.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
     <div>${list.map(e=>`<div class="cart-row"><div class="ct">${useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
       <b>${escT(e.it.name)}</b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
     ${dup?`<div class="hint" style="margin-top:8px">같은 부위 아이템은 모두 구매되고, 입는 건 마지막에 담은 것이에요</div>`:''}
@@ -5659,7 +5652,7 @@ function openProfileSheet(){
   const m=me();
   $('#sheet').innerHTML=`
     <h3>내 프로필</h3>
-    <div style="display:flex;justify-content:center;margin:-2px 0 14px"><div class="pc-av" style="background:${m.bg||'var(--card)'}">${avatarHTML(m)}</div></div>
+    <div style="display:flex;justify-content:center;margin:-2px 0 14px"><div class="pc-av" style="background:${bgCss(m.bg)||'var(--card)'}">${avatarHTML(m)}</div></div>
     <div class="field">
       <label>이름</label>
       <input id="pfName" maxlength="6" value="${esc2(m.name)}" autocomplete="off">

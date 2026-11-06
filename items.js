@@ -401,6 +401,29 @@ const ACC_TYPES=[
   {key:'freckle',name:'주근깨',items:[{id:'face_etc_002',name:'주근깨',img:CHARP+'face/face_etc_002.png'}]},
 ];
 
+/* ---------- 배경 ----------
+   · 컬러 배경: {id, hex:'#RRGGBB', name, cost}
+   · 이미지 배경: char/bg/ 에 파일을 넣고 {id, img:CHARP+'bg/파일.png', base:'#로딩 중 바탕색', name, cost, d:'올린날짜'}
+   · 대시보드에서 이름·캐시·색·NEW·숨김·순서를 바꾸고, 새 컬러 배경도 추가할 수 있음 (meta) */
+const BGS=[
+  {id:'bg_none',  hex:'',       name:'기본'},
+  {id:'bg_cream', hex:'#FFF6E8',name:'크림'},
+  {id:'bg_peach', hex:'#FCE7D8',name:'복숭아'},
+  {id:'bg_mint',  hex:'#E2F0E8',name:'민트'},
+  {id:'bg_sky',   hex:'#E3EEF7',name:'하늘'},
+  {id:'bg_lav',   hex:'#ECE6F5',name:'라벤더'},
+  {id:'bg_pink',  hex:'#FBE6EE',name:'핑크'},
+  {id:'bg_sand',  hex:'#F0E9DA',name:'모래'},
+  {id:'bg_gray',  hex:'#ECECEC',name:'연그레이'},
+  {id:'bg_lemon', hex:'#FFEBB8',name:'레몬', cost:1},
+  {id:'bg_orange',hex:'#FFC28C',name:'주황', cost:1},
+  {id:'bg_brown', hex:'#C39983',name:'갈색', cost:1},
+  {id:'bg_dsky',  hex:'#95C2DA',name:'진하늘', cost:1},
+  {id:'bg_green', hex:'#55A67E',name:'그린', cost:1},
+  {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
+];
+
+
 /* ---------- 대시보드 덮어쓰기(meta) 적용 ----------
    meta = { 아이템id: { n:이름, c:캐시, cat:'cloth_top'|'dress'|'outer'|...|'acc:hat', d:'YYYY-MM-DD'(''=신상 해제), h:true(숨김), tz,tx,ty(썸네일 확대·이동), o(진열 순서 1,2,3…) } }
    항상 위의 기본값에서 다시 계산하므로 여러 번 불러도 안전 */
@@ -408,10 +431,12 @@ function _baseCat(slot,it){return slot==='cloth_top'&&(it.dress===true||(it.id||
 const ITEM_BASE=(()=>{const all=[];
   Object.keys(ITEMS).forEach(s=>ITEMS[s].forEach(it=>all.push({it:Object.assign({},it),cat:_baseCat(s,it)})));
   ACC_TYPES.forEach(t=>t.items.forEach(it=>all.push({it:Object.assign({},it),cat:'acc:'+t.key})));
+  BGS.forEach(it=>all.push({it:Object.assign({},it),cat:'bg'}));
   return all;})();
+const HEX_RE=/^#[0-9a-fA-F]{6}$/;
 function applyItemMeta(meta){
   meta=meta||{};
-  Object.keys(ITEMS).forEach(s=>{ITEMS[s].length=0;}); ACC_TYPES.forEach(t=>{t.items.length=0;});
+  Object.keys(ITEMS).forEach(s=>{ITEMS[s].length=0;}); ACC_TYPES.forEach(t=>{t.items.length=0;}); BGS.length=0;
   ITEM_BASE.forEach(b=>{
     const o=meta[b.it.id]||{}, it=Object.assign({},b.it);
     if(typeof o.n==='string'&&o.n.trim())it.name=o.n.trim();
@@ -419,10 +444,17 @@ function applyItemMeta(meta){
     if(typeof o.d==='string'){ if(o.d)it.d=o.d; else delete it.d; }
     if(o.h)it.hidden=true;
     ['tz','tx','ty','o'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
+    if(b.cat==='bg'){ if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&!it.img&&it.id!=='bg_none')it.hex=o.hex; BGS.push(it); return; }
     let cat=(typeof o.cat==='string'&&o.cat)||b.cat;
     if(cat==='dress'){it.dress=true;cat='cloth_top';}
     else if(cat==='cloth_top'){it.dress=false;}
     if(cat.indexOf('acc:')===0){const t=ACC_TYPES.find(x=>x.key===cat.slice(4));if(t){t.items.push(it);return;}cat=b.cat.replace('dress','cloth_top');}
     (ITEMS[cat]||ITEMS[b.cat==='dress'?'cloth_top':b.cat]).push(it);
   });
+  // 대시보드에서 새로 만든 컬러 배경 (meta[id].add)
+  Object.keys(meta).forEach(id=>{const o=meta[id];
+    if(!o||!o.add||ITEM_BASE.some(b=>b.it.id===id)||typeof o.hex!=='string'||!HEX_RE.test(o.hex))return;
+    const it={id,hex:o.hex,name:(o.n||'새 배경'),cost:typeof o.c==='number'?o.c:0,custom:true};
+    if(typeof o.d==='string'&&o.d)it.d=o.d; if(o.h)it.hidden=true; if(typeof o.o==='number')it.o=o.o;
+    BGS.push(it);});
 }
