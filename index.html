@@ -5246,6 +5246,7 @@ function drawItems(){
           <div class="bgswatch" style="background:${bgCss(v)||'#FFFFFF'}"></div>
           ${sel?'<div class="chk">✓</div>':''}
           ${isNewItem(bg)?'<span class="newb">NEW</span>':''}
+          ${inCart(bg.id)?'<span class="cartb">🛒</span>':''}
         </div>
         <div class="inm">${escT(bg.name||'')}</div>
         ${locked?`<div class="ptag"><span class="coin">C</span>${cost}</div>`:''}
@@ -5254,8 +5255,8 @@ function drawItems(){
     $('#items').querySelectorAll('.bgtile').forEach(el=>el.onclick=async()=>{
       const v=el.dataset.bg||'';
       const bg=list.find(b=>bgVal(b)===v);         // 클릭한 배경 데이터 찾기
-      if(el.classList.contains('locked')){        // 잠금=구매 확인 후 바로 적용
-        tryBuyItem(bg,()=>{m.bg=v||null;}); return;
+      if(el.classList.contains('locked')){        // 잠금=입어보기 시트(캐시 부족해도 미리보기·장바구니 가능)
+        openTryOn({it:bg,bg:true}); return;
       }
       if((m.bg||'')===v)return;
       m.bg=v||null; await save(); refreshDressPreview(); // 무료/보유 배경=바로 적용
@@ -5371,6 +5372,7 @@ function drawItems(){
 /* 입어보기 시트: 아이템을 누르면 지금 내 캐릭터에 입혀서 크게 보여주고, 여기서 찜·구매(또는 입기)까지.
    en = {it, slot} 또는 {it, accKey} */
 function _equipEn(m,en){
+  if(en.bg){ m.bg=bgVal(en.it)||null; return; }
   if(en.slot) m.items[en.slot]=en.it.id;
   else { if(!m.items.acc)m.items.acc={}; m.items.acc[en.accKey]=[en.it.id]; }
 }
@@ -5382,13 +5384,13 @@ function openTryOn(en){
   const draw=()=>{
     const fav=isFav(it.id);
     $('#sheet').innerHTML=`
-      <div class="to-av" style="background:${bgCss(m.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
+      <div class="to-av" style="background:${bgCss(pv.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
       <div class="to-nm">${escT(it.name)}${isNewItem(it)?'<span class="newb">NEW</span>':''}</div>
       <div class="to-pr">${locked?`<span class="ptag"><span class="coin">C</span>${cost}</span><small>· 보유 ${have.toLocaleString()}캐시</small>`:'<small>보유 중인 아이템이에요</small>'}</div>
       <div class="to-btns">
         <button class="btn ghost fav" id="toFav" aria-label="찜">${fav?'❤️':'🤍'}</button>
         ${locked?`<button class="btn ghost cart" id="toCart">${inCart(it.id)?'🛒 담김 ✓':'🛒 담기'}</button>`:''}
-        <button class="btn" id="toGo">${locked?`${cost}캐시 구매`:'입기'}</button>
+        <button class="btn ${locked&&have<cost?'ghost':''}" id="toGo">${!locked?'입기':have<cost?`${cost-have}캐시 부족`:`${cost}캐시 구매`}</button>
       </div>
       ${locked&&CART.length?`<div class="hint" style="text-align:center;margin-top:8px">장바구니에 ${CART.length}개 · 여러 개를 한 번에 살 수 있어요</div>`:''}
       <button class="btn ghost" id="toX" style="margin-top:8px">닫기</button>`;
@@ -5396,7 +5398,7 @@ function openTryOn(en){
     $('#toFav').onclick=async()=>{toggleFav(it.id);await save();draw();if(tab==='dress'&&dressSlot==='fav')drawItems();};
     $('#toCart')&&($('#toCart').onclick=()=>{
       if(inCart(it.id)){CART=CART.filter(c=>c.id!==it.id);toast('장바구니에서 뺐어요');}
-      else{CART.push({id:it.id,slot:en.slot,accKey:en.accKey});toast(`장바구니에 담았어요 (${CART.length}개)`);}
+      else{CART.push({id:it.id,slot:en.slot,accKey:en.accKey,bg:!!en.bg});toast(`장바구니에 담았어요 (${CART.length}개)`);}
       closeOv(); if(tab==='dress')drawItems();
     });
     $('#toGo').onclick=async()=>{
@@ -5415,7 +5417,7 @@ function openTryOn(en){
    CART = [{id, slot} 또는 {id, accKey}] · 같은 부위 아이템은 모두 사지만, 입는 건 나중에 담은 것 */
 let CART=[];
 function inCart(id){return CART.some(c=>c.id===id);}
-function cartEn(c){const it=c.slot?pItem(c.slot,c.id):accItem(c.accKey,c.id);return it?{it,slot:c.slot,accKey:c.accKey}:null;}
+function cartEn(c){const it=c.bg?BGS.find(b=>b.id===c.id):c.slot?pItem(c.slot,c.id):accItem(c.accKey,c.id);return it?{it,slot:c.slot,accKey:c.accKey,bg:!!c.bg}:null;}
 function cartList(){ // 지금 살 수 있는 것만 (이미 샀거나 사라진 아이템은 빼기)
   const m=me(); CART=CART.filter(c=>{const e=cartEn(c);return e&&itemLocked(m,e.it);});
   return CART.map(cartEn);
@@ -5431,14 +5433,14 @@ function openCart(){
   const list=cartList(); if(!list.length){closeOv();refreshCartBar();return;}
   const tot=list.reduce((a,e)=>a+itemCost(e.it),0), have=m.cash||0;
   const pv=JSON.parse(JSON.stringify(m)); list.forEach(e=>_equipEn(pv,e));
-  const parts=list.map(e=>e.slot||('acc:'+e.accKey)), dup=parts.length!==new Set(parts).size;
+  const parts=list.map(e=>e.bg?'bg':(e.slot||('acc:'+e.accKey))), dup=parts.length!==new Set(parts).size;
   $('#sheet').innerHTML=`<h3>🛒 장바구니</h3>
-    <div class="to-av" style="background:${bgCss(m.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
-    <div>${list.map(e=>`<div class="cart-row"><div class="ct">${useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
+    <div class="to-av" style="background:${bgCss(pv.bg)||'#FBF8F3'}">${avatarHTML(pv)}</div>
+    <div>${list.map(e=>`<div class="cart-row"><div class="ct">${e.bg?`<div class="th" style="background:${bgCss(bgVal(e.it))||'#fff'}"></div>`:useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
       <b>${escT(e.it.name)}</b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
     ${dup?`<div class="hint" style="margin-top:8px">같은 부위 아이템은 모두 구매되고, 입는 건 마지막에 담은 것이에요</div>`:''}
     <div class="cart-sum"><span>합계 C ${tot}</span><small>보유 ${have.toLocaleString()}캐시 → ${have>=tot?`구매 후 ${(have-tot).toLocaleString()}캐시`:`<b style="color:#B8321F">${tot-have}캐시 부족</b>`}</small></div>
-    <button class="btn" id="cartBuy">${list.length}개 모두 구매하고 입기</button>
+    <button class="btn ${have<tot?'ghost':''}" id="cartBuy">${have<tot?`${tot-have}캐시 더 모으면 살 수 있어요`:`${list.length}개 모두 구매하고 입기`}</button>
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="cartClr">비우기</button><button class="btn ghost" id="cartX">닫기</button></div>`;
   openOv();
   $('#sheet').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{CART=CART.filter(c=>c.id!==b.dataset.rm);if(tab==='dress')drawItems();openCart();});
