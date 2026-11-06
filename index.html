@@ -1426,7 +1426,7 @@ function itemById(id){return CATALOG.find(i=>i.id===id);}
 const CHARP='char/';                 // 레포 char/ 폴더 (Vercel 루트 기준)
 const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
 const AV_AR=0.7;                     // 700x1000
-const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 가방은 상의 위, 악세사리는 맨 위)
+const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','outer','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 아우터는 상의 위, 가방은 아우터 위, 악세사리는 맨 위)
 const ITEMS={
   eyes:[
     {id:'eyes_basic',name:'기본',img:CHARP+'eyes/base_eyes_01.png'},
@@ -1516,6 +1516,12 @@ const ITEMS={
     {id:'ops_3', name:'재영님꽃ops(핑크)',img:CHARP+'cloth/ops/ops_003.png',cost:10},
     {id:'ops_4',name:'재영님꽃ops(블루)',img:CHARP+'cloth/ops/ops_004.png',cost:10},
     {id:'ops_5',name:'재영님꽃ops(노란)',img:CHARP+'cloth/ops/ops_005.png',cost:10},
+    // ▼ 크리스마스 (상의)
+    {id:'christmas_001',name:'산타상의1',img:CHARP+'cloth/top/christmas_001.png',cost:35},
+    {id:'christmas_002',name:'산타상의2',img:CHARP+'cloth/top/christmas_002.png',cost:35},
+    {id:'top_christmas_001',name:'루돌프니트1',img:CHARP+'cloth/top/top_christmas_001.png',cost:35},
+    {id:'top_christmas_002',name:'루돌프니트2',img:CHARP+'cloth/top/top_christmas_002.png',cost:35},
+    {id:'top_christmas_003',name:'루돌프니트3',img:CHARP+'cloth/top/top_christmas_003.png',cost:35},
     
   ],
   cloth_bottom:[
@@ -1583,11 +1589,83 @@ const ITEMS={
     {id:'skirt_019', name:'치마19', img:CHARP+'cloth/bottom/skirt/skirt_019.png', cost:20},
     {id:'skirt_020', name:'치마20', img:CHARP+'cloth/bottom/skirt/skirt_020.png', cost:20},
     {id:'skirt_021', name:'치마21', img:CHARP+'cloth/bottom/skirt/skirt_021.png', cost:20},
+    // ▼ 크리스마스 (하의)
+    {id:'christmas_003',name:'산타바지',img:CHARP+'cloth/bottom/christmas_003.png',cost:35},
+  ],
+  // 아우터 — 상의 위에 겹쳐 입는 별도 슬롯 (상의+아우터 동시 착용)
+  outer:[
+    // ▼ 패딩
+    {id:'outer_001',name:'패딩1',img:CHARP+'cloth/outer/outer_001.png',cost:25},
+    {id:'outer_002',name:'패딩2',img:CHARP+'cloth/outer/outer_002.png',cost:25},
+    {id:'outer_003',name:'패딩3',img:CHARP+'cloth/outer/outer_003.png',cost:25},
+    {id:'outer_004',name:'패딩4',img:CHARP+'cloth/outer/outer_004.png',cost:25},
+    {id:'outer_005',name:'패딩5',img:CHARP+'cloth/outer/outer_005.png',cost:25},
+    {id:'outer_006',name:'패딩6',img:CHARP+'cloth/outer/outer_006.png',cost:25},
+    {id:'outer_007',name:'패딩7',img:CHARP+'cloth/outer/outer_007.png',cost:25},
+    {id:'outer_008',name:'패딩8',img:CHARP+'cloth/outer/outer_008.png',cost:25},
+    {id:'outer_009',name:'패딩9',img:CHARP+'cloth/outer/outer_009.png',cost:25},
+    {id:'outer_010',name:'패딩10',img:CHARP+'cloth/outer/outer_010.png',cost:25},
+    {id:'outer_011',name:'패딩11',img:CHARP+'cloth/outer/outer_011.png',cost:25},
+    {id:'outer_012',name:'패딩12',img:CHARP+'cloth/outer/outer_012.png',cost:25},
+    // ▼ 더플코트
+    {id:'outer_coat_001',name:'더플코트1',img:CHARP+'cloth/outer/outer_coat_001.png',cost:25},
+    {id:'outer_coat_002',name:'더플코트2',img:CHARP+'cloth/outer/outer_coat_002.png',cost:25},
+    {id:'outer_coat_003',name:'더플코트3',img:CHARP+'cloth/outer/outer_coat_003.png',cost:25},
+    {id:'outer_coat_004',name:'더플코트4',img:CHARP+'cloth/outer/outer_coat_004.png',cost:25},
+    // ▼ 후드
+    {id:'outer_hood_002',name:'후드2',img:CHARP+'cloth/outer/outer_hood_002.png',cost:25},
+    {id:'outer_hood_003',name:'후드3',img:CHARP+'cloth/outer/outer_hood_003.png',cost:25},
+    {id:'outer_hood_004_1',name:'후드4-1',img:CHARP+'cloth/outer/outer_hood_004_1.png',cost:25},
+    {id:'outer_hood_004',name:'후드4',img:CHARP+'cloth/outer/outer_hood_004.png',cost:25},
+    {id:'outer_hood_005',name:'후드5',img:CHARP+'cloth/outer/outer_hood_005.png',cost:25},
+    {id:'outer_hood_006',name:'후드6',img:CHARP+'cloth/outer/outer_hood_006.png',cost:25},
+    {id:'outer_hood_007',name:'후드7',img:CHARP+'cloth/outer/outer_hood_007.png',cost:25},
+    {id:'outer_hood_008',name:'후드8',img:CHARP+'cloth/outer/outer_hood_008.png',cost:25},
+    {id:'outer_hood_009',name:'후드9',img:CHARP+'cloth/outer/outer_hood_009.png',cost:25},
+    {id:'outer_hood_010',name:'후드10',img:CHARP+'cloth/outer/outer_hood_010.png',cost:25},
+    {id:'outer_hood_011',name:'후드11',img:CHARP+'cloth/outer/outer_hood_011.png',cost:25},
+    // ▼ 무스탕
+    {id:'outer_jp_001',name:'무스탕1',img:CHARP+'cloth/outer/outer_jp_001.png',cost:25},
+    {id:'outer_jp_002',name:'무스탕2',img:CHARP+'cloth/outer/outer_jp_002.png',cost:25},
+    {id:'outer_jp_003',name:'무스탕3',img:CHARP+'cloth/outer/outer_jp_003.png',cost:25},
+    {id:'outer_jp_004',name:'무스탕4',img:CHARP+'cloth/outer/outer_jp_004.png',cost:25},
+    {id:'outer_jp_005',name:'무스탕5',img:CHARP+'cloth/outer/outer_jp_005.png',cost:25},
+    {id:'outer_jp_006',name:'무스탕6',img:CHARP+'cloth/outer/outer_jp_006.png',cost:25},
+    {id:'outer_jp_007',name:'무스탕7',img:CHARP+'cloth/outer/outer_jp_007.png',cost:25},
+    // ▼ 퍼조끼
+    {id:'outer_vest_001',name:'퍼조끼1',img:CHARP+'cloth/outer/outer_vest_001.png',cost:25},
+    {id:'outer_vest_002',name:'퍼조끼2',img:CHARP+'cloth/outer/outer_vest_002.png',cost:25},
+    {id:'outer_vest_003',name:'퍼조끼3',img:CHARP+'cloth/outer/outer_vest_003.png',cost:25},
+    // ▼ 집업
+    {id:'outer_zipup_001',name:'집업1',img:CHARP+'cloth/outer/outer_zipup_001.png',cost:25},
+    {id:'outer_zipup_002',name:'집업2',img:CHARP+'cloth/outer/outer_zipup_002.png',cost:25},
+    {id:'outer_zipup_003',name:'집업3',img:CHARP+'cloth/outer/outer_zipup_003.png',cost:25},
+    {id:'outer_zipup_004',name:'집업4',img:CHARP+'cloth/outer/outer_zipup_004.png',cost:25},
+    {id:'outer_zipup_005',name:'집업5',img:CHARP+'cloth/outer/outer_zipup_005.png',cost:25},
+    {id:'outer_zipup_006',name:'집업6',img:CHARP+'cloth/outer/outer_zipup_006.png',cost:25},
+    {id:'outer_zipup_007',name:'집업7',img:CHARP+'cloth/outer/outer_zipup_007.png',cost:25},
+    {id:'outer_zipup_008',name:'집업8',img:CHARP+'cloth/outer/outer_zipup_008.png',cost:25},
+    {id:'outer_zipup_009',name:'집업9',img:CHARP+'cloth/outer/outer_zipup_009.png',cost:25},
+    {id:'outer_zipup_010',name:'집업10',img:CHARP+'cloth/outer/outer_zipup_010.png',cost:25},
+    {id:'outer_zipup_011',name:'집업11',img:CHARP+'cloth/outer/outer_zipup_011.png',cost:25},
+    {id:'outer_zipup_012',name:'집업12',img:CHARP+'cloth/outer/outer_zipup_012.png',cost:25},
+    {id:'outer_zipup_013',name:'집업13',img:CHARP+'cloth/outer/outer_zipup_013.png',cost:25},
+    {id:'outer_zipup_014',name:'집업14',img:CHARP+'cloth/outer/outer_zipup_014.png',cost:25},
+    {id:'outer_zipup_015',name:'집업15',img:CHARP+'cloth/outer/outer_zipup_015.png',cost:25},
+    {id:'outer_zipup_016',name:'집업16',img:CHARP+'cloth/outer/outer_zipup_016.png',cost:25},
+    {id:'outer_zipup_017',name:'집업17',img:CHARP+'cloth/outer/outer_zipup_017.png',cost:25},
+    {id:'outer_zipup_018',name:'집업18',img:CHARP+'cloth/outer/outer_zipup_018.png',cost:25},
+    {id:'outer_zipup_019',name:'집업19',img:CHARP+'cloth/outer/outer_zipup_019.png',cost:25},
+    {id:'outer_zipup_020',name:'집업20',img:CHARP+'cloth/outer/outer_zipup_020.png',cost:25},
+    {id:'outer_zipup_021',name:'집업21',img:CHARP+'cloth/outer/outer_zipup_021.png',cost:25},
+    {id:'outer_zipup_022',name:'집업22',img:CHARP+'cloth/outer/outer_zipup_022.png',cost:25},
   ],
   // 신발 — 발 위치에만 그림이 있어 전신에서 발에 보임
   shoes:[
     {id:'shoes_1',name:'빨간구두',img:CHARP+'shoes/shoes_001.png', cost:1},
     {id:'shoes_2',name:'갈색구두',img:CHARP+'shoes/shoes_002.png', cost:1},
+    // ▼ 어그
+    {id:'ugg_001',name:'어그부츠',img:CHARP+'shoes/ugg_001.png',cost:10},
   ],
   // 가방 — 신발과 별도 슬롯이라 신발+가방 동시 착용 가능
   bag:[
@@ -1647,6 +1725,36 @@ const ACC_TYPES=[
     {id:'cap_5',name:'뒤캡모자(주황)',img:CHARP+'acc/cap/cap_005.png',cost:7},
     {id:'cap_6',name:'뒤캡모자(버터)',img:CHARP+'acc/cap/cap_006.png',cost:7},
     {id:'cap_7',name:'뒤캡모자(아이)',img:CHARP+'acc/cap/cap_007.png',cost:7},
+    // ▼ 비니
+    {id:'hat_beanie_001',name:'비니1',img:CHARP+'acc/beanie/hat_beanie_001.png',cost:5},
+    {id:'hat_beanie_002',name:'비니2',img:CHARP+'acc/beanie/hat_beanie_002.png',cost:5},
+    {id:'hat_beanie_003',name:'비니3',img:CHARP+'acc/beanie/hat_beanie_003.png',cost:5},
+    {id:'hat_beanie_004',name:'비니4',img:CHARP+'acc/beanie/hat_beanie_004.png',cost:5},
+    {id:'hat_beanie_005',name:'비니5',img:CHARP+'acc/beanie/hat_beanie_005.png',cost:5},
+    {id:'hat_beanie_006',name:'비니6',img:CHARP+'acc/beanie/hat_beanie_006.png',cost:5},
+    {id:'hat_beanie_007',name:'비니7',img:CHARP+'acc/beanie/hat_beanie_007.png',cost:5},
+    {id:'hat_beanie_008',name:'비니8',img:CHARP+'acc/beanie/hat_beanie_008.png',cost:5},
+    {id:'hat_beanie_009',name:'비니9',img:CHARP+'acc/beanie/hat_beanie_009.png',cost:5},
+    {id:'hat_beanie_010',name:'비니10',img:CHARP+'acc/beanie/hat_beanie_010.png',cost:5},
+    {id:'hat_beanie_011',name:'비니11',img:CHARP+'acc/beanie/hat_beanie_011.png',cost:5},
+    {id:'hat_beanie_012',name:'비니12',img:CHARP+'acc/beanie/hat_beanie_012.png',cost:5},
+    {id:'hat_beanie_013',name:'비니13',img:CHARP+'acc/beanie/hat_beanie_013.png',cost:5},
+    {id:'hat_beanie_014',name:'비니14',img:CHARP+'acc/beanie/hat_beanie_014.png',cost:5},
+    {id:'hat_beanie_015',name:'비니15',img:CHARP+'acc/beanie/hat_beanie_015.png',cost:5},
+    {id:'hat_beanie_016',name:'비니16',img:CHARP+'acc/beanie/hat_beanie_016.png',cost:5},
+    {id:'hat_beanie_017',name:'비니17',img:CHARP+'acc/beanie/hat_beanie_017.png',cost:5},
+    {id:'hat_beanie_018',name:'비니18',img:CHARP+'acc/beanie/hat_beanie_018.png',cost:5},
+    {id:'hat_beanie_019',name:'비니19',img:CHARP+'acc/beanie/hat_beanie_019.png',cost:5},
+    {id:'hat_beanie_020',name:'비니20',img:CHARP+'acc/beanie/hat_beanie_020.png',cost:5},
+    {id:'hat_beanie_021',name:'비니21',img:CHARP+'acc/beanie/hat_beanie_021.png',cost:5},
+    // ▼ 크리스마스 (모자)
+    {id:'christmas_004',name:'산타모자',img:CHARP+'acc/beanie/christmas_004.png',cost:35},
+  ]},
+  // 귀마개 — 모자와 별개 타입이라 비니+귀마개 동시 착용 가능 (모자 위에 그려짐)
+  {key:'earmuff',name:'귀마개',items:[
+    {id:'earmuff_001',name:'귀마개1',img:CHARP+'acc/earmuff/earmuff_001.png',cost:5},
+    {id:'earmuff_002',name:'귀마개2',img:CHARP+'acc/earmuff/earmuff_002.png',cost:5},
+    {id:'earmuff_003',name:'귀마개3',img:CHARP+'acc/earmuff/earmuff_003.png',cost:5},
   ]},
   {key:'hairacc',name:'헤어장식',items:[
     {id:'hairacc_1',name:'사과머리띠',img:CHARP+'acc/hairacc/hairacc_001.png'},
@@ -1699,6 +1807,16 @@ const ACC_TYPES=[
   // 목걸이
   {key:'neck',name:'목걸이',items:[
     {id:'neck_1',name:'하트목걸이',img:CHARP+'acc/neck_001.png'},
+  ]},
+  // 목도리 — 목걸이와 별개 타입 (목걸이 위에 그려짐)
+  {key:'neckwarm',name:'목도리',items:[
+    {id:'neckwarm_001',name:'목도리1',img:CHARP+'acc/neckwarm/acc_neckwarm_001.png',cost:5},
+    {id:'neckwarm_002',name:'목도리2',img:CHARP+'acc/neckwarm/acc_neckwarm_002.png',cost:5},
+    {id:'neckwarm_003',name:'목도리3',img:CHARP+'acc/neckwarm/acc_neckwarm_003.png',cost:5},
+    {id:'neckwarm_004',name:'목도리4',img:CHARP+'acc/neckwarm/acc_neckwarm_004.png',cost:5},
+    {id:'neckwarm_005',name:'목도리5',img:CHARP+'acc/neckwarm/acc_neckwarm_005.png',cost:5},
+    {id:'neckwarm_006',name:'목도리6',img:CHARP+'acc/neckwarm/acc_neckwarm_006.png',cost:5},
+    {id:'neckwarm_007',name:'목도리7',img:CHARP+'acc/neckwarm/acc_neckwarm_007.png',cost:5},
   ]},
   // 얼굴 추가요소(수염·주근깨) — 악세사리 저장구조를 재사용하되 '얼굴' 탭에서만 노출
   {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'}]},
@@ -5110,11 +5228,11 @@ function clothGrid(m,dressOnly){
   }).join('');
 }
 // 슬롯 섹션 — 헤더 + '없음'(벗기) + 아이템들. 부위별로 섹션을 나눌 때 사용 (zoom=null=전신)
-function slotSection(m,slot,name){
+function slotSection(m,slot,name,hideHeader){
   const list=ITEMS[slot]||[];
   const noneEq=!m.items[slot];                                                   // 이 부위에 아무것도 안 걸쳤는지
   const npv=Object.assign({},m,{items:Object.assign({},m.items,{[slot]:null})});
-  let out=`<div class="dsec">${name}</div>`;                                      // 섹션 제목 (예: 신발 / 가방)
+  let out=hideHeader?'':`<div class="dsec">${name}</div>`;                                      // 섹션 제목 (예: 신발 / 가방)
   out+=tile(npv,null,'없음',noneEq,`data-slot="${slot}" data-id=""`,null);        // '없음'(벗기) 타일
   out+=list.map(it=>{
     const eq=m.items[slot]===it.id;
@@ -5155,7 +5273,7 @@ function allItemsFlat(){
 }
 // 펼친 목록의 아이템 1개 → 올바른 슬롯/악세사리 data를 붙여 타일 생성 (클릭=착용/구매 그대로 동작)
 function flatTile(m,en){
-  const it=en.it, zoom=(en.slot==='cloth_top'||en.slot==='cloth_bottom')?null:'hz';
+  const it=en.it, zoom=(en.slot==='cloth_top'||en.slot==='cloth_bottom'||en.slot==='outer')?null:'hz';
   if(en.slot){
     const eq=m.items[en.slot]===it.id;
     const pv=Object.assign({},m,{items:Object.assign({},m.items,{[en.slot]:it.id})});
@@ -5385,10 +5503,12 @@ function drawItems(){
     $('#dsub').innerHTML=`<div class="dsub">
       <div class="t ${clothTab==='top'?'on':''}" data-t="top">상의</div>
       <div class="t ${clothTab==='bottom'?'on':''}" data-t="bottom">하의</div>
-      <div class="t ${clothTab==='dress'?'on':''}" data-t="dress">원피스</div></div>`;
+      <div class="t ${clothTab==='dress'?'on':''}" data-t="dress">원피스</div>
+      <div class="t ${clothTab==='outer'?'on':''}" data-t="outer">아우터</div></div>`;
     $('#dsub').querySelectorAll('.t').forEach(t=>t.onclick=()=>{clothTab=t.dataset.t;drawItems();});
     if(clothTab==='bottom')      $('#items').innerHTML=slotGrid(m,'cloth_bottom',null); // 하의
     else if(clothTab==='dress')  $('#items').innerHTML=clothGrid(m,true);               // 원피스만
+    else if(clothTab==='outer')  $('#items').innerHTML=slotSection(m,'outer','',true);  // 아우터('없음'=벗기 포함)
     else                         $('#items').innerHTML=clothGrid(m,false);              // 상의만(원피스 제외)
   }
   else if(dressSlot==='shoes'){ $('#items').innerHTML=shoesGrid(m); }
