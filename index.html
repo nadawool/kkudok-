@@ -5484,17 +5484,18 @@ function refreshCartBar(){ // 상점 오른쪽 위 '🛒 장바구니' 버튼에
 function openCart(){
   const m=me(); ensureItems(m);
   const list=cartList(); if(!list.length){closeOv();refreshCartBar();return;}
-  const tot=list.reduce((a,e)=>a+itemCost(e.it),0), have=m.cash||0;
+  const buy=list.filter(e=>!e.off);                                     // '입는 중'인 것만 구매 (벗음은 장바구니에 남음)
+  const tot=buy.reduce((a,e)=>a+itemCost(e.it),0), have=m.cash||0;
   const pv=JSON.parse(JSON.stringify(m)); list.forEach(e=>{if(!e.off)_equipEn(pv,e);});   // 벗은(off) 건 미리보기에서 빼기
-  const parts=list.map(e=>e.bg?(e.it.deco?'deco:'+e.it.id:'bg'):(e.slot||('acc:'+e.accKey))), dup=parts.length!==new Set(parts).size;
+  const parts=buy.map(e=>e.bg?(e.it.deco?'deco:'+e.it.id:'bg'):(e.slot||('acc:'+e.accKey))), dup=parts.length!==new Set(parts).size;
   $('#sheet').innerHTML=`<h3>🛒 장바구니</h3>
     <div class="to-av" style="background:${memberBg(pv,'#FBF8F3')}">${avatarHTML(pv)}</div>
     <div class="hint" style="text-align:center;margin:-4px 0 6px">아이템을 누르면 입었다 벗었다 해볼 수 있어요</div>
     <div>${list.map(e=>`<div class="cart-row ${e.off?'off':''}" data-wear="${e.it.id}"><div class="ct">${e.bg?bgThumbHTML(e.it).replace('class="bgswatch"','class="th"'):useThumb(e.slot,e.accKey)?itemThumb(e.it):avatarStack(Object.assign({},m,{items:Object.assign({},m.items,e.slot?{[e.slot]:e.it.id}:{})}),'hz')}</div>
       <b>${escT(e.it.name)}<small>${e.off?'벗음':'입는 중'}</small></b><span class="ptag"><span class="coin">C</span>${itemCost(e.it)}</span><button class="x" data-rm="${e.it.id}" aria-label="빼기">✕</button></div>`).join('')}</div>
-    ${dup?`<div class="hint" style="margin-top:8px">같은 부위 아이템은 모두 구매되고, 입는 건 마지막에 담은 것이에요</div>`:''}
-    <div class="cart-sum"><span>합계 C ${tot}</span><small>보유 ${have.toLocaleString()}캐시 → ${have>=tot?`구매 후 ${(have-tot).toLocaleString()}캐시`:`<b style="color:#B8321F">${tot-have}캐시 부족</b>`}</small></div>
-    <button class="btn ${have<tot?'ghost':''}" id="cartBuy">${have<tot?`${tot-have}캐시 더 모으면 살 수 있어요`:`${list.length}개 모두 구매하고 입기`}</button>
+    ${dup?`<div class="hint" style="margin-top:8px">같은 부위를 여러 개 입으면 모두 구매되고, 보이는 건 마지막에 담은 것이에요</div>`:''}
+    <div class="cart-sum"><span>입은 것 ${buy.length}개 · C ${tot}</span><small>보유 ${have.toLocaleString()}캐시 → ${have>=tot?`구매 후 ${(have-tot).toLocaleString()}캐시`:`<b style="color:#B8321F">${tot-have}캐시 부족</b>`}</small></div>
+    <button class="btn ${have<tot||!buy.length?'ghost':''}" id="cartBuy">${!buy.length?'입어볼 아이템을 눌러 골라주세요':have<tot?`${tot-have}캐시 더 모으면 살 수 있어요`:`입은 ${buy.length}개 구매하고 입기`}</button>
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="cartClr">비우기</button><button class="btn ghost" id="cartX">닫기</button></div>`;
   openOv();
   $('#sheet').querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();cartSet(CART.filter(c=>c.id!==b.dataset.rm));if(tab==='dress')drawItems();openCart();});
@@ -5502,11 +5503,13 @@ function openCart(){
   $('#cartClr').onclick=()=>{cartSet([]);closeOv();if(tab==='dress')drawItems();};
   $('#cartX').onclick=closeOv;
   $('#cartBuy').onclick=async()=>{
+    if(!buy.length){toast('입을 아이템을 눌러 골라주세요');return;}
     if((m.cash||0)<tot){toast(`캐시가 ${tot-(m.cash||0)} 부족해요 (${tot}캐시 필요)`);return;}
     m.cash=(m.cash||0)-tot; m.items.owned=m.items.owned||[];
-    list.forEach(e=>{if(!m.items.owned.includes(e.it.id))m.items.owned.push(e.it.id);if(!e.off)_equipEn(m,e);}); // 전부 구매, 입은 것만 착용
-    cartSet([]); await save(); closeOv();
-    toast(`${list.length}개 구매 완료! 🎉`); refreshDressPreview();
+    buy.forEach(e=>{if(!m.items.owned.includes(e.it.id))m.items.owned.push(e.it.id);_equipEn(m,e);}); // 입은 것만 구매·착용
+    const ids=buy.map(e=>e.it.id); cartSet(CART.filter(c=>!ids.includes(c.id)));                      // 벗음은 장바구니에 그대로
+    await save(); closeOv();
+    toast(`${buy.length}개 구매 완료! 🎉`); refreshDressPreview();
   };
 }
 /* 잠긴 아이템 캐시 구매: 나이 안 돼도 캐시로 미리 해제 → owned에 넣어 영구 보유.
