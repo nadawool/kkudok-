@@ -46,6 +46,10 @@ input,select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;back
 .msg{background:#fff;border-radius:14px;padding:28px;text-align:center;line-height:1.7;margin-top:40px}
 .save{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:30;box-shadow:0 6px 20px rgba(60,45,30,.25);padding:13px 22px;font-size:15px;border-radius:30px}
 .count{font-size:12.5px;color:var(--soft)}
+.ordbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:12.5px;color:var(--soft)}
+.card[draggable=true]{cursor:grab}
+.card.drop{box-shadow:0 -4px 0 var(--honey)}
+.card .no{font-size:10.5px;font-weight:900;color:#8A4A12;background:var(--honey-s);border-radius:6px;padding:0 5px;margin-right:4px}
 </style>
 </head>
 <body>
@@ -65,6 +69,7 @@ input,select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;back
         <button class="mini" id="selAll">보이는 것 전체 선택</button>
         <button class="mini" id="selNone">선택 해제</button>
       </div>
+      <div class="ordbar" id="ordbar"></div>
       <div class="bulk" id="bulk">
         <b id="bulkN"></b>
         <span>캐시</span><input type="number" id="bC" min="0" style="width:70px"><button class="mini" id="bCgo">적용</button>
@@ -117,7 +122,7 @@ const THUMB_CATS=k=>!['eyes','mouth','hair','acc:beard','acc:freckle'].includes(
 /* ---- 상태: 기본값(def) + 현재값(cur) ---- */
 const DEF={}, CUR={}, ORDER=[];
 ITEM_BASE.forEach(b=>{const it=b.it;
-  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,img:it.img};
+  DEF[it.id]={n:it.name,c:typeof it.cost==='number'?it.cost:0,cat:b.cat,d:it.d||'',h:false,tz:1,tx:0,ty:0,o:null,img:it.img};
   ORDER.push(it.id);});
 let SAVED={};             // 마지막으로 저장된 meta (변경 감지용)
 const sel=new Set();
@@ -125,12 +130,13 @@ const sel=new Set();
 function curFromMeta(meta){
   ORDER.forEach(id=>{const d=DEF[id], o=meta[id]||{};
     CUR[id]={n:(typeof o.n==='string'&&o.n.trim())?o.n.trim():d.n, c:typeof o.c==='number'?o.c:d.c, cat:o.cat||d.cat,
-      d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0};});
+      d:typeof o.d==='string'?o.d:d.d, h:!!o.h, tz:typeof o.tz==='number'?o.tz:1, tx:typeof o.tx==='number'?o.tx:0, ty:typeof o.ty==='number'?o.ty:0,
+      o:typeof o.o==='number'?o.o:null};});
 }
 function metaOf(id){ // 기본값과 다른 것만
   const d=DEF[id], c=CUR[id], o={};
   if(c.n!==d.n)o.n=c.n; if(c.c!==d.c)o.c=c.c; if(c.cat!==d.cat)o.cat=c.cat; if(c.d!==d.d)o.d=c.d; if(c.h)o.h=true;
-  if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty;
+  if(c.tz!==1)o.tz=c.tz; if(c.tx!==0)o.tx=c.tx; if(c.ty!==0)o.ty=c.ty; if(typeof c.o==='number')o.o=c.o;
   return o;
 }
 function buildMeta(){const m={};ORDER.forEach(id=>{const o=metaOf(id);if(Object.keys(o).length)m[id]=o;});return m;}
@@ -171,14 +177,51 @@ function visibleIds(){
     if($('#fChg').checked&&!Object.keys(metaOf(id)).length&&!isChanged(id))return false;
     if($('#fHid').checked&&!c.h)return false;
     return true;})
-  .sort((a,b)=>{const da=CUR[a].d,db=CUR[b].d;return da===db?ORDER.indexOf(a)-ORDER.indexOf(b):(da<db?1:-1);});
+  .sort(appOrder);
+}
+/* 앱(상점)과 같은 진열 순서: 순서(o) 없는 것 = 최신 날짜순으로 맨 위 → 그다음 정한 순서. 전체 보기는 카테고리별로 묶음 */
+const catIdx=k=>CATS.findIndex(c=>c[0]===k);
+function appOrder(a,b){
+  const A=CUR[a],B=CUR[b];
+  if(A.cat!==B.cat)return catIdx(A.cat)-catIdx(B.cat);
+  const oa=typeof A.o==='number', ob=typeof B.o==='number';
+  if(oa!==ob)return oa?1:-1;
+  if(oa)return A.o-B.o||ORDER.indexOf(a)-ORDER.indexOf(b);
+  return A.d===B.d?ORDER.indexOf(a)-ORDER.indexOf(b):(A.d<B.d?1:-1);
+}
+/* ---- 진열 순서 바꾸기 (카테고리를 골랐을 때만) ---- */
+const catList=cat=>ORDER.filter(id=>CUR[id].cat===cat).sort(appOrder);
+function commitOrder(ids){ids.forEach((id,i)=>{CUR[id].o=i+1;});}
+function moveSel(how){
+  const cat=$('#fCat').value; if(!cat)return;
+  let L=catList(cat); const S=L.filter(id=>sel.has(id)); if(!S.length)return toastMsg('옮길 아이템을 체크해주세요');
+  if(how==='top')L=S.concat(L.filter(id=>!sel.has(id)));
+  else if(how==='bottom')L=L.filter(id=>!sel.has(id)).concat(S);
+  else if(how==='up'){for(let i=1;i<L.length;i++)if(sel.has(L[i])&&!sel.has(L[i-1]))[L[i-1],L[i]]=[L[i],L[i-1]];}
+  else if(how==='down'){for(let i=L.length-2;i>=0;i--)if(sel.has(L[i])&&!sel.has(L[i+1]))[L[i],L[i+1]]=[L[i+1],L[i]];}
+  commitOrder(L); render();
+}
+function dropBefore(dragId,targetId){
+  const cat=$('#fCat').value; if(!cat||dragId===targetId)return;
+  const moving=sel.has(dragId)?catList(cat).filter(id=>sel.has(id)):[dragId];
+  if(moving.includes(targetId))return;
+  const rest=catList(cat).filter(id=>!moving.includes(id)), at=rest.indexOf(targetId);
+  rest.splice(at,0,...moving); commitOrder(rest); render();
+}
+function resetOrder(){const cat=$('#fCat').value;if(!cat)return;catList(cat).forEach(id=>{CUR[id].o=null;});render();}
+function ordBarHTML(){
+  const cat=$('#fCat').value;
+  if(!cat)return '↕️ 진열 순서를 바꾸려면 카테고리를 먼저 골라주세요';
+  return `↕️ ${esc(catName(cat))} 진열 순서 · 체크한 것을 <button class="mini" data-mv="top">⤒ 맨 위로</button><button class="mini" data-mv="up">↑ 위로</button><button class="mini" data-mv="down">↓ 아래로</button><button class="mini" data-mv="bottom">⤓ 맨 아래로</button>
+    <button class="mini" id="ordReset">순서 초기화</button><span>· PC에선 카드를 끌어다 놓아도 돼요</span>`;
 }
 let io=null;
 function cardHTML(id){const c=CUR[id];
-  return `<div class="card ${sel.has(id)?'sel':''} ${isChanged(id)?'chg':''} ${c.h?'hid':''}" data-id="${id}">
+  const drag=!!$('#fCat').value&&!$('#fQ').value.trim();
+  return `<div class="card ${sel.has(id)?'sel':''} ${isChanged(id)?'chg':''} ${c.h?'hid':''}" data-id="${id}" ${drag?'draggable="true"':''}>
     <input type="checkbox" class="ck" ${sel.has(id)?'checked':''}>
     <canvas class="th" width="168" height="168" title="눌러서 썸네일 조정"></canvas>
-    <div class="id"><span>${esc(id)}</span><span>${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
+    <div class="id"><span>${$('#fCat').value?`<span class="no">${catList(c.cat).indexOf(id)+1}</span>`:''}${esc(id)}</span><span>${isNew(id)?'<span class="tag">NEW</span>':''}${c.h?' 🙈':''}</span></div>
     <div class="row"><input type="text" data-f="n" value="${esc(c.n)}" placeholder="이름"><input type="number" data-f="c" min="0" value="${c.c}" title="캐시 (0=무료)"></div>
     <div class="row"><select data-f="cat">${catOpts(c.cat)}</select></div>
     <div class="row"><input type="date" data-f="d" value="${esc(c.d)}" title="올린 날짜 (14일간 NEW·신상)"><button class="mini" data-act="hide">${c.h?'보이기':'숨김'}</button><button class="mini" data-act="reset" title="기본값으로">↺</button></div>
@@ -193,6 +236,9 @@ function render(){
   if(io)io.disconnect();
   io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);drawThumb(e.target,e.target.closest('.card').dataset.id);}}),{rootMargin:'300px'});
   $('#main').querySelectorAll('canvas.th').forEach(cv=>io.observe(cv));
+  $('#ordbar').innerHTML=ordBarHTML();
+  $('#ordbar').querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>moveSel(b.dataset.mv));
+  $('#ordReset')&&($('#ordReset').onclick=resetOrder);
   refreshBar();
 }
 function refreshCard(id){const el=$(`.card[data-id="${CSS.escape(id)}"]`);if(!el)return;
@@ -223,6 +269,15 @@ function bindMain(){
     if(act==='reset'){const d=DEF[id];Object.assign(CUR[id],{n:d.n,c:d.c,cat:d.cat,d:d.d,h:false,tz:1,tx:0,ty:0});
       card.querySelectorAll('.tune input').forEach(r=>{r.value=CUR[id][r.dataset.f];r.nextElementSibling.textContent=CUR[id][r.dataset.f].toFixed(2);});refreshCard(id);}
   });
+}
+let _dragId=null;
+function bindDrag(){
+  const M=$('#main');
+  M.addEventListener('dragstart',e=>{const c=e.target.closest&&e.target.closest('.card');if(!c)return;_dragId=c.dataset.id;e.dataTransfer.effectAllowed='move';});
+  M.addEventListener('dragover',e=>{const c=e.target.closest('.card');if(!c||!_dragId)return;e.preventDefault();
+    M.querySelectorAll('.card.drop').forEach(x=>x!==c&&x.classList.remove('drop'));c.classList.add('drop');});
+  M.addEventListener('drop',e=>{const c=e.target.closest('.card');if(!c||!_dragId)return;e.preventDefault();const d=_dragId;_dragId=null;dropBefore(d,c.dataset.id);});
+  M.addEventListener('dragend',()=>{_dragId=null;M.querySelectorAll('.card.drop').forEach(x=>x.classList.remove('drop'));});
 }
 function bulk(fn){sel.forEach(id=>fn(CUR[id]));render();}
 function bindTools(){
@@ -268,7 +323,7 @@ firebase.auth().onAuthStateChanged(async user=>{
     catch(e){showMsg('설정을 불러오지 못했어요.<br>Firestore 규칙에 <b>config</b> 권한을 추가해주세요.<br><small>'+esc(e.message||e)+'</small>');return;}
     SAVED=JSON.parse(JSON.stringify(meta)); curFromMeta(meta);
     $('#tools').style.display=''; $('#save').style.display='';
-    bindTools(); bindMain(); render();
+    bindTools(); bindMain(); bindDrag(); render();
   }catch(e){console.error(e);showMsg('불러오지 못했어요: '+esc(e.message||e));}
 });
 </script>

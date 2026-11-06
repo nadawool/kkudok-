@@ -402,7 +402,7 @@ const ACC_TYPES=[
 ];
 
 /* ---------- 대시보드 덮어쓰기(meta) 적용 ----------
-   meta = { 아이템id: { n:이름, c:캐시, cat:'cloth_top'|'dress'|'outer'|...|'acc:hat', d:'YYYY-MM-DD'(''=신상 해제), h:true(숨김), tz,tx,ty(썸네일 확대·이동) } }
+   meta = { 아이템id: { n:이름, c:캐시, cat:'cloth_top'|'dress'|'outer'|...|'acc:hat', d:'YYYY-MM-DD'(''=신상 해제), h:true(숨김), tz,tx,ty(썸네일 확대·이동), o(진열 순서 1,2,3…) } }
    항상 위의 기본값에서 다시 계산하므로 여러 번 불러도 안전 */
 function _baseCat(slot,it){return slot==='cloth_top'&&(it.dress===true||(it.id||'').startsWith('ops'))?'dress':slot;}
 const ITEM_BASE=(()=>{const all=[];
@@ -418,7 +418,7 @@ function applyItemMeta(meta){
     if(typeof o.c==='number'&&o.c>=0)it.cost=o.c;
     if(typeof o.d==='string'){ if(o.d)it.d=o.d; else delete it.d; }
     if(o.h)it.hidden=true;
-    ['tz','tx','ty'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
+    ['tz','tx','ty','o'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
     let cat=(typeof o.cat==='string'&&o.cat)||b.cat;
     if(cat==='dress'){it.dress=true;cat='cloth_top';}
     else if(cat==='cloth_top'){it.dress=false;}
