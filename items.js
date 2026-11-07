@@ -347,6 +347,13 @@ const ACC_TYPES=[
     {id:'hat_beanie_021',name:'비니21',img:CHARP+'acc/beanie/hat_beanie_021.png',cost:5,d:'2026-11-06'},
     // ▼ 크리스마스 (모자)
     {id:'christmas_004',name:'산타모자',img:CHARP+'acc/beanie/christmas_004.png',cost:35,d:'2026-11-06'},
+    // ▼ 워머모자
+    {id:'warmhat_001',name:'워머모자1',img:CHARP+'acc/warmhat/warmhat_001.png',cost:3,d:'2026-11-07'},
+    {id:'warmhat_002',name:'워머모자2',img:CHARP+'acc/warmhat/warmhat_002.png',cost:3,d:'2026-11-07'},
+    {id:'warmhat_003',name:'워머모자3',img:CHARP+'acc/warmhat/warmhat_003.png',cost:3,d:'2026-11-07'},
+    {id:'warmhat_004',name:'워머모자4',img:CHARP+'acc/warmhat/warmhat_004.png',cost:3,d:'2026-11-07'},
+    {id:'warmhat_005',name:'워머모자5',img:CHARP+'acc/warmhat/warmhat_005.png',cost:3,d:'2026-11-07'},
+    {id:'warmhat_006',name:'워머모자6',img:CHARP+'acc/warmhat/warmhat_006.png',cost:3,d:'2026-11-07'},
   ]},
   // 귀마개 — 모자와 별개 타입이라 비니+귀마개 동시 착용 가능 (모자 위에 그려짐)
   {key:'earmuff',name:'귀마개',items:[
@@ -390,6 +397,8 @@ const ACC_TYPES=[
     {id:'mbti_014',name:'MBTI머리띠14',img:CHARP+'acc/hairacc/mbti_014.png', cost:10},
     {id:'mbti_015',name:'MBTI머리띠15',img:CHARP+'acc/hairacc/mbti_015.png', cost:10},
     {id:'mbti_016',name:'MBTI머리띠16',img:CHARP+'acc/hairacc/mbti_016.png', cost:10}, 
+    // ▼ 크리스마스 (헤어장식)
+    {id:'christmas_hairacc_001',name:'루돌프머리띠',img:CHARP+'acc/hairacc/christmas_hairacc_001.png',cost:5,d:'2026-11-07'},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
   {key:'glasses',name:'안경',items:[
@@ -415,6 +424,16 @@ const ACC_TYPES=[
     {id:'neckwarm_005',name:'목도리5',img:CHARP+'acc/neckwarm/acc_neckwarm_005.png',cost:5,d:'2026-11-06'},
     {id:'neckwarm_006',name:'목도리6',img:CHARP+'acc/neckwarm/acc_neckwarm_006.png',cost:5,d:'2026-11-06'},
     {id:'neckwarm_007',name:'목도리7',img:CHARP+'acc/neckwarm/acc_neckwarm_007.png',cost:5,d:'2026-11-06'},
+  ]},
+  // 양말 — under:true = 몸 바로 위·신발/하의 아래에 그려짐 (상점: 소품 > 신발 탭)
+  {key:'socks',name:'양말',under:true,items:[
+    {id:'socks_001',name:'양말1',img:CHARP+'acc/socks/socks_001.png',cost:1,d:'2026-11-07'},
+    {id:'socks_002',name:'양말2',img:CHARP+'acc/socks/socks_002.png',cost:1,d:'2026-11-07'},
+    {id:'socks_003',name:'양말3',img:CHARP+'acc/socks/socks_003.png',cost:1,d:'2026-11-07'},
+    {id:'socks_004',name:'양말4',img:CHARP+'acc/socks/socks_004.png',cost:1,d:'2026-11-07'},
+    {id:'socks_005',name:'양말5',img:CHARP+'acc/socks/socks_005.png',cost:1,d:'2026-11-07'},
+    {id:'socks_006',name:'양말6',img:CHARP+'acc/socks/socks_006.png',cost:1,d:'2026-11-07'},
+    {id:'socks_007',name:'양말7',img:CHARP+'acc/socks/socks_007.png',cost:1,d:'2026-11-07'},
   ]},
   // 얼굴 추가요소(수염·주근깨) — 악세사리 저장구조를 재사용하되 '얼굴' 탭에서만 노출
   {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'},

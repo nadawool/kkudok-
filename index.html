@@ -1714,11 +1714,12 @@ function _avCompose(key,layers,W){
 function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
   ensureItems(m);
   const layers=[{src:baseImgOf(m)}];
+  ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });   // 양말 등: 신발·하의 아래
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});}
     else layers.push({src:im});
   });
-  ACC_TYPES.forEach(t=>{ accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });
+  ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });
   const cls=`avstack${zoom?' '+zoom:''}`;
   if(!layered&&typeof document!=='undefined'&&window.HTMLCanvasElement){
     const W=zoom==='uz'?420:350, sig=W+'|'+layers.map(l=>l.src+(l.hid?'#'+l.hid:'')).join('|');
@@ -1733,11 +1734,12 @@ function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 
 function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 화면 · 큰 미리보기용
   ensureHairFilters();
   let h=`<img src="${baseImgOf(m)}" alt="">`;
+  ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
     else h+=`<img src="${im}" alt="">`;
   });
-  ACC_TYPES.forEach(t=>{ accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
+  ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
   return h;
 }
 
@@ -4950,7 +4952,7 @@ const PROPS_TABS=[
   {k:'glass',n:'안경', acc:['glasses']},
   {k:'ear',  n:'귀',   acc:['earring','earmuff']},
   {k:'neck', n:'목',   acc:['neck','neckwarm']},
-  {k:'shoes',n:'신발', slot:'shoes'},
+  {k:'shoes',n:'신발', slot:'shoes', acc:['socks']},   // 신발 + 양말
   {k:'bag',  n:'가방', slot:'bag'},
 ];
 function propsAccKeys(g){
@@ -5358,7 +5360,7 @@ function drawItems(){
     $('#dsub').innerHTML=`<div class="dsub">${PROPS_TABS.map(g=>`<div class="t ${propsTab===g.k?'on':''}" data-t="${g.k}">${g.n}</div>`).join('')}</div>`;
     $('#dsub').querySelectorAll('.t').forEach(el=>el.onclick=()=>{propsTab=el.dataset.t;drawItems();});
     const g=PROPS_TABS.find(x=>x.k===propsTab);
-    if(g.slot) $('#items').innerHTML=slotSection(m,g.slot,g.n,true);
+    if(g.slot) $('#items').innerHTML=slotSection(m,g.slot,g.n,!g.acc)+(g.acc||[]).filter(k=>accType(k)).map(k=>accTypeGrid(m,accType(k),false)).join('');
     else { const keys=propsAccKeys(g).filter(k=>accType(k));
       $('#items').innerHTML=keys.map(k=>accTypeGrid(m,accType(k),keys.length===1)).join(''); }
   }
