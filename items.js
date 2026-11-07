@@ -345,6 +345,13 @@ const ACC_TYPES=[
     {id:'hat_beanie_019',name:'비니19',img:CHARP+'acc/beanie/hat_beanie_019.png',cost:5,d:'2026-11-06'},
     {id:'hat_beanie_020',name:'비니20',img:CHARP+'acc/beanie/hat_beanie_020.png',cost:5,d:'2026-11-06'},
     {id:'hat_beanie_021',name:'비니21',img:CHARP+'acc/beanie/hat_beanie_021.png',cost:5,d:'2026-11-06'},
+    // ▼ 방울모자 (파일은 비니 번호 이어서)
+    {id:'hat_beanie_022',name:'방울모자1',img:CHARP+'acc/beanie/hat_beanie_022.png',cost:5,d:'2026-11-07'},
+    {id:'hat_beanie_023',name:'방울모자2',img:CHARP+'acc/beanie/hat_beanie_023.png',cost:5,d:'2026-11-07'},
+    {id:'hat_beanie_024',name:'방울모자3',img:CHARP+'acc/beanie/hat_beanie_024.png',cost:5,d:'2026-11-07'},
+    {id:'hat_beanie_025',name:'방울모자4',img:CHARP+'acc/beanie/hat_beanie_025.png',cost:5,d:'2026-11-07'},
+    {id:'hat_beanie_026',name:'방울모자5',img:CHARP+'acc/beanie/hat_beanie_026.png',cost:5,d:'2026-11-07'},
+    {id:'hat_beanie_027',name:'방울모자6',img:CHARP+'acc/beanie/hat_beanie_027.png',cost:5,d:'2026-11-07'},
     // ▼ 크리스마스 (모자)
     {id:'christmas_004',name:'산타모자',img:CHARP+'acc/beanie/christmas_004.png',cost:35,d:'2026-11-06'},
     // ▼ 워머모자
@@ -360,6 +367,9 @@ const ACC_TYPES=[
     {id:'earmuff_001',name:'귀마개1',img:CHARP+'acc/earmuff/earmuff_001.png',cost:5,d:'2026-11-06'},
     {id:'earmuff_002',name:'귀마개2',img:CHARP+'acc/earmuff/earmuff_002.png',cost:5,d:'2026-11-06'},
     {id:'earmuff_003',name:'귀마개3',img:CHARP+'acc/earmuff/earmuff_003.png',cost:5,d:'2026-11-06'},
+    {id:'earmuff_004',name:'귀마개4',img:CHARP+'acc/earmuff/earmuff_004.png',cost:5,d:'2026-11-07'},
+    {id:'earmuff_005',name:'귀마개5',img:CHARP+'acc/earmuff/earmuff_005.png',cost:5,d:'2026-11-07'},
+    {id:'earmuff_006',name:'귀마개6',img:CHARP+'acc/earmuff/earmuff_006.png',cost:5,d:'2026-11-07'},
   ]},
   {key:'hairacc',name:'헤어장식',items:[
     {id:'hairacc_1',name:'사과머리띠',img:CHARP+'acc/hairacc/hairacc_001.png'},
@@ -400,11 +410,17 @@ const ACC_TYPES=[
     // ▼ 크리스마스 (헤어장식)
     {id:'christmas_hairacc_001',name:'루돌프머리띠',img:CHARP+'acc/hairacc/christmas_hairacc_001.png',cost:5,d:'2026-11-07'},
   ]},
+  // 코(얼굴 탭) — 안경보다 먼저 그려져서 안경 아래에 깔림
+  {key:'nose',name:'코',items:[
+    {id:'christmas_red_nose_001',name:'루돌프코',img:CHARP+'face/christmas_red_nose_001.png',cost:3,d:'2026-11-07'},
+  ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
   {key:'glasses',name:'안경',items:[
     {id:'glass_1',name:'검정 선글라스',img:CHARP+'acc/glass/glass_001.png', cost:3},
     {id:'glass_2',name:'갈색 뿔테',img:CHARP+'acc/glass/glass_002.png', cost:3},
     {id:'glass_3',name:'검정 뿔테',img:CHARP+'acc/glass/glass_003.png', cost:3},
+    // ▼ 크리스마스 (안경)
+    {id:'christmas_glass_001',name:'크리스마스안경',img:CHARP+'acc/glass/christmas_glass_001.png',cost:5,d:'2026-11-07'},
   ]},
   // 귀걸이 — 헤어장식과 별개 타입이라 머리띠와 동시 착용 가능
   {key:'earring',name:'귀걸이',items:[
@@ -434,6 +450,10 @@ const ACC_TYPES=[
     {id:'socks_005',name:'양말5',img:CHARP+'acc/socks/socks_005.png',cost:1,d:'2026-11-07'},
     {id:'socks_006',name:'양말6',img:CHARP+'acc/socks/socks_006.png',cost:1,d:'2026-11-07'},
     {id:'socks_007',name:'양말7',img:CHARP+'acc/socks/socks_007.png',cost:1,d:'2026-11-07'},
+  ]},
+  // 손에 드는 소품 (상점: 소품 > 손 탭)
+  {key:'hand',name:'손',items:[
+    {id:'hand_001',name:'붕어빵',img:CHARP+'acc/hand/hand_001.png',cost:3,d:'2026-11-07'},
   ]},
   // 얼굴 추가요소(수염·주근깨) — 악세사리 저장구조를 재사용하되 '얼굴' 탭에서만 노출
   {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'},

@@ -114,7 +114,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 
 /* ---- 카테고리 목록 ---- */
 const SLOT_NAMES={eyes:'얼굴 · 눈',mouth:'얼굴 · 입',hair:'헤어',cloth_top:'의상 · 상의',dress:'의상 · 원피스',cloth_bottom:'의상 · 하의',outer:'의상 · 아우터',shoes:'소품 · 신발',bag:'소품 · 가방'};
-const FACE_EXTRA=['beard','freckle'];
+const FACE_EXTRA=['beard','freckle','nose'];
 const CATS=[];
 ['cloth_top','dress','cloth_bottom','outer','shoes','bag'].forEach(k=>CATS.push([k,SLOT_NAMES[k]]));
 ACC_TYPES.forEach(t=>{ if(!FACE_EXTRA.includes(t.key)) CATS.push(['acc:'+t.key,'소품 · '+t.name]); });

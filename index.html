@@ -1526,7 +1526,7 @@ const BASE_IMG_M=CHARP+'base_body_m.png';// 남자 base: 상의 탈의(튜브탑
 function baseImgOf(m){return (m&&genderKey(m)==='man')?BASE_IMG_M:BASE_IMG;}
 const AV_AR=0.7;                     // 700x1000
 const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','outer','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 아우터는 상의 위, 가방은 아우터 위, 악세사리는 맨 위)
-const FACE_EXTRA_KEYS=['beard','freckle']; // '얼굴' 탭에 노출하는 acc 타입
+const FACE_EXTRA_KEYS=['beard','freckle','nose']; // '얼굴' 탭에 노출하는 acc 타입
 const DEFAULT_ITEMS={
   man:  {eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_m'},
   woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
@@ -4954,6 +4954,7 @@ const PROPS_TABS=[
   {k:'neck', n:'목',   acc:['neck','neckwarm']},
   {k:'shoes',n:'신발', slot:'shoes', acc:['socks']},   // 신발 + 양말
   {k:'bag',  n:'가방', slot:'bag'},
+  {k:'hand', n:'손',   acc:['hand']},
 ];
 function propsAccKeys(g){
   if(!g.acc)return [];
