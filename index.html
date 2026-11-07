@@ -1520,7 +1520,9 @@ function catBySlot(s){return CATALOG.filter(i=>i.slot===s);}
 function itemById(id){return CATALOG.find(i=>i.id===id);}
 
 /* ---------- PNG layer character system ---------- */
-const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코)
+const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코) — 여자: 흰 튜브탑+검정 반바지
+const BASE_IMG_M=CHARP+'base_body_m.png';// 남자 base: 상의 탈의(튜브탑 없음)+검정 반바지 — 상의를 벗거나 아우터만 입으면 맨몸
+function baseImgOf(m){return (m&&genderKey(m)==='man')?BASE_IMG_M:BASE_IMG;}
 const AV_AR=0.7;                     // 700x1000
 const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','outer','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 아우터는 상의 위, 가방은 아우터 위, 악세사리는 맨 위)
 const FACE_EXTRA_KEYS=['beard','freckle']; // '얼굴' 탭에 노출하는 acc 타입
@@ -1710,7 +1712,7 @@ function _avCompose(key,layers,W){
 }
 function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
   ensureItems(m);
-  const layers=[{src:BASE_IMG}];
+  const layers=[{src:baseImgOf(m)}];
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});}
     else layers.push({src:im});
@@ -1729,7 +1731,7 @@ function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 
 }
 function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 화면 · 큰 미리보기용
   ensureHairFilters();
-  let h=`<img src="${BASE_IMG}" alt="">`;
+  let h=`<img src="${baseImgOf(m)}" alt="">`;
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
     else h+=`<img src="${im}" alt="">`;
