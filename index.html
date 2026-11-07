@@ -82,7 +82,7 @@ input{font-family:inherit}
 .avstack.uz{transform:scale(1.28);transform-origin:50% 42%}  /* 상반신(출첵 프로필) */
 .tinyav .avstack img,.bustav .avstack img{object-position:center top}
 .avatar.avbg{isolation:isolate}
-.avatar .bglayer{position:absolute;left:-56.9%;top:-9.31%;width:213.8%;height:187.1%;z-index:-1;pointer-events:none}
+.avatar .bglayer{position:absolute;left:-46.5%;top:-9.32%;width:192.68%;height:112.28%;z-index:-1;pointer-events:none}
 .hero{overflow:hidden}
 .avatar .base{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center bottom}
 .avatar svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
@@ -1444,7 +1444,7 @@ function bgVal(bg){return bg?(bg.img?'img:'+bg.id:(bg.hex||'')):'';}
 /* 배경 타일 썸네일: 컬러=색 칸 / 이미지=확대(tz)·이동(tx,ty) 반영한 미리보기 (대시보드에서 조정, 아이템 썸네일과 같은 방향) */
 function bgThumbHTML(bg){
   if(!bg||!bg.img)return `<div class="bgswatch" style="background:${bgCss(bgVal(bg))||'#FFFFFF'}"></div>`;
-  const z=bg.tz||1, ar=bg.ar||1.25, w=100*z, h=w*ar;
+  const z=bg.tz||1, ar=bg.ar||(1000/1200), w=100*z, h=w*ar;
   const l=50-(0.5-(bg.tx||0))*w, t=50-(0.5-(bg.ty||0))*h;
   return `<div class="bgswatch" style="background:${bg.base||'#FBF8F3'};position:relative;overflow:hidden"><img src="${bg.img}" alt="" style="position:absolute;width:${w}%;left:${l}%;top:${t}%;max-width:none"></div>`;
 }
@@ -1467,7 +1467,8 @@ function memberBg(m,fb,noDeco){ // CSS background 값: 소품들(위) + 바탕(�
   return layers.concat(base?[base]:[]).join(', ');
 }
 /* 이미지 배경(소품·그림 바탕)은 카드가 아니라 '캐릭터 기준'으로 붙임 → 상점·프로필·입어보기 어디서든 같은 자리.
-   기준: 배경 가이드 1200×1500에서 캐릭터 = (319,75) 크기 561×802 → 캐릭터 상자 대비 비율로 환산 */
+   기준: 배경 가이드 1200×1000(6:5 무대)에서 캐릭터 = (289.6,83) 크기 622.8×890.6 → 캐릭터 상자 대비 비율로 환산
+   (무대 .to-av = 6:5, 캐릭터 폭 51.9%·위 8.3% 와 같은 배치) */
 function bgLayerCss(m){
   const L=decoList(m).slice().reverse().map(id=>`url(${bgById(id).img}) 0 0/100% 100% no-repeat`);
   const bv=baseBgVal(m);
@@ -3981,8 +3982,8 @@ function openMemberProfile(id){
   const role=id===S.ownerId?'<span>👑 모임장</span>':isStaffId(id)?'<span>⭐ 운영진</span>':'';
   const king=isDebateKing(id)?`<span>🗣️ 토론왕 · ${debateCount(id)}회</span>`:'';
   $('#sheet').innerHTML=`
-    <div class="card hero mp-hero" style="background:${memberCardBg(m,'var(--card)')}">
-      ${avatarHTML(m,'',true)}
+    <div class="card hero mp-hero" style="padding:10px 10px 14px">
+      <div class="to-av stage" style="margin-bottom:4px;background:${memberCardBg(m,'#FBF8F3')}">${avatarHTML(m,'',true)}</div>
       <div class="mp-box">
         <div class="nm">${escT(m.name)}${isMine?' <span style="font-size:13px;color:var(--honey-d)">(나)</span>':''}</div>
         <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:6px">
@@ -4962,12 +4963,15 @@ function renderDress(){
   refreshHeader();
   const m=me(); ensureItems(m);
   $('#s-dress').innerHTML=`
-  <div class="card hero" style="position:relative;padding-bottom:14px;background:${memberCardBg(m,'var(--card)')}">
-    <!-- 캐릭터 우측 상단 모서리: 프로필 설정창(이름변경·백업·로그아웃 등)을 여는 ⚙️ -->
-    <button class="dress-gear" id="dressGear" aria-label="설정">⚙️</button>
-    ${avatarHTML(m,'',true)}
+  <div class="card hero" style="position:relative;padding:10px 10px 14px">
+    <!-- 캐릭터 무대(6:5, 입어보기와 같은 비율) — 배경은 이 박스 안에만 깔림 -->
+    <div class="to-av stage" style="margin-bottom:0;background:${memberCardBg(m,'#FBF8F3')}">
+      <!-- 캐릭터 우측 상단 모서리: 프로필 설정창(이름변경·백업·로그아웃 등)을 여는 ⚙️ -->
+      <button class="dress-gear" id="dressGear" aria-label="설정" style="z-index:3">⚙️</button>
+      ${avatarHTML(m,'',true)}
+    </div>
     <!-- 이름~다음생일 묶음을 하얀 카드로 감싸 배경색에 묻히지 않게 함 -->
-    <div style="background:#fff;border-radius:18px;padding:12px 16px 14px;margin:6px 10px 0;box-shadow:0 2px 10px rgba(60,45,30,.08)">
+    <div style="background:#fff;border-radius:18px;padding:12px 16px 4px;margin:4px 0 0">
       <div class="nm">${m.name}</div>
       <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:6px">
         <span class="agebadge" style="margin-top:0">🎂 ${age(m)}살 · 독서 ${readDays(m)}일</span>
@@ -4999,7 +5003,7 @@ function refreshDressPreview(){
   const m=me(); ensureItems(m);
   const hero=host.querySelector('.hero');
   if(hero){
-    hero.style.background=memberCardBg(m,'var(--card)');                              // 배경 변경 반영
+    const stg=hero.querySelector('.stage'); if(stg) stg.style.background=memberCardBg(m,'#FBF8F3');   // 배경 변경 반영(무대만)
     const cc=hero.querySelector('.cashcoin');
     if(cc) cc.innerHTML=`<span class="coin">C</span>${(m.cash||0).toLocaleString()}`; // 구매 후 캐시 반영
     const av=hero.querySelector('.avatar');

@@ -444,7 +444,7 @@ const BGS=[
   {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
   // ▼ 이미지 배경 (1200×1500 · tz/tx/ty = 상점 타일 썸네일 확대·이동)
   //   deco:true = 배경 소품(투명 PNG) → 바탕 위에 여러 개 겹쳐 올림 / 없으면 바탕(하나만, base=로딩·투명 부분 색)
-  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:4,tx:-0.22,ty:0.08,deco:true},
+  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:3.57,tx:-0.2475,ty:-0.23,deco:true},
 ];
 
 
