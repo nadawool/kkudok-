@@ -144,6 +144,23 @@ const ITEMS={
     {id:'wdpants_021', name:'와이드팬츠21', img:CHARP+'cloth/bottom/pants/wdpants_021.png', cost:20},
     {id:'wdpants_022', name:'와이드팬츠22', img:CHARP+'cloth/bottom/pants/wdpants_022.png', cost:30},
     {id:'wdpants_023', name:'와이드팬츠23', img:CHARP+'cloth/bottom/pants/wdpants_023.png', cost:30},
+    // ▼ 레깅스
+    {id:'leggings_001',name:'레깅스1',img:CHARP+'cloth/bottom/pants/leggings_001.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_002',name:'레깅스2',img:CHARP+'cloth/bottom/pants/leggings_002.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_003',name:'레깅스3',img:CHARP+'cloth/bottom/pants/leggings_003.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_004',name:'레깅스4',img:CHARP+'cloth/bottom/pants/leggings_004.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_005',name:'레깅스5',img:CHARP+'cloth/bottom/pants/leggings_005.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_006',name:'레깅스6',img:CHARP+'cloth/bottom/pants/leggings_006.png',cost:3,d:'2026-11-07'},
+    {id:'leggings_007',name:'레깅스7',img:CHARP+'cloth/bottom/pants/leggings_007.png',cost:3,d:'2026-11-07'},
+    // ▼ 코듀로이팬츠
+    {id:'corduroypt_001',name:'코듀로이팬츠1',img:CHARP+'cloth/bottom/pants/corduroypt_001.png',cost:5,d:'2026-11-07'},
+    {id:'corduroypt_002',name:'코듀로이팬츠2',img:CHARP+'cloth/bottom/pants/corduroypt_002.png',cost:5,d:'2026-11-07'},
+    {id:'corduroypt_003',name:'코듀로이팬츠3',img:CHARP+'cloth/bottom/pants/corduroypt_003.png',cost:5,d:'2026-11-07'},
+    // ▼ 조거팬츠
+    {id:'joggerpt_001',name:'조거팬츠1',img:CHARP+'cloth/bottom/pants/joggerpt_001.png',cost:5,d:'2026-11-07'},
+    {id:'joggerpt_002',name:'조거팬츠2',img:CHARP+'cloth/bottom/pants/joggerpt_002.png',cost:5,d:'2026-11-07'},
+    {id:'joggerpt_003',name:'조거팬츠3',img:CHARP+'cloth/bottom/pants/joggerpt_003.png',cost:5,d:'2026-11-07'},
+    {id:'joggerpt_004',name:'조거팬츠4',img:CHARP+'cloth/bottom/pants/joggerpt_004.png',cost:5,d:'2026-11-07'},
     // ▼ 치마
     {id:'skirt_001', name:'치마1', img:CHARP+'cloth/bottom/skirt/skirt_001.png', cost:5},
     {id:'skirt_002', name:'치마2', img:CHARP+'cloth/bottom/skirt/skirt_002.png', cost:5},
