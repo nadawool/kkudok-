@@ -442,9 +442,14 @@ const BGS=[
   {id:'bg_dsky',  hex:'#95C2DA',name:'진하늘', cost:1},
   {id:'bg_green', hex:'#55A67E',name:'그린', cost:1},
   {id:'bg_pink2', hex:'#FFB8B9',name:'핑크', cost:1},
-  // ▼ 이미지 배경 (1200×1500 · tz/tx/ty = 상점 타일 썸네일 확대·이동)
-  //   deco:true = 배경 소품(투명 PNG) → 바탕 위에 여러 개 겹쳐 올림 / 없으면 바탕(하나만, base=로딩·투명 부분 색)
-  {id:'bg_img_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:3.57,tx:-0.2475,ty:-0.23,deco:true},
+  // ▼ 이미지 배경 (1200×1000 · 6:5 무대 · tz/tx/ty = 상점 타일 썸네일 확대·이동)
+  //   deco:true = 배경 소품(투명 PNG) → 바탕 위에 여러 개 겹쳐 올림 / 없으면 그림 바탕(하나만 · 컬러 바탕과 같이 못 씀, base=로딩·투명 부분 색)
+  // ▼ 배경 소품
+  {id:'bg_img_001',img:CHARP+'bg/bg_002.png',base:'#F6EFE4',name:'루돌프',cost:10,d:'2026-11-07',tz:3.65,tx:-0.226,ty:-0.2405,deco:true},   // 파일은 bg_002 (id는 보유 유지용으로 그대로)
+  {id:'bg_tree_001',img:CHARP+'bg/bg_001.png',base:'#F6EFE4',name:'크리스마스 트리',cost:5,d:'2026-11-07',tz:1.75,tx:0.2325,ty:0.0495,deco:true},
+  {id:'bg_snow_001',img:CHARP+'bg/bg_003.png',base:'#AFC9DC',name:'눈',cost:5,d:'2026-11-07',tz:1,tx:0,ty:0,deco:true},
+  // ▼ 그림 바탕
+  {id:'bg_art_001',img:CHARP+'bg/bg_art_001.png',base:'#FBE9D2',name:'크리스마스 거실',cost:5,d:'2026-11-07',tz:1,tx:0,ty:0},
 ];
 
 
