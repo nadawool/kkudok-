@@ -623,6 +623,11 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .itembox .ptag{justify-content:flex-start;padding:0 2px;font-size:11.5px;margin-top:-3px}
 .itembox .ptag .coin{width:14px;height:14px;font-size:9px}
 .itembox{gap:4px}
+.dsave{position:sticky;bottom:10px;z-index:15;display:flex;align-items:center;gap:6px;margin:14px 0 0;padding:8px 8px 8px 16px;background:#232220;color:#fff;border-radius:18px;box-shadow:0 6px 18px rgba(35,34,32,.28)}
+.dsave span{flex:1;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dsave button{flex:none;border:0;border-radius:12px;padding:9px 13px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+.dsv-x{background:transparent;color:#C9C3BA}
+.dsv-ok{background:var(--honey);color:#fff;padding:9px 20px!important}
 .dtool{display:flex;justify-content:flex-end;gap:6px;margin:0 2px 8px}
 .dtool .tb{padding:5px 11px;border-radius:30px;border:1px solid var(--line);background:#fff;font-size:12px;font-weight:800;color:var(--soft);cursor:pointer}
 .dtool .tb.on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -1843,7 +1848,8 @@ let _lastSavedJSON='';
 async function save(){ // persists only the current user's own record
   // 내 기록이 저장될 때마다 앱을 켜둔 모든 사람이 1번씩 읽음 → 바뀐 게 없으면 저장하지 않음
   try{if(S&&S.meId&&S.members[S.meId]){
-    const js=JSON.stringify(S.members[S.meId]);
+    let js=JSON.stringify(S.members[S.meId]);
+    if(DRESS_BASE){const c=JSON.parse(js);applyLook(c,DRESS_BASE);js=JSON.stringify(c);}   // 저장 안 한 꾸미기는 빼고(마지막 저장 모습으로) 저장
     if(js===_lastSavedJSON)return;
     await window.storage.set('member:'+S.meId,js,true);
     _lastSavedJSON=js;
@@ -2995,6 +3001,7 @@ function renderTabs(){
 }
 function go(t){
   if(t==='dress'&&!isMe()){toast('내 캐릭터만 꾸밀 수 있어요');return;}
+  if(tab==='dress'&&t!=='dress'&&dressDirty()){askDressLeave(t);return;}   // 저장 안 한 꾸미기 확인
   tab=t;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('#s-'+t).classList.add('on');renderTabs();
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[t])();
@@ -5001,11 +5008,54 @@ function renderStats(){
 }
 
 /* ---------- DRESS ---------- */
+/* 꾸미기 저장 방식: 아이템을 눌러도 바로 저장하지 않고, 아래 '저장' 버튼을 눌러야 저장
+   DRESS_BASE = 마지막으로 저장된 모습 {items(owned 제외), bg, bgDeco} · 바꾼 게 없으면 null
+   · 그 사이 다른 이유(찜·캐시 등)로 save()가 불려도 모습은 DRESS_BASE 그대로 저장됨
+   · 캐시로 구매(입어보기·장바구니)하면 그때 지금 모습까지 같이 저장 */
+var DRESS_BASE=null;   // var: save()가 위쪽에 있어도 안전
+function _stab(v){return Array.isArray(v)?v.map(_stab):(v&&typeof v==='object')?Object.keys(v).sort().reduce((o,k)=>(o[k]=_stab(v[k]),o),{}):v;}
+function lookOf(m){const it=JSON.parse(JSON.stringify(m.items||{}));delete it.owned;
+  return {items:it,bg:m.bg===undefined?undefined:m.bg,bgDeco:Array.isArray(m.bgDeco)?m.bgDeco.slice():m.bgDeco};}
+function applyLook(m,l){const owned=(m.items&&m.items.owned)||[];
+  m.items=Object.assign(JSON.parse(JSON.stringify(l.items)),{owned});
+  if(l.bg===undefined)delete m.bg; else m.bg=l.bg;
+  if(l.bgDeco===undefined)delete m.bgDeco; else m.bgDeco=Array.isArray(l.bgDeco)?l.bgDeco.slice():l.bgDeco;}
+function _lookKey(l){const it=Object.assign({},l.items);Object.keys(it).forEach(k=>{if(it[k]==null||(Array.isArray(it[k])&&!it[k].length))delete it[k];});
+  if(it.acc){const a=Object.assign({},it.acc);Object.keys(a).forEach(k=>{if(!a[k]||!a[k].length)delete a[k];});it.acc=a;}
+  return JSON.stringify(_stab({items:it,bg:l.bg||null,bgDeco:(l.bgDeco||[])}));}
+function dressBegin(){ if(!DRESS_BASE)DRESS_BASE=lookOf(me()); }                 // 아이템 고르기 직전에 호출 (저장된 모습 기억)
+function dressDirty(){ return !!DRESS_BASE&&_lookKey(DRESS_BASE)!==_lookKey(lookOf(me())); }
+function dressTouched(){ if(!dressDirty())DRESS_BASE=null; refreshDressPreview(); }   // 고른 뒤 호출 (원래대로 돌아오면 저장할 것 없음)
+async function dressCommit(){ DRESS_BASE=null; await save(); }
+function dressRevert(){ if(DRESS_BASE)applyLook(me(),DRESS_BASE); DRESS_BASE=null; }
+function dressSaveBarHTML(){
+  if(!dressDirty())return '';
+  return `<div class="dsave"><span>저장 안 한 변경이 있어요</span><button class="dsv-x" id="dsvX">되돌리기</button><button class="dsv-ok" id="dsvOk">저장</button></div>`;
+}
+function refreshSaveBar(){
+  const el=$('#dsaveWrap'); if(!el)return;
+  el.innerHTML=dressSaveBarHTML();
+  const ok=$('#dsvOk'), x=$('#dsvX');
+  if(ok)ok.onclick=async()=>{ await dressCommit(); toast('저장했어요 ✨'); refreshDressPreview(); };
+  if(x)x.onclick=()=>{ dressRevert(); toast('저장 전으로 되돌렸어요'); refreshDressPreview(); };
+}
+/* 상점에서 저장 안 하고 다른 탭으로 갈 때 물어보기 */
+function askDressLeave(next){
+  $('#sheet').innerHTML=`<h3>저장 안 한 꾸미기가 있어요</h3>
+    <p style="text-align:center;color:var(--soft);font-size:13.5px;line-height:1.6;margin:-4px 4px 16px">저장하지 않으면 바꾼 모습이 사라져요</p>
+    <button class="btn" id="dlSave">저장하고 이동</button>
+    <button class="btn ghost" id="dlDrop" style="margin-top:8px">저장 안 하고 이동</button>
+    <button class="btn ghost" id="dlStay" style="margin-top:8px">계속 꾸미기</button>`;
+  openOv();
+  $('#dlSave').onclick=async()=>{ closeOv(); await dressCommit(); toast('저장했어요 ✨'); go(next); };
+  $('#dlDrop').onclick=()=>{ closeOv(); dressRevert(); go(next); };
+  $('#dlStay').onclick=closeOv;
+}
 let dressSlot='new', clothTab='top', accTab='hairacc', propsTab='head';
 const GIFT_TAB_LABEL='🎁선물';   // 상점 탭 '선물' 카테고리 이름 (바꾸려면 여기만)
-const DCATS2=[['new','신상'],['cloth','의상'],['props','소품'],['face','얼굴'],['hair','헤어'],['bg','배경']]; // 상점 큰 탭(고정 6칸)
+const DCATS2=[['new','신상'],['cloth','의상'],['props','잡화'],['face','얼굴'],['hair','헤어'],['bg','배경']]; // 상점 큰 탭(고정 6칸)
 const DTOOLS=[['my','MY'],['fav','찜'],['gift','선물']];                                               // 오른쪽 위 작은 버튼
-/* 소품 소분류 — 악세사리 타입(ACC_TYPES key)·슬롯을 묶음. 새 악세사리 타입을 만들면 여기 그룹에 key만 추가 (안 넣으면 '머리' 끝에 자동으로 붙음) */
+/* 잡화 소분류 — 악세사리 타입(ACC_TYPES key)·슬롯을 묶음. 새 악세사리 타입을 만들면 여기 그룹에 key만 추가 (안 넣으면 '머리' 끝에 자동으로 붙음) */
 const PROPS_TABS=[
   {k:'head', n:'머리', acc:['hat','hairacc']},
   {k:'glass',n:'안경', acc:['glasses']},
@@ -5049,12 +5099,14 @@ function renderDress(){
   <div class="dtool" id="dtool">${DTOOLS.map(([k,l])=>`<div class="tb ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}<div class="tb cartb2" id="cartTb">🛒 장바구니</div></div>
   <div class="dcat fixed" id="dcat">${DCATS2.map(([k,l])=>`<div class="c ${k===dressSlot?'on':''}" data-s="${k}">${l}</div>`).join('')}</div>
   <div id="dsub"></div>
-  <div class="items" id="items"></div>`;
+  <div class="items" id="items"></div>
+  <div id="dsaveWrap"></div>`;
   if(dressSlot==='shoes'||dressSlot==='acc')dressSlot='props';   // 예전 탭 이름 호환
   $('#dcat').querySelectorAll('.c').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#dtool').querySelectorAll('.tb[data-s]').forEach(c=>c.onclick=()=>{dressSlot=c.dataset.s;renderDress();});
   $('#cartTb').onclick=()=>{if(!cartList().length){toast('장바구니가 비었어요 · 아이템을 눌러 🛒 담기');refreshCartBar();return;}openCart();};
   $('#dressGear').onclick=openProfileSheet; // ⚙️ → 프로필 설정창 열기
+  refreshSaveBar();
   drawItems();
 }
 /* 아이템 착용/구매 시 화면 전체(renderDress)를 다시 그리면 스크롤이 맨 위(캐릭터 미리보기)로 튀어
@@ -5072,6 +5124,7 @@ function refreshDressPreview(){
     if(av) av.outerHTML=avatarHTML(m,'',true);                                  // 미리보기 아바타(+배경 소품)만 교체
   }
   refreshHeader();   // 상단 헤더 캐시 배지
+  refreshSaveBar();  // 저장 바(바꾼 게 있을 때만)
   drawItems();       // 아이템 타일 다시 그리기(체크/미니 미리보기) — 컨테이너 높이 유지로 스크롤 안 튐
 }
 // 아이템 타일 — 썸네일 + 이름 + (안 산 아이템만) 가격. thumb=true면 아이템만 확대한 썸네일, 아니면 캐릭터 미리보기
@@ -5363,13 +5416,14 @@ function bindBgTiles(m){
   $('#items').querySelectorAll('.bgtile[data-bgid]').forEach(el=>el.onclick=async()=>{
     const bg=bgById(el.dataset.bgid); if(!bg)return;
     if(el.classList.contains('locked')||(dressSlot==='fav'&&bg.id!=='bg_none')){ openTryOn({it:bg,bg:true}); return; } // 잠금(또는 찜 탭)=입어보기
+    dressBegin();
     if(bg.deco){
       let a=decoList(m); a=a.includes(bg.id)?a.filter(x=>x!==bg.id):a.concat(bg.id);
       m.bgDeco=a; if(!baseBgVal(m))m.bg=null;
     }else{
       const v=bgVal(bg); if(baseBgVal(m)===v)return; m.bgDeco=decoList(m); m.bg=v||null;
     }
-    await save(); refreshDressPreview();
+    dressTouched();
   });
 }
 function drawItems(){
@@ -5457,7 +5511,7 @@ function drawItems(){
       : `<div class="dempty">아직 구매한 아이템이 없어요 🛍️<br>아이템을 캐시로 구매하면 여기에 모여요</div>`);
     $('#items').querySelectorAll('[data-basic]').forEach(el=>el.onclick=async()=>{
       if(!m.items.cloth_top&&!m.items.cloth_bottom&&!m.items.outer)return;
-      m.items.cloth_top=null;m.items.cloth_bottom=null;m.items.outer=null; await save(); refreshDressPreview();
+      dressBegin(); m.items.cloth_top=null;m.items.cloth_bottom=null;m.items.outer=null; dressTouched();
     });
     $('#items').querySelectorAll('[data-req]').forEach(el=>el.onclick=()=>requestGift(el.dataset.req));
     $('#items').querySelectorAll('[data-phone]').forEach(el=>el.onclick=()=>openPhoneForOrder(el.dataset.phone));
@@ -5475,11 +5529,12 @@ function drawItems(){
     const slot=el.dataset.slot,id=el.dataset.id||null;
     if(id&&(el.classList.contains('locked')||dressSlot==='fav')){ openTryOn({it:pItem(slot,id),slot}); return; } // 잠금(또는 찜 탭)=입어보기 시트
     if(!id&&!m.items[slot])return;
+    dressBegin();
     if(id&&m.items[slot]===id){                          // 입고 있는 걸 한 번 더 누르면 벗기
       if(['eyes','mouth','hair'].includes(slot))return;  // 눈·입·헤어는 항상 착용
-      m.items[slot]=null; await save(); refreshDressPreview(); return;
+      m.items[slot]=null; dressTouched(); return;
     }
-    m.items[slot]=id; await save(); refreshDressPreview();
+    m.items[slot]=id; dressTouched();
   });
   $('#items').querySelectorAll('.item[data-acc]').forEach(el=>el.onclick=async()=>{
     const t=el.dataset.acc,id=el.dataset.id||'';
@@ -5487,18 +5542,19 @@ function drawItems(){
     if(!Array.isArray(m.items.acc[t]))m.items.acc[t]=m.items.acc[t]?[m.items.acc[t]]:[]; // 안전: 배열 보장
     if(!id){ // '없음' 타일 → 이 섹션 벗기
       if(m.items.acc[t].length===0)return;
-      m.items.acc[t]=[]; await save(); refreshDressPreview(); return;
+      dressBegin(); m.items.acc[t]=[]; dressTouched(); return;
     }
     if(el.classList.contains('locked')||dressSlot==='fav'){ openTryOn({it:accItem(t,id),accKey:t}); return; } // 잠금(또는 찜 탭)=입어보기 시트
+    dressBegin();
     const worn=m.items.acc[t];
     if(worn.length===1&&worn[0]===id) m.items.acc[t]=[];   // 같은 걸 다시 누르면 벗기
     else m.items.acc[t]=[id];                               // 섹션당 1개 — 다른 걸 누르면 교체
-    await save(); refreshDressPreview();
+    dressTouched();
   });
   $('#items').querySelectorAll('.hcchip').forEach(el=>el.onclick=async()=>{
     const id=el.dataset.hc||'';
     if((me().items.hairColor||'')===id)return;
-    me().items.hairColor=id||null; await save(); refreshDressPreview();
+    dressBegin(); me().items.hairColor=id||null; dressTouched();
   });
 }
 
@@ -5543,8 +5599,9 @@ function openTryOn(en){
         m.cash=(m.cash||0)-cost;
         m.items.owned=m.items.owned||[]; if(!m.items.owned.includes(it.id))m.items.owned.push(it.id);
       }
-      _equipEn(m,en); if(inCart(it.id))cartSet(CART.filter(c=>c.id!==it.id)); await save(); closeOv();
-      toast(locked?`${it.name} 구매 완료! 🎉`:`${it.name} 착용`); refreshDressPreview();
+      if(!locked){ dressBegin(); _equipEn(m,en); closeOv(); toast(`${it.name} 입었어요 · 저장을 눌러야 저장돼요`); dressTouched(); return; }
+      _equipEn(m,en); if(inCart(it.id))cartSet(CART.filter(c=>c.id!==it.id)); await dressCommit(); closeOv();   // 구매는 바로 저장(지금 모습 포함)
+      toast(`${it.name} 구매 완료! 🎉`); refreshDressPreview();
     };
   };
   draw(); openOv();
@@ -5597,7 +5654,7 @@ function openCart(){
     m.cash=(m.cash||0)-tot; m.items.owned=m.items.owned||[];
     buy.forEach(e=>{if(!m.items.owned.includes(e.it.id))m.items.owned.push(e.it.id);_equipEn(m,e);}); // 입은 것만 구매·착용
     const ids=buy.map(e=>e.it.id); cartSet(CART.filter(c=>!ids.includes(c.id)));                      // 벗음은 장바구니에 그대로
-    await save(); closeOv();
+    await dressCommit(); closeOv();
     toast(`${buy.length}개 구매 완료! 🎉`); refreshDressPreview();
   };
 }
@@ -5616,7 +5673,7 @@ function tryBuyItem(it,equipFn){
       m.items.owned=m.items.owned||[];
       if(!m.items.owned.includes(it.id))m.items.owned.push(it.id);
       if(equipFn)equipFn();        // 구매하자마자 바로 착용
-      await save();
+      await dressCommit();
       toast(`${it.name} 해제 완료! 🎉`);
       refreshDressPreview();
     }
@@ -6183,7 +6240,9 @@ function subscribeRealtime(){
     qs.docChanges().forEach(ch=>{
       const id=ch.doc.id;
       if(ch.type==='removed'){ delete S.members[id]; if(S.viewId===id)S.viewId=S.meId; return; }
-      try{ const mm=ch.doc.data()||{}; if(!mm.id)mm.id=id; if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0]; ensureItems(mm); S.members[mm.id]=mm; }catch(e){}
+      try{ const mm=ch.doc.data()||{}; if(!mm.id)mm.id=id; if(!mm.char||!CH[mm.char])mm.char=CHKEYS[0]; ensureItems(mm);
+        if(mm.id===S.meId&&DRESS_BASE&&S.members[mm.id]){ DRESS_BASE=lookOf(mm); applyLook(mm,lookOf(S.members[mm.id])); }   // 저장 안 한 꾸미기 유지(서버 모습=새 기준)
+        S.members[mm.id]=mm; }catch(e){}
     });
     rerender();
   }, e=>console.warn('participants snapshot',e));

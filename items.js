@@ -506,7 +506,7 @@ const ACC_TYPES=[
     {id:'neckwarm_006',name:'목도리6',img:CHARP+'acc/neckwarm/acc_neckwarm_006.png',cost:5,d:'2026-11-06'},
     {id:'neckwarm_007',name:'목도리7',img:CHARP+'acc/neckwarm/acc_neckwarm_007.png',cost:5,d:'2026-11-06'},
   ]},
-  // 양말 — under:true = 몸 바로 위·신발/하의 아래에 그려짐 (상점: 소품 > 신발 탭)
+  // 양말 — under:true = 몸 바로 위·신발/하의 아래에 그려짐 (상점: 잡화 > 신발 탭)
   {key:'socks',name:'양말',under:true,items:[
     {id:'socks_001',name:'양말1',img:CHARP+'acc/socks/socks_001.png',cost:1,d:'2026-11-07'},
     {id:'socks_002',name:'양말2',img:CHARP+'acc/socks/socks_002.png',cost:1,d:'2026-11-07'},
@@ -516,7 +516,7 @@ const ACC_TYPES=[
     {id:'socks_006',name:'양말6',img:CHARP+'acc/socks/socks_006.png',cost:1,d:'2026-11-07'},
     {id:'socks_007',name:'양말7',img:CHARP+'acc/socks/socks_007.png',cost:1,d:'2026-11-07'},
   ]},
-  // 손에 드는 소품 (상점: 소품 > 손 탭)
+  // 손에 드는 소품 (상점: 잡화 > 손 탭)
   {key:'hand',name:'손',items:[
     {id:'hand_001',name:'붕어빵',img:CHARP+'acc/hand/hand_001.png',cost:3,d:'2026-11-07'},
   ]},
