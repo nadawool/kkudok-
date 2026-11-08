@@ -1521,12 +1521,12 @@ function catBySlot(s){return CATALOG.filter(i=>i.slot===s);}
 function itemById(id){return CATALOG.find(i=>i.id===id);}
 
 /* ---------- PNG layer character system ---------- */
-const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷+코) — 여자: 흰 튜브탑+검정 반바지
+const BASE_IMG=CHARP+'base_body.png';// 공용 base (민머리+옷, 코 없음 — 코는 얼굴>코에서 선택) — 여자: 흰 튜브탑+검정 반바지
 const BASE_IMG_M=CHARP+'base_body_m.png';// 남자 base: 상의 탈의(튜브탑 없음)+검정 반바지 — 상의를 벗거나 아우터만 입으면 맨몸
 function baseImgOf(m){return (m&&genderKey(m)==='man')?BASE_IMG_M:BASE_IMG;}
 const AV_AR=0.7;                     // 700x1000
 const LAYER_ORDER=['shoes','cloth_bottom','cloth_top','outer','bag','eyes','mouth','hair']; // base 위 z-순서 (신발은 하의 위, 아우터는 상의 위, 가방은 아우터 위, 악세사리는 맨 위)
-const FACE_EXTRA_KEYS=['beard','freckle','nose']; // '얼굴' 탭에 노출하는 acc 타입
+const FACE_EXTRA_KEYS=['nose','brow','blush','beard','freckle']; // '얼굴' 탭에 노출하는 acc 타입
 const DEFAULT_ITEMS={
   man:  {eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_m'},
   woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
@@ -1538,7 +1538,9 @@ function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
 // ----- 악세사리 착용 헬퍼 (섹션당 1개, 섹션끼리는 동시 착용) -----
 // m.items.acc[key] 는 '배열'로 저장하되 섹션당 최대 1개만 담는다(0개=안 씀, 1개=착용).
 // 배열로 두는 이유: 예전 단일 문자열 데이터와의 호환 + avatarStack이 배열을 순회해 합성하기 때문.
-function accList(m,key){const a=m.items&&m.items.acc&&m.items.acc[key];return Array.isArray(a)?a:(a?[a]:[]);}
+function accList(m,key){const a=m.items&&m.items.acc&&m.items.acc[key];
+  if(key==='nose'&&a===undefined)return ['nose_round'];   // 코를 한 번도 안 고른 멤버 = 예전 기본 몸처럼 둥근코 (없음 고르면 [] 저장)
+  return Array.isArray(a)?a:(a?[a]:[]);}
 function accHas(m,key,id){return accList(m,key).includes(id);}
 function itemAge(it){return (it&&it.age)||0;}
 /* ----- 신상(NEW) — 아이템에 d:'YYYY-MM-DD'(올린 날짜)를 적으면 목록 맨 위 + NEW_DAYS일 동안 NEW 배지 ----- */

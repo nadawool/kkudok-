@@ -11,6 +11,15 @@ const ITEMS={
     {id:'eyes_calm', name:'스윗',img:CHARP+'eyes/face_eyes02.png'},
     {id:'eyes_3', name:'눈3', img:CHARP+'eyes/face_eyes_03.png'},   // 0살·무료
     {id:'eyes_4', name:'눈4', img:CHARP+'eyes/face_eyes_04.png'},   // 0살·무료
+    // ▼ 신규 눈 (무료)
+    {id:'eyes_5', name:'눈5', img:CHARP+'eyes/face_eyes_05.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_6', name:'눈6', img:CHARP+'eyes/face_eyes_06.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_7', name:'눈7', img:CHARP+'eyes/face_eyes_07.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_8', name:'눈8', img:CHARP+'eyes/face_eyes_08.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_9', name:'눈9', img:CHARP+'eyes/face_eyes_09.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_10', name:'눈10', img:CHARP+'eyes/face_eyes_10.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_11', name:'눈11', img:CHARP+'eyes/face_eyes_11.png',cost:0,d:'2026-11-08'},
+    {id:'eyes_12', name:'눈12', img:CHARP+'eyes/face_eyes_12.png',cost:0,d:'2026-11-08'},
   ],
   mouth:[
     {id:'mouth_basic',name:'기본',img:CHARP+'mouth/base_mouth_01.png'},
@@ -18,6 +27,17 @@ const ITEMS={
     {id:'mouth_grin', name:'활짝',img:CHARP+'mouth/face_mouth02.png'},
     {id:'mouth_3', name:'입3', img:CHARP+'mouth/face_mouth_03.png'}, // 0살·무료
     {id:'mouth_4', name:'입4', img:CHARP+'mouth/face_mouth_04.png'}, // 0살·무료
+    // ▼ 신규 입 (무료)
+    {id:'mouth_5', name:'입5', img:CHARP+'mouth/face_mouth_05.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_6', name:'입6', img:CHARP+'mouth/face_mouth_06.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_7', name:'입7', img:CHARP+'mouth/face_mouth_07.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_8', name:'입8', img:CHARP+'mouth/face_mouth_08.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_9', name:'입9', img:CHARP+'mouth/face_mouth_09.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_10', name:'입10', img:CHARP+'mouth/face_mouth_10.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_11', name:'입11', img:CHARP+'mouth/face_mouth_11.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_12', name:'입12', img:CHARP+'mouth/face_mouth_12.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_13', name:'입13', img:CHARP+'mouth/face_mouth_13.png',cost:0,d:'2026-11-08'},
+    {id:'mouth_14', name:'입14', img:CHARP+'mouth/face_mouth_14.png',cost:0,d:'2026-11-08'},
   ],
   hair:[
     {id:'hair_m',name:'기본(남)', img:CHARP+'hair/hair_010.png'},
@@ -455,7 +475,10 @@ const ACC_TYPES=[
     {id:'christmas_hairacc_001',name:'루돌프머리띠',img:CHARP+'acc/hairacc/christmas_hairacc_001.png',cost:5,d:'2026-11-07'},
   ]},
   // 코(얼굴 탭) — 안경보다 먼저 그려져서 안경 아래에 깔림
+  //   기본 몸(base_body)에서 코를 지움 → 코는 여기서 고름 (없음·둥근코·일자코 / 루돌프코). 한 번도 안 고른 멤버는 둥근코로 보임(index.html accList)
   {key:'nose',name:'코',items:[
+    {id:'nose_round',name:'둥근코',img:CHARP+'face/nose_001.png',cost:0},
+    {id:'nose_line',name:'일자코',img:CHARP+'face/nose_002.png',cost:0,d:'2026-11-08'},
     {id:'christmas_red_nose_001',name:'루돌프코',img:CHARP+'face/christmas_red_nose_001.png',cost:3,d:'2026-11-07'},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
@@ -503,6 +526,15 @@ const ACC_TYPES=[
   {key:'beard',  name:'수염',  items:[{id:'face_etc_001',name:'수염',  img:CHARP+'face/face_etc_001.png'},
     {id:'christmas_item_001',name:'산타수염',img:CHARP+'face/christmas_item_001.png',cost:3,d:'2026-11-07'}]},
   {key:'freckle',name:'주근깨',items:[{id:'face_etc_002',name:'주근깨',img:CHARP+'face/face_etc_002.png'}]},
+  // ▼ 눈썹·볼터치 (무료)
+  {key:'brow',name:'눈썹',items:[
+    {id:'eyebrow_001',name:'눈썹1',img:CHARP+'face/eyebrow_001.png',cost:0,d:'2026-11-08'},
+    {id:'eyebrow_002',name:'눈썹2',img:CHARP+'face/eyebrow_002.png',cost:0,d:'2026-11-08'},
+    {id:'eyebrow_003',name:'눈썹3',img:CHARP+'face/eyebrow_003.png',cost:0,d:'2026-11-08'},
+  ]},
+  {key:'blush',name:'볼터치',items:[
+    {id:'blush_001',name:'볼터치',img:CHARP+'face/blush_001.png',cost:0,d:'2026-11-08'},
+  ]},
 ];
 
 /* ---------- 배경 ----------
