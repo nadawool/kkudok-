@@ -599,6 +599,11 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .item.eq{border-color:var(--honey);box-shadow:0 6px 18px rgba(242,153,74,.22)}
 .item.on{border-color:var(--honey);background:#FFF8F0}
 .item .mini{width:100%;height:100%;position:relative;overflow:hidden;border-radius:11px}
+.inner-sw{grid-column:1/-1;display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:11px 14px;margin:0 0 4px;cursor:pointer}
+.inner-sw div{flex:1;min-width:0}.inner-sw b{display:block;font-size:13.5px;font-weight:800}.inner-sw small{display:block;font-size:11.5px;color:var(--soft);margin-top:2px}
+.inner-sw .tg{flex:none;width:42px;height:25px;border-radius:20px;background:#E3DCD0;position:relative;transition:background .15s}
+.inner-sw .tg i{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.inner-sw.on .tg{background:var(--honey)}.inner-sw.on .tg i{left:20px}
 .dsec{grid-column:1/-1;font-size:12.5px;font-weight:800;color:var(--soft);margin:6px 2px 0;padding-left:2px}
 .item .mini .b{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center}
 .item .mini svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
@@ -1540,6 +1545,12 @@ const DEFAULT_ITEMS={
   woman:{eyes:'eyes_basic',mouth:'mouth_basic',hair:'hair_w'},
 };
 function pItem(slot,id){return (ITEMS[slot]||[]).find(x=>x.id===id);}
+/* 아우터가 안 상의를 가리는지 — 원피스·겹쳐입기 아우터(조끼 등)·'속 상의 보이기' 켠 멤버는 그대로 보임 */
+function topHidden(m){
+  const it=m&&m.items; if(!it||!it.outer||!it.cloth_top||it.showInner)return false;
+  const o=pItem('outer',it.outer), t=pItem('cloth_top',it.cloth_top);
+  return !!(o&&t&&!isDress(t)&&!outerLayers(o));
+}
 function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
 function accType(k){return ACC_TYPES.find(t=>t.key===k);}
 function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
@@ -1772,7 +1783,8 @@ function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 
   ensureItems(m);
   const layers=[{src:baseImgOf(m)}];
   ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });   // 양말 등: 신발·하의 아래
-  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
+  const hideTop=topHidden(m);
+  LAYER_ORDER.forEach(s=>{if(s==='cloth_top'&&hideTop)return;const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});const ear=hairEarOf(im);if(ear)layers.push({src:ear});}
     else layers.push({src:im});
   });
@@ -1792,7 +1804,8 @@ function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 �
   ensureHairFilters();
   let h=`<img src="${baseImgOf(m)}" alt="">`;
   ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
-  LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
+  const hideTop=topHidden(m);
+  LAYER_ORDER.forEach(s=>{if(s==='cloth_top'&&hideTop)return;const im=pItemImg(m,s);if(!im)return;
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;const ear=hairEarOf(im);if(ear)h+=`<img src="${ear}" alt="">`;}
     else h+=`<img src="${im}" alt="">`;
   });
@@ -5461,7 +5474,11 @@ function drawItems(){
     $('#dsub').querySelectorAll('.t').forEach(t=>t.onclick=()=>{clothTab=t.dataset.t;drawItems();});
     if(clothTab==='bottom')      $('#items').innerHTML=slotGrid(m,'cloth_bottom',null); // 하의
     else if(clothTab==='dress')  $('#items').innerHTML=clothGrid(m,true);               // 원피스만
-    else if(clothTab==='outer')  $('#items').innerHTML=slotSection(m,'outer','',true);  // 아우터('없음'=벗기 포함)
+    else if(clothTab==='outer'){ // 아우터('없음'=벗기 포함) + 속 상의 보이기 스위치
+      const on=!!m.items.showInner;
+      $('#items').innerHTML=`<div class="inner-sw ${on?'on':''}" id="innerSw"><div><b>속 상의 보이기</b><small>${on?'아우터 안에 입은 상의가 같이 보여요':'아우터가 상의를 덮어요 · 조끼·원피스는 항상 보여요'}</small></div><span class="tg"><i></i></span></div>`+slotSection(m,'outer','',true);
+      $('#innerSw').onclick=()=>{ dressBegin(); m.items.showInner=!m.items.showInner||null; dressTouched(); };
+    }
     else                         $('#items').innerHTML=clothGrid(m,false);              // 상의만(원피스 제외)
   }
   else if(dressSlot==='new'){

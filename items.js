@@ -569,6 +569,9 @@ const BGS=[
 /* ---------- 대시보드 덮어쓰기(meta) 적용 ----------
    meta = { 아이템id: { n:이름, c:캐시, cat:'cloth_top'|'dress'|'outer'|...|'acc:hat', d:'YYYY-MM-DD'(''=신상 해제), h:true(숨김), tz,tx,ty(썸네일 확대·이동), o(진열 순서 1,2,3…) } }
    항상 위의 기본값에서 다시 계산하므로 여러 번 불러도 안전 */
+/* 아우터 겹쳐입기: true면 안에 입은 상의가 보임(조끼 등) / false면 아우터가 상의를 가림(밑단·소매 삐져나옴 방지)
+   기본값 = id에 'vest'가 있거나 layer:true · 대시보드 '겹쳐입기' 체크(meta.ly)로 바꿀 수 있음. 원피스는 항상 보임 */
+function outerLayers(it){return !!it&&(it.layer===true||(it.layer!==false&&/vest/.test(it.id||'')));}
 function _baseCat(slot,it){return slot==='cloth_top'&&(it.dress===true||(it.id||'').startsWith('ops'))?'dress':slot;}
 const ITEM_BASE=(()=>{const all=[];
   Object.keys(ITEMS).forEach(s=>ITEMS[s].forEach(it=>all.push({it:Object.assign({},it),cat:_baseCat(s,it)})));
@@ -585,6 +588,7 @@ function applyItemMeta(meta){
     if(typeof o.c==='number'&&o.c>=0)it.cost=o.c;
     if(typeof o.d==='string'){ if(o.d)it.d=o.d; else delete it.d; }
     if(o.h)it.hidden=true;
+    if(typeof o.ly==='boolean')it.layer=o.ly;   // 아우터 겹쳐입기
     ['tz','tx','ty','o'].forEach(k=>{if(typeof o[k]==='number')it[k]=o[k];});
     if(b.cat==='bg'){ if(it.img&&typeof o.deco==='boolean')it.deco=o.deco;
       if(typeof o.hex==='string'&&HEX_RE.test(o.hex)&&it.id!=='bg_none'){ if(it.img)it.base=o.hex; else it.hex=o.hex; } BGS.push(it); return; }
