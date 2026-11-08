@@ -623,7 +623,8 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .itembox .ptag{justify-content:flex-start;padding:0 2px;font-size:11.5px;margin-top:-3px}
 .itembox .ptag .coin{width:14px;height:14px;font-size:9px}
 .itembox{gap:4px}
-.dsave{position:sticky;bottom:10px;z-index:15;display:flex;align-items:center;gap:6px;margin:14px 0 0;padding:8px 8px 8px 16px;background:#232220;color:#fff;border-radius:18px;box-shadow:0 6px 18px rgba(35,34,32,.28)}
+#dsaveWrap{position:sticky;bottom:10px;z-index:15}   /* 감싸는 칸이 sticky여야 목록 위로 따라옴 */
+.dsave{display:flex;align-items:center;gap:6px;margin:14px 0 0;padding:8px 8px 8px 16px;background:#232220;color:#fff;border-radius:18px;box-shadow:0 6px 18px rgba(35,34,32,.28)}
 .dsave span{flex:1;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dsave button{flex:none;border:0;border-radius:12px;padding:9px 13px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
 .dsv-x{background:transparent;color:#C9C3BA}
