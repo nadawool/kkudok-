@@ -475,10 +475,7 @@ const ACC_TYPES=[
     {id:'christmas_hairacc_001',name:'루돌프머리띠',img:CHARP+'acc/hairacc/christmas_hairacc_001.png',cost:5,d:'2026-11-07'},
   ]},
   // 코(얼굴 탭) — 안경보다 먼저 그려져서 안경 아래에 깔림
-  //   기본 몸(base_body)에서 코를 지움 → 코는 여기서 고름 (없음·둥근코·일자코 / 루돌프코). 한 번도 안 고른 멤버는 둥근코로 보임(index.html accList)
   {key:'nose',name:'코',items:[
-    {id:'nose_round',name:'둥근코',img:CHARP+'face/nose_001.png',cost:0},
-    {id:'nose_line',name:'일자코',img:CHARP+'face/nose_002.png',cost:0,d:'2026-11-08'},
     {id:'christmas_red_nose_001',name:'루돌프코',img:CHARP+'face/christmas_red_nose_001.png',cost:3,d:'2026-11-07'},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
