@@ -476,6 +476,7 @@ const ACC_TYPES=[
   ]},
   // 코(얼굴 탭) — 안경보다 먼저 그려져서 안경 아래에 깔림
   {key:'nose',name:'코',items:[
+    {id:'nose_line',name:'일자코',img:CHARP+'face/nose_002.png',cost:0,d:'2026-11-08'},   // 기본 둥근코 자리를 살색으로 덮고 일자 선 (원본 nose_002 + 덮개)
     {id:'christmas_red_nose_001',name:'루돌프코',img:CHARP+'face/christmas_red_nose_001.png',cost:3,d:'2026-11-07'},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
