@@ -211,6 +211,8 @@ input{font-family:inherit}
 .mqb-mini{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0 0 14px}
 .mqb-mini span{display:inline-flex;align-items:center;gap:3px;background:var(--honey-s);color:var(--honey-d);font-size:11.5px;font-weight:800;padding:3px 9px 3px 5px;border-radius:20px}
 .mqb-mini .mqa{font-size:12px}
+.mqb-mini span.mqa{padding:0;background:none}
+.mqa.mqm{display:inline-flex;line-height:0}.mqa.mqm svg{width:1.15em;height:1.15em;display:block;filter:drop-shadow(0 1px 1px rgba(120,70,20,.22))}
 /* 홈: 얼굴 둘레 월간 게이지 + 이번 달 출석 현황 */
 .att-ring{position:absolute;left:-5px;top:-5px;width:64px;height:64px;pointer-events:none;z-index:2}
 .att-cnt{font-size:10.5px;font-weight:800;color:var(--soft);margin-top:1px}
@@ -3103,6 +3105,8 @@ const MONTH_GOAL=15;          // 한 달 필수 출석일
 const MQ_START='2026-10';     // 이 달부터 필수 출석 시작 (이전 달은 안내만)
 const MQ_APPLE_ON='<span class="mqa">🍎</span>';          // 채운 칸 / 배지
 const MQ_APPLE_OFF='<span class="mqa off">🍎</span>';      // 빈 칸 (흐리게)
+/* 완주 배지 = 메달 (리본 + 금메달 · 별) — 크기는 .mqa font-size 따라감 */
+const MQ_MEDAL='<span class="mqa mqm"><svg viewBox="0 0 32 32" aria-hidden="true"><polygon points="7,1 13.5,1 18,13 11.5,13" fill="#4E5DB0"/><polygon points="25,1 18.5,1 14,13 20.5,13" fill="#E5533D"/><circle cx="16" cy="21.5" r="9.8" fill="#F7B733" stroke="#E08A1E" stroke-width="1.6"/><circle cx="16" cy="21.5" r="6.8" fill="none" stroke="#FFDB7A" stroke-width="1.2"/><polygon points="16.0,17.3 17.1,20.0 20.0,20.2 17.7,22.1 18.5,24.9 16.0,23.3 13.5,24.9 14.3,22.1 12.0,20.2 14.9,20.0" fill="#FFF6DC"/></svg></span>';
 /* 이번 달 출석 현황 계산 → {ym, mon, got, need, left, state, head, sub} */
 /* 중간 가입자: 1~14일 가입 → 그 달부터 / 15일 이후 가입 → 다음 달부터 (출석·회비 공통) */
 const JOIN_CUTOFF_DAY=14;
@@ -3160,7 +3164,7 @@ function monthBadgesCardHTML(m){
   return `<div class="card">
     <div class="sec-t">🏅 완주 배지${list.length?` · ${list.length}개`:''}</div>
     ${list.length
-      ?`<div class="mqb-grid">${list.map(ym=>`<div class="mqb ${ym===cur?'new':''}"><div class="mqb-d">${MQ_APPLE_ON}</div><div class="mqb-l">${badgeLabel(ym)}</div></div>`).join('')}</div>`
+      ?`<div class="mqb-grid">${list.map(ym=>`<div class="mqb ${ym===cur?'new':''}"><div class="mqb-d">${MQ_MEDAL}</div><div class="mqb-l">${badgeLabel(ym)}</div></div>`).join('')}</div>`
       :`<div class="mqb-empty">한 달에 ${MONTH_GOAL}일 출석을 채우면 배지가 생겨요</div>`}
   </div>`;
 }
@@ -3168,7 +3172,7 @@ function monthBadgesCardHTML(m){
 function monthBadgesMiniHTML(m){
   const list=monthBadges(m); if(!list.length)return '';
   const more=list.length-6;
-  return `<div class="mqb-mini">${list.slice(0,6).map(ym=>`<span>${MQ_APPLE_ON}${badgeLabel(ym)} 완주</span>`).join('')}${more>0?`<span>+${more}</span>`:''}</div>`;
+  return `<div class="mqb-mini">${list.slice(0,6).map(ym=>`<span>${MQ_MEDAL}${badgeLabel(ym)} 완주</span>`).join('')}${more>0?`<span>+${more}</span>`:''}</div>`;
 }
 /* 이번 달 15일을 막 채웠으면 보상 지급 (달마다 한 번) → 지급한 달(ym) 반환, 아니면 null */
 function grantMonthReward(m){
@@ -3189,7 +3193,7 @@ function grantMonthBonus(m){
 function openMonthDoneSheet(ym){
   const mo=+ym.slice(5);
   $('#sheet').innerHTML=`<div class="mqw">
-    <div class="mqw-medal">${MQ_APPLE_ON}<b>${mo}월 완주</b></div>
+    <div class="mqw-medal">${MQ_MEDAL}<b>${mo}월 완주</b></div>
     <h3>${MONTH_GOAL}일 출석 달성!</h3>
     <p>${mo}월 필수 출석을 다 채웠어요.<br>남은 날 도장은 보너스로 쌓여요.</p>
     ${MQ_REWARD>0?`<div class="gift">🎁 완주 선물 +${MQ_REWARD}캐시</div>`:''}
