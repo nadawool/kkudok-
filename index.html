@@ -1555,7 +1555,7 @@ function topHidden(m){
 /* '속 상의 보이기' 스위치 — 입어보기·장바구니 창에서만, 아우터가 상의를 덮는 경우에만 보임 */
 function needInnerSw(pv){const it=pv&&pv.items; if(!it)return false;
   const o=pItem('outer',it.outer), t=pItem('cloth_top',it.cloth_top); return !!(o&&t&&!isDress(t)&&!outerLayers(o));}
-function innerSwHTML(on){return `<div class="inner-sw sheet-sw ${on?'on':''}" id="innerSw"><div><b>속 상의 보이기</b><small>${on?'아우터 안에 입은 상의가 같이 보여요':'아우터가 상의를 덮어요'}</small></div><span class="tg"><i></i></span></div>`;}
+function innerSwHTML(on){return `<div class="inner-sw sheet-sw ${on?'on':''}" id="innerSw"><div><b>속 상의 보이기</b><small>${on?'아우터 안에 입은 상의가 같이 보여요':'속 상의를 가려요'}</small></div><span class="tg"><i></i></span></div>`;}
 function pItemImg(m,slot){const it=pItem(slot,m.items&&m.items[slot]);return it?it.img:null;}
 function accType(k){return ACC_TYPES.find(t=>t.key===k);}
 function accItem(k,id){const t=accType(k);return t&&t.items.find(x=>x.id===id);}
@@ -5472,10 +5472,10 @@ function drawItems(){
   else if(dressSlot==='face'){ $('#items').innerHTML=`<div class="dsec">눈</div>${slotGrid(m,'eyes','hz')}<div class="dsec">입</div>${slotGrid(m,'mouth','hz')}${faceExtraGrid(m)}`; }
   else if(dressSlot==='cloth'){
     $('#dsub').innerHTML=`<div class="dsub">
+      <div class="t ${clothTab==='outer'?'on':''}" data-t="outer">아우터</div>
       <div class="t ${clothTab==='top'?'on':''}" data-t="top">상의</div>
       <div class="t ${clothTab==='bottom'?'on':''}" data-t="bottom">하의</div>
-      <div class="t ${clothTab==='dress'?'on':''}" data-t="dress">원피스</div>
-      <div class="t ${clothTab==='outer'?'on':''}" data-t="outer">아우터</div></div>`;
+      <div class="t ${clothTab==='dress'?'on':''}" data-t="dress">원피스</div></div>`;
     $('#dsub').querySelectorAll('.t').forEach(t=>t.onclick=()=>{clothTab=t.dataset.t;drawItems();});
     if(clothTab==='bottom')      $('#items').innerHTML=slotGrid(m,'cloth_bottom',null); // 하의
     else if(clothTab==='dress')  $('#items').innerHTML=clothGrid(m,true);               // 원피스만
@@ -5613,7 +5613,9 @@ function openTryOn(en){
     $('#toFav').onclick=async()=>{toggleFav(it.id);await save();draw();if(tab==='dress'&&dressSlot==='fav')drawItems();};
     $('#toCart')&&($('#toCart').onclick=()=>{
       if(inCart(it.id)){cartSet(CART.filter(c=>c.id!==it.id));toast('장바구니에서 뺐어요');}
-      else{cartSet(CART.concat({id:it.id,slot:en.slot,accKey:en.accKey,bg:!!en.bg}));toast(`장바구니에 담았어요 (${CART.length}개)`);}
+      else{const nc={id:it.id,slot:en.slot,accKey:en.accKey,bg:!!en.bg}, part=cartPart(nc);
+        cartSet(CART.map(c=>cartPart(c)===part?Object.assign({},c,{off:true}):c).concat(nc));   // 새로 담은 걸 입히고 같은 부위 다른 건 벗김
+        toast(`장바구니에 담았어요 (${CART.length}개)`);}
       closeOv(); if(tab==='dress')drawItems();
     });
     $('#toGo').onclick=async()=>{
@@ -5633,7 +5635,8 @@ function openTryOn(en){
 /* 🛒 장바구니 — 여러 아이템을 담아서 한 번에 구매
    · 이 기기에 저장(localStorage, 멤버별) → 앱을 다시 열어도 직접 빼거나 사기 전까지 그대로
    · CART = [{id, slot|accKey|bg, off}] · off=true면 장바구니 미리보기에서 벗은 상태 */
-let CART=[], _cartFor=null, CART_INNER=null;   // CART_INNER: 장바구니 창의 '속 상의 보이기' (null=지금 내 설정)
+let CART=[], _cartFor=null, CART_INNER=null;
+function cartPart(c){return c.bg?(bgById(c.id)&&bgById(c.id).deco?'deco:'+c.id:'bg'):(c.slot||('acc:'+c.accKey));}   // 같은 부위 판별   // CART_INNER: 장바구니 창의 '속 상의 보이기' (null=지금 내 설정)
 const cartKey=()=>'kkudok::cart::'+(S&&S.meId||'');
 function cartLoad(){ if(!S||!S.meId||_cartFor===S.meId)return; _cartFor=S.meId;
   try{const a=JSON.parse(localStorage.getItem(cartKey())||'[]');CART=Array.isArray(a)?a:[];}catch(e){CART=[];} }
@@ -5671,7 +5674,12 @@ function openCart(){
     <div class="btnrow" style="margin-top:8px"><button class="btn ghost" id="cartClr">비우기</button><button class="btn ghost" id="cartX">닫기</button></div>`;
   openOv();
   $('#sheet').querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();cartSet(CART.filter(c=>c.id!==b.dataset.rm));if(tab==='dress')drawItems();openCart();});
-  $('#sheet').querySelectorAll('[data-wear]').forEach(r=>r.onclick=()=>{cartSet(CART.map(c=>c.id===r.dataset.wear?Object.assign({},c,{off:!c.off}):c));openCart();});
+  // 입었다/벗었다 — 같은 부위(아우터·상의·모자 등)는 한 번에 1개만: 하나를 입으면 같은 부위 다른 건 자동으로 벗음 (배경 소품은 겹치기라 제외)
+  $('#sheet').querySelectorAll('[data-wear]').forEach(r=>r.onclick=()=>{
+    const cur=CART.find(c=>c.id===r.dataset.wear); if(!cur)return;
+    const wearing=!!cur.off, part=cartPart(cur);   // off였으면 이제 입는 것
+    cartSet(CART.map(c=>c.id===cur.id?Object.assign({},c,{off:!c.off}):(wearing&&cartPart(c)===part?Object.assign({},c,{off:true}):c)));
+    openCart();});
   $('#innerSw')&&($('#innerSw').onclick=()=>{CART_INNER=!inner;openCart();});
   $('#cartClr').onclick=()=>{cartSet([]);CART_INNER=null;closeOv();if(tab==='dress')drawItems();};
   $('#cartX').onclick=()=>{CART_INNER=null;closeOv();};
