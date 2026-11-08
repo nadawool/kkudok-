@@ -480,7 +480,7 @@ const ACC_TYPES=[
     {id:'christmas_red_nose_001',name:'루돌프코',img:CHARP+'face/christmas_red_nose_001.png',cost:3,d:'2026-11-07'},
   ]},
   // 안경 — 헤어장식과 별개 타입이라 머리띠·헤드셋과 동시 착용 가능
-  {key:'glasses',name:'안경',items:[
+  {key:'glasses',name:'안경',over:true,items:[   // over:true = 눈썹·볼터치 등 다른 악세사리보다 위에 그림 (선글라스가 눈썹을 덮게)
     {id:'glass_1',name:'검정 선글라스',img:CHARP+'acc/glass/glass_001.png', cost:3},
     {id:'glass_2',name:'갈색 뿔테',img:CHARP+'acc/glass/glass_002.png', cost:3},
     {id:'glass_3',name:'검정 뿔테',img:CHARP+'acc/glass/glass_003.png', cost:3},

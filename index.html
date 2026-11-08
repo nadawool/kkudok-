@@ -1793,7 +1793,7 @@ function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});const ear=hairEarOf(im);if(ear)layers.push({src:ear});}
     else layers.push({src:im});
   });
-  ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });
+  [false,true].forEach(ov=>ACC_TYPES.forEach(t=>{ if(!t.under&&!!t.over===ov)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); }));   // over 타입(안경)은 맨 위
   const cls=`avstack${zoom?' '+zoom:''}`;
   if(!layered&&typeof document!=='undefined'&&window.HTMLCanvasElement){
     const W=zoom==='uz'?420:350, sig=W+'|'+layers.map(l=>l.src+(l.hid?'#'+l.hid:'')).join('|');
@@ -1814,7 +1814,7 @@ function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 �
     if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;const ear=hairEarOf(im);if(ear)h+=`<img src="${ear}" alt="">`;}
     else h+=`<img src="${im}" alt="">`;
   });
-  ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
+  [false,true].forEach(ov=>ACC_TYPES.forEach(t=>{ if(!t.under&&!!t.over===ov)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); }));
   return h;
 }
 
