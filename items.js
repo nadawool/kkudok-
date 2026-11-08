@@ -34,6 +34,10 @@ const ITEMS={
     {id:'hair_11',name:'빵빵이',img:CHARP+'hair/hair_011.png', cost:5},
     {id:'hair_12',name:'재영님그라데이션(갈색)',img:CHARP+'hair/hair_012.png', cost:5},
     {id:'hair_13',name:'재영님그라데이션(노란)',img:CHARP+'hair/hair_013.png', cost:5},
+    // ▼ 신규 헤어
+    {id:'hair_14',name:'양갈래땋은머리',img:CHARP+'hair/hair_014.png',cost:3,d:'2026-11-08'},
+    {id:'hair_15',name:'웨이브긴머리',img:CHARP+'hair/hair_015.png',cost:3,d:'2026-11-08'},
+    {id:'hair_16',name:'가르마숏컷',img:CHARP+'hair/hair_016.png',cost:3,d:'2026-11-08'},
   ],
   cloth_top:[
     {id:'top_1', name:'상의1', img:CHARP+'cloth/top/top_001.png'},
