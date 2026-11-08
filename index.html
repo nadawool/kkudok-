@@ -1674,12 +1674,12 @@ function markWrite(kind){   // 반환: 받은 캐시 (0·1·2)
   m.cashLog[key]=t;
   let got=1;
   // 주간 첫 문장 공유 보너스 +1 (월~일 기준 그 주에 처음 문장을 공유하면) — 2026-11-09~
-  if(kind==='quote'&&t>=CASH_V2_START){const wk=weekKey(t); if(m.cashLog.quoteWeek!==wk){m.cashLog.quoteWeek=wk; got+=QUOTE_WEEK_BONUS;}}
+  if(QUOTE_WEEK_BONUS>0&&kind==='quote'&&t>=CASH_V2_START){const wk=weekKey(t); if(m.cashLog.quoteWeek!==wk){m.cashLog.quoteWeek=wk; got+=QUOTE_WEEK_BONUS;}}
   got=Math.min(got,room);
   m.cash=(m.cash||0)+got; m.cashLog.writeAmt=(m.cashLog.writeAmt||0)+got;
   return got;
 }
-const QUOTE_WEEK_BONUS=1;
+const QUOTE_WEEK_BONUS=0;   // 주간 첫 문장 보너스 (0 = 끔)
 function weekKey(iso){const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()-((d.getDay()+6)%7)); return ymdLocal(d);}   // 그 주 월요일 날짜
 function earnDaily(m,key,amount){
   ensureItems(m);                          // m.cashLog 보장
@@ -2613,7 +2613,7 @@ function renderFeed(){
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
   <!-- 캐시 적립 안내: 출첵·댓글·좋아요는 각각 하루 1번 +1캐시 (글 작성은 출첵 조건이라 캐시 없음) -->
-  <div class="fd-cashtip">🎁 문장 공유 +1 · 책 추천 +1 (하루 최대 2) · 이번 주 첫 문장 +1 더 · 좋아요 +1 💰</div>
+  <div class="fd-cashtip">🎁 문장 공유 +1 · 책 추천 +1 · 좋아요 +1 · 하루 1번씩 💰</div>
   <div class="fd-search">
     <span class="fd-search-ic">🔍</span>
     <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
@@ -2984,7 +2984,7 @@ async function submitPost(){
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
   // 글쓰기 캐시: 문장 공유·책 추천 합쳐서 하루 1번 +1
   const got=markWrite('quote'); if(got)await save();
-  closeOv();toast(got>1?`문장을 공유했어요 ✨ +${got}캐시 💰 (이번 주 첫 공유 보너스!)`:got?'문장을 공유했어요 ✨ +1캐시 💰':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
+  closeOv();toast(got?'문장을 공유했어요 ✨ +1캐시 💰':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
 }
 function renderTabs(){
   $('#tabs').innerHTML=TABMETA.map(([k,l,d])=>
