@@ -1711,12 +1711,14 @@ function _avCompose(key,layers,W){
       el.innerHTML=`<img src="${url}" alt="" decoding="async">`;el.removeAttribute('data-avk');});
   }).catch(()=>_avCache.set(key,false));
 }
+// 헤어 이미지에 살색 귀가 같이 그려진 경우(ear:true) → 귀만 뽑은 *_ear.png를 염색 필터 없이 위에 덮음 (염색 시 귀가 머리색으로 물드는 것 방지)
+function hairEarOf(im){const it=(ITEMS.hair||[]).find(x=>x.img===im&&x.ear);return it?im.replace(/\.png$/,'_ear.png'):'';}
 function avatarStack(m,zoom,layered){ // base → 하의 → 상의 → 눈 → 입 → 헤어 → 악세사리
   ensureItems(m);
   const layers=[{src:baseImgOf(m)}];
   ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });   // 양말 등: 신발·하의 아래
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
-    if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});}
+    if(s==='hair'){const hc=hairColorById(m.items.hairColor);layers.push({src:im,hex:hc.id?hc.hex:'',hid:hc.id});const ear=hairEarOf(im);if(ear)layers.push({src:ear});}
     else layers.push({src:im});
   });
   ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)layers.push({src:it.img});}); });
@@ -1736,7 +1738,7 @@ function _avLayers(m){   // 예전 방식(겹쳐 그리기) — 합성 전 첫 �
   let h=`<img src="${baseImgOf(m)}" alt="">`;
   ACC_TYPES.forEach(t=>{ if(t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
   LAYER_ORDER.forEach(s=>{const im=pItemImg(m,s);if(!im)return;
-    if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;}
+    if(s==='hair'){const hc=hairColorById(m.items.hairColor);h+=`<img src="${im}" alt=""${hc.id?` style="filter:url(#hairFx_${hc.id})"`:''}>`;const ear=hairEarOf(im);if(ear)h+=`<img src="${ear}" alt="">`;}
     else h+=`<img src="${im}" alt="">`;
   });
   ACC_TYPES.forEach(t=>{ if(!t.under)accList(m,t.key).forEach(id=>{const it=accItem(t.key,id);if(it)h+=`<img src="${it.img}" alt="">`;}); });
