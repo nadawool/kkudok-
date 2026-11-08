@@ -1663,11 +1663,16 @@ function markSocial(kind){
   return true;
 }
 /* 글쓰기(하나로 합침): 오늘 문장 공유 또는 책 추천 → +1캐시 (하루 1번) */
-function markWrite(){
+function markWrite(kind){   // 반환: 받은 캐시 (0·1·2)
   const m=me(); ensureItems(m);
-  if(isNewbieMonth(m))return false;
-  return earnDaily(m,'post',1);
+  if(isNewbieMonth(m))return 0;
+  if(!earnDaily(m,'post',1))return 0;
+  // 주간 첫 문장 공유 보너스 +1 (월~일 기준 주에 처음 문장을 공유하면) — 2026-11-09~
+  if(kind==='quote'&&todayISO()>=CASH_V2_START){const wk=weekKey(todayISO()); if(m.cashLog.quoteWeek!==wk){m.cashLog.quoteWeek=wk; m.cash=(m.cash||0)+QUOTE_WEEK_BONUS; return 1+QUOTE_WEEK_BONUS;}}
+  return 1;
 }
+const QUOTE_WEEK_BONUS=1;
+function weekKey(iso){const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()-((d.getDay()+6)%7)); return ymdLocal(d);}   // 그 주 월요일 날짜
 function earnDaily(m,key,amount){
   ensureItems(m);                          // m.cashLog 보장
   const today=todayISO();
@@ -2600,7 +2605,7 @@ function renderFeed(){
     <button class="fd-plus" id="fdPlus">+</button>
   </div>
   <!-- 캐시 적립 안내: 출첵·댓글·좋아요는 각각 하루 1번 +1캐시 (글 작성은 출첵 조건이라 캐시 없음) -->
-  <div class="fd-cashtip">🎁 글쓰기(문장·책 추천) +1 · 좋아요+댓글 둘 다 +1 · 하루 1번씩 💰</div>
+  <div class="fd-cashtip">🎁 글쓰기(문장·책 추천) +1 · 이번 주 첫 문장 +1 더 · 좋아요+댓글 둘 다 +1 💰</div>
   <div class="fd-search">
     <span class="fd-search-ic">🔍</span>
     <input id="fdSearch" class="fd-search-inp" type="text" placeholder="작성자·글·책 검색" value="${escT(feedSearch).replace(/"/g,'&quot;')}" autocomplete="off">
@@ -2879,8 +2884,8 @@ async function submitRec(){
     createdAt:Date.now(),likes:[],saves:[],comments:[]};
   S.posts=S.posts||[]; S.posts.push(post);
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
-  const got=markWrite(); if(got)await save();
-  _recBookId=null; closeOv(); toast(got?'책을 추천했어요 📚 +1캐시 💰':'책을 추천했어요 📚');
+  const got=markWrite('rec'); if(got)await save();
+  _recBookId=null; closeOv(); toast(got?`책을 추천했어요 📚 +${got}캐시 💰`:'책을 추천했어요 📚');
   feedSavedOnly=false; feedSort='recent'; renderFeed();
 }
 // 추천글 수정 — 책·별점은 원본 그대로 두고 '추천 한마디'만 고침
@@ -2970,8 +2975,8 @@ async function submitPost(){
   S.posts=S.posts||[];S.posts.push(post);
   try{await window.storage.set('post:'+post.id,JSON.stringify(post),true);}catch(e){}
   // 글쓰기 캐시: 문장 공유·책 추천 합쳐서 하루 1번 +1
-  const got=markWrite(); if(got)await save();
-  closeOv();toast(got?'문장을 공유했어요 ✨ +1캐시 💰':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
+  const got=markWrite('quote'); if(got)await save();
+  closeOv();toast(got>1?`문장을 공유했어요 ✨ +${got}캐시 💰 (이번 주 첫 공유 보너스!)`:got?'문장을 공유했어요 ✨ +1캐시 💰':'문장을 공유했어요 ✨');feedSavedOnly=false;feedSort='recent';renderFeed();
 }
 function renderTabs(){
   $('#tabs').innerHTML=TABMETA.map(([k,l,d])=>
