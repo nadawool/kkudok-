@@ -93,6 +93,31 @@ const ITEMS={
     {id:'ops_3', name:'재영님꽃ops(핑크)',img:CHARP+'cloth/ops/ops_003.png',cost:10},
     {id:'ops_4',name:'재영님꽃ops(블루)',img:CHARP+'cloth/ops/ops_004.png',cost:10},
     {id:'ops_5',name:'재영님꽃ops(노란)',img:CHARP+'cloth/ops/ops_005.png',cost:10},
+    // ▼ 멜빵원피스
+    {id:'ops_suspender_001',name:'멜빵원피스1',img:CHARP+'cloth/ops/ops_suspender_001.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_002',name:'멜빵원피스2',img:CHARP+'cloth/ops/ops_suspender_002.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_003',name:'멜빵원피스3',img:CHARP+'cloth/ops/ops_suspender_003.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_004',name:'멜빵원피스4',img:CHARP+'cloth/ops/ops_suspender_004.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_005',name:'멜빵원피스5',img:CHARP+'cloth/ops/ops_suspender_005.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_006',name:'멜빵원피스6',img:CHARP+'cloth/ops/ops_suspender_006.png',cost:5,d:'2026-11-08'},
+    {id:'ops_suspender_007',name:'멜빵원피스7',img:CHARP+'cloth/ops/ops_suspender_007.png',cost:5,d:'2026-11-08'},
+    // ▼ 나시원피스
+    {id:'ops_sleeveless_001',name:'나시원피스1',img:CHARP+'cloth/ops/ops_sleeveless_001.png',cost:3,d:'2026-11-08'},
+    {id:'ops_sleeveless_002',name:'나시원피스2',img:CHARP+'cloth/ops/ops_sleeveless_002.png',cost:3,d:'2026-11-08'},
+    {id:'ops_sleeveless_003',name:'나시원피스3',img:CHARP+'cloth/ops/ops_sleeveless_003.png',cost:3,d:'2026-11-08'},
+    {id:'ops_sleeveless_004',name:'나시원피스4',img:CHARP+'cloth/ops/ops_sleeveless_004.png',cost:3,d:'2026-11-08'},
+    {id:'ops_sleeveless_005',name:'나시원피스5',img:CHARP+'cloth/ops/ops_sleeveless_005.png',cost:3,d:'2026-11-08'},
+    // ▼ 긴팔원피스
+    {id:'ops_longsleeve_001',name:'긴팔원피스1',img:CHARP+'cloth/ops/ops_longsleeve_001.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_002',name:'긴팔원피스2',img:CHARP+'cloth/ops/ops_longsleeve_002.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_003',name:'긴팔원피스3',img:CHARP+'cloth/ops/ops_longsleeve_003.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_004',name:'긴팔원피스4',img:CHARP+'cloth/ops/ops_longsleeve_004.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_005',name:'긴팔원피스5',img:CHARP+'cloth/ops/ops_longsleeve_005.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_006',name:'긴팔원피스6',img:CHARP+'cloth/ops/ops_longsleeve_006.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_007',name:'긴팔원피스7',img:CHARP+'cloth/ops/ops_longsleeve_007.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_008',name:'긴팔원피스8',img:CHARP+'cloth/ops/ops_longsleeve_008.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_009',name:'긴팔원피스9',img:CHARP+'cloth/ops/ops_longsleeve_009.png',cost:1,d:'2026-11-08'},
+    {id:'ops_longsleeve_010',name:'긴팔원피스10',img:CHARP+'cloth/ops/ops_longsleeve_010.png',cost:1,d:'2026-11-08'},
     // ▼ 크리스마스 (상의)
     {id:'christmas_001',name:'산타상의1',img:CHARP+'cloth/top/christmas_001.png',cost:35,d:'2026-11-06'},
     {id:'christmas_002',name:'산타상의2',img:CHARP+'cloth/top/christmas_002.png',cost:35,d:'2026-11-06'},
@@ -253,6 +278,21 @@ const ITEMS={
     {id:'outer_zipup_020',name:'집업20',img:CHARP+'cloth/outer/outer_zipup_020.png',cost:25,d:'2026-11-06'},
     {id:'outer_zipup_021',name:'집업21',img:CHARP+'cloth/outer/outer_zipup_021.png',cost:25,d:'2026-11-06'},
     {id:'outer_zipup_022',name:'집업22',img:CHARP+'cloth/outer/outer_zipup_022.png',cost:25,d:'2026-11-06'},
+    // ▼ 퀼팅자켓
+    {id:'outer_quilt_001',name:'퀼팅자켓1',img:CHARP+'cloth/outer/outer_quilt_001.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_002',name:'퀼팅자켓2',img:CHARP+'cloth/outer/outer_quilt_002.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_003',name:'퀼팅자켓3',img:CHARP+'cloth/outer/outer_quilt_003.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_004',name:'퀼팅자켓4',img:CHARP+'cloth/outer/outer_quilt_004.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_005',name:'퀼팅자켓5',img:CHARP+'cloth/outer/outer_quilt_005.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_006',name:'퀼팅자켓6',img:CHARP+'cloth/outer/outer_quilt_006.png',cost:10,d:'2026-11-08'},
+    {id:'outer_quilt_007',name:'퀼팅자켓7',img:CHARP+'cloth/outer/outer_quilt_007.png',cost:10,d:'2026-11-08'},
+    // ▼ 배색점퍼
+    {id:'outer_color_001',name:'배색점퍼1',img:CHARP+'cloth/outer/outer_color_001.png',cost:10,d:'2026-11-08'},
+    {id:'outer_color_002',name:'배색점퍼2',img:CHARP+'cloth/outer/outer_color_002.png',cost:10,d:'2026-11-08'},
+    {id:'outer_color_003',name:'배색점퍼3',img:CHARP+'cloth/outer/outer_color_003.png',cost:10,d:'2026-11-08'},
+    {id:'outer_color_004',name:'배색점퍼4',img:CHARP+'cloth/outer/outer_color_004.png',cost:10,d:'2026-11-08'},
+    {id:'outer_color_005',name:'배색점퍼5',img:CHARP+'cloth/outer/outer_color_005.png',cost:10,d:'2026-11-08'},
+    {id:'outer_color_006',name:'배색점퍼6',img:CHARP+'cloth/outer/outer_color_006.png',cost:10,d:'2026-11-08'},
   ],
   // 신발 — 발 위치에만 그림이 있어 전신에서 발에 보임
   shoes:[
