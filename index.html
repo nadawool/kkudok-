@@ -240,6 +240,13 @@ input{font-family:inherit}
 .rc-foot b{color:var(--ink)}
 .rc-toggle{border:0;background:#F4EFE6;color:var(--soft);font-weight:800;font-size:11.5px;border-radius:14px;padding:5px 10px;font-family:inherit;cursor:pointer}
 .mqs-list{margin-top:-4px}
+.rl-field{position:relative;height:66px;margin:0 14px}
+.rl-pile{position:absolute;bottom:0;width:0}
+.rl-ch{position:absolute;bottom:-4px;width:36px;height:51px;cursor:pointer}
+.rl-ch .avstack img{object-position:center bottom}
+.rl-ch.me{filter:drop-shadow(0 0 2px #F2994A) drop-shadow(0 0 1px #F2994A)}
+.rc-more.rl-more{left:22px;bottom:30px;width:auto;z-index:20}
+.rc-tick.g{color:var(--honey-d)}
 .rb-mini{width:20px;height:20px;border-radius:50%;overflow:hidden;background:var(--honey-s);display:inline-block;flex:none}
 .rb-mini .tinyav{width:100%;height:100%}
 .rb-li{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #F4EFE7;cursor:pointer}.rb-li b{font-size:14px}.rb-li span{font-size:11px;font-weight:800;color:var(--honey-d);background:var(--honey-s);border-radius:10px;padding:1px 7px}
@@ -3874,7 +3881,7 @@ function renderHome(){
   $('#s-home').querySelectorAll('.att-m,.mr-seat[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   bindMiniRoom();
   $('#mqsTog')&&($('#mqsTog').onclick=()=>{_mqsOpen=!_mqsOpen;$('#mqsList').style.display=_mqsOpen?'':'none';$('#mqsTog').textContent=_mqsOpen?'목록 접기':'목록 보기';});
-  $('#s-home').querySelectorAll('.rc-av[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
+  $('#s-home').querySelectorAll('.rc-av[data-uid],.rl-ch[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   $('#s-home').querySelectorAll('.rc-more[data-uids]').forEach(el=>el.onclick=()=>{   // 보드 칸: 1명=프로필, 여러 명=명단
     const ids=el.dataset.uids.split(',').filter(Boolean); if(!ids.length)return;
     if(ids.length===1){openMemberProfile(ids[0]);return;}
@@ -3907,7 +3914,7 @@ function monthStatusHTML(members){
   const sub=ym<MQ_START?`${+MQ_START.slice(5)}월부터 월 ${MONTH_GOAL}일 필수`:`완주 ${doneN}명 · 남은 ${left}일`;
   return `<div class="home-sec">
     <div class="hs-head"><b>${mon}월 출석 현황</b><span class="hs-count">${sub}</span></div>
-    ${raceTrackHTML(rows)}
+    ${raceLineHTML(rows)}
     <div class="card mqs-list" id="mqsList" style="padding:6px 14px;${_mqsOpen?'':'display:none'}">${rows.map(({m,n})=>`<div class="mqs-row ${n>=MONTH_GOAL?'done':''}">
       <div class="mqs-nm">${escT(m.name)}</div>
       <div class="mqs-bar"><i style="width:${Math.round(Math.min(1,n/MONTH_GOAL)*100)}%"></i></div>
@@ -3916,6 +3923,19 @@ function monthStatusHTML(members){
 }
 
 
+/* 🏃 출석 레이스(전신) — 같은 날짜는 최대 3명이 옆으로 겹쳐 서고 나머지는 +n(누르면 명단) · 나는 맨 앞 */
+function raceLineHTML(rows){
+  const G=MONTH_GOAL, FIN=84, byN=new Map();
+  rows.forEach(r=>{const k=Math.min(r.n,G);if(!byN.has(k))byN.set(k,[]);byN.get(k).push(r);});
+  const piles=[...byN.entries()].map(([k,v])=>{const left=k>=G?(FIN+8):(k/G*FIN);
+    v.sort((a,b)=>(a.m.id===S.meId)-(b.m.id===S.meId)||a.n-b.n); const shown=v.slice(-3), extra=v.length-shown.length;
+    return `<div class="rl-pile" style="left:${left}%">${shown.map((r,i)=>`<div class="rl-ch${r.m.id===S.meId?' me':''}" data-uid="${r.m.id}" style="left:${(i-(shown.length-1)/2)*13-18}px;z-index:${10+i}">${avatarStack(r.m,'')}</div>`).join('')}${extra>0?`<span class="rc-more rl-more" data-day="${k}" data-uids="${v.map(r=>r.m.id).join(',')}">+${extra}</span>`:''}</div>`;}).join('');
+  const myN=(rows.find(r=>r.m.id===S.meId)||{}).n;
+  return `<div class="card rc-card"><div class="rl-field">${piles}</div>
+    <div class="rc-track"><i style="width:${FIN}%"></i><div class="rc-flag" style="left:${FIN}%;top:-58px">🏁</div>${[0,5,10,15].map(d=>`<span class="rc-tick${d===G?' g':''}" style="left:${d/G*FIN}%">${d===G?G+'일':d}</span>`).join('')}</div>
+    <div class="rc-foot"><span>${myN!=null?`나 <b>${myN}일</b>${myN>G?` · 완주! 🎉 보너스 +${myN-G}일`:myN===G?' · 완주! 🎉':` · 깃발까지 ${G-myN}일`}`:''}</span>
+      <button class="rc-toggle" id="mqsTog">${_mqsOpen?'목록 접기':'목록 보기'}</button></div></div>`;
+}
 /* 🏁 출석 레이스 — 한 줄 트랙 위에 이번 달 출석일만큼 캐릭터가 달려감 · 15일 = 깃발(완주) · 같은 칸은 위로 쌓임 */
 let _mqsOpen=false;
 const RACE_STACK=3;
