@@ -222,6 +222,27 @@ input{font-family:inherit}
 .att-cnt.done{color:var(--honey-d)}
 .att-done{position:absolute;left:50%;top:-9px;transform:translateX(-50%);background:var(--honey);color:#fff;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:20px;white-space:nowrap;z-index:4;box-shadow:0 1px 3px rgba(120,70,20,.25)}
 .mqs-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid #F4EFE7}
+.rc-card{padding:14px 16px 10px}
+.rc-field{position:relative;margin:0 14px 0 14px}
+.rc-pile{position:absolute;bottom:0;width:0}
+.rc-av{position:absolute;left:-14px;width:28px;height:28px;border-radius:50%;background:var(--honey-s);border:2px solid #fff;overflow:hidden;box-shadow:0 1px 3px rgba(60,45,30,.18);cursor:pointer}
+.rc-av .tinyav{width:100%;height:100%}
+.rc-av.me{border-color:var(--honey);box-shadow:0 0 0 2px rgba(242,153,74,.35)}
+.rc-more{position:absolute;left:-14px;width:28px;cursor:pointer;text-align:center;font-size:10px;font-weight:900;color:var(--soft)}
+.rc-track{position:relative;height:26px;margin:4px 14px 0}
+.rc-track:before{content:'';position:absolute;left:0;right:0;top:3px;height:6px;border-radius:6px;background:#EAD8BF}
+.rc-track i{position:absolute;left:0;top:5px;height:2px;background:repeating-linear-gradient(90deg,#fff 0 6px,transparent 6px 12px)}
+.rc-track:after{content:'';position:absolute;right:0;top:3px;height:6px;width:16%;border-radius:0 6px 6px 0;background:repeating-linear-gradient(90deg,#232220 0 4px,#fff 4px 8px);opacity:.5}
+.rc-flag{position:absolute;top:-30px;transform:translateX(-4px);font-size:20px;line-height:1}
+.rc-flag b{position:absolute;left:2px;top:39px;font-size:10px;font-weight:900;color:var(--honey-d);white-space:nowrap}
+.rc-tick{position:absolute;top:13px;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--soft)}
+.rc-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--soft);font-weight:700}
+.rc-foot b{color:var(--ink)}
+.rc-toggle{border:0;background:#F4EFE6;color:var(--soft);font-weight:800;font-size:11.5px;border-radius:14px;padding:5px 10px;font-family:inherit;cursor:pointer}
+.mqs-list{margin-top:-4px}
+.rb-mini{width:20px;height:20px;border-radius:50%;overflow:hidden;background:var(--honey-s);display:inline-block;flex:none}
+.rb-mini .tinyav{width:100%;height:100%}
+.rb-li{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #F4EFE7;cursor:pointer}.rb-li b{font-size:14px}.rb-li span{font-size:11px;font-weight:800;color:var(--honey-d);background:var(--honey-s);border-radius:10px;padding:1px 7px}
 .mqs-row:last-child{border-bottom:none}
 .mqs-nm{width:52px;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mqs-bar{flex:1;height:8px;background:#F0EADF;border-radius:30px;overflow:hidden}
@@ -3852,6 +3873,17 @@ function renderHome(){
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
   $('#s-home').querySelectorAll('.att-m,.mr-seat[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   bindMiniRoom();
+  $('#mqsTog')&&($('#mqsTog').onclick=()=>{_mqsOpen=!_mqsOpen;$('#mqsList').style.display=_mqsOpen?'':'none';$('#mqsTog').textContent=_mqsOpen?'목록 접기':'목록 보기';});
+  $('#s-home').querySelectorAll('.rc-av[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
+  $('#s-home').querySelectorAll('.rc-more[data-uids]').forEach(el=>el.onclick=()=>{   // 보드 칸: 1명=프로필, 여러 명=명단
+    const ids=el.dataset.uids.split(',').filter(Boolean); if(!ids.length)return;
+    if(ids.length===1){openMemberProfile(ids[0]);return;}
+    const d=+el.dataset.day;
+    $('#sheet').innerHTML=`<div class="sec-t" style="font-size:15px;color:var(--ink)">${d>=MONTH_GOAL?'🏁 완주한 멤버':`${d}일 출석`} · ${ids.length}명</div>
+      ${ids.slice().reverse().map(id=>{const m=S.members[id];return m?`<div class="rb-li" data-uid="${id}"><div class="rb-mini" style="width:34px;height:34px">${avatarTiny(m)}</div><b>${escT(m.name)}</b>${id===S.meId?'<span>나</span>':''}</div>`:'';}).join('')}`;
+    openOv();
+    $('#sheet').querySelectorAll('.rb-li').forEach(li=>li.onclick=()=>{closeOv();setTimeout(()=>openMemberProfile(li.dataset.uid),250);});
+  });
   bindHomeAlbum();
   bindMeetCard();
   bindVoteCard();
@@ -3875,10 +3907,39 @@ function monthStatusHTML(members){
   const sub=ym<MQ_START?`${+MQ_START.slice(5)}월부터 월 ${MONTH_GOAL}일 필수`:`완주 ${doneN}명 · 남은 ${left}일`;
   return `<div class="home-sec">
     <div class="hs-head"><b>${mon}월 출석 현황</b><span class="hs-count">${sub}</span></div>
-    <div class="card" style="padding:6px 14px">${rows.map(({m,n})=>`<div class="mqs-row ${n>=MONTH_GOAL?'done':''}">
+    ${raceTrackHTML(rows)}
+    <div class="card mqs-list" id="mqsList" style="padding:6px 14px;${_mqsOpen?'':'display:none'}">${rows.map(({m,n})=>`<div class="mqs-row ${n>=MONTH_GOAL?'done':''}">
       <div class="mqs-nm">${escT(m.name)}</div>
       <div class="mqs-bar"><i style="width:${Math.round(Math.min(1,n/MONTH_GOAL)*100)}%"></i></div>
       <div class="mqs-n">${n}일</div></div>`).join('')}</div>
+  </div>`;
+}
+
+
+/* 🏁 출석 레이스 — 한 줄 트랙 위에 이번 달 출석일만큼 캐릭터가 달려감 · 15일 = 깃발(완주) · 같은 칸은 위로 쌓임 */
+let _mqsOpen=false;
+const RACE_STACK=3;
+function raceTrackHTML(rows){
+  const G=MONTH_GOAL, FIN=84;   // 트랙 0~84% = 0~15일, 84% 오른쪽 = 완주 구역
+  const byN=new Map();
+  rows.forEach(r=>{const k=Math.min(r.n,G);if(!byN.has(k))byN.set(k,[]);byN.get(k).push(r);});
+  let maxH=1; byN.forEach(v=>maxH=Math.max(maxH,Math.min(v.length,RACE_STACK)+(v.length>RACE_STACK?1:0)));
+  const STEP=22, AV=28, H=AV+(maxH-1)*STEP+4;
+  const piles=[...byN.entries()].map(([k,v])=>{
+    const left=k>=G?(FIN+8):(k/G*FIN);
+    v.sort((a,b)=>(a.m.id===S.meId)-(b.m.id===S.meId)||a.n-b.n);   // 나는 맨 위 · 완주 구역은 많이 출석한 사람이 위
+    const shown=v.slice(-RACE_STACK), extra=v.length-shown.length;
+    return `<div class="rc-pile${k>=G?' fin':''}" style="left:${left}%">
+      ${extra>0?`<div class="rc-more" data-day="${k}" data-uids="${v.map(r=>r.m.id).join(',')}" style="bottom:${(shown.length-1)*STEP+AV+2}px">+${extra}</div>`:''}
+      ${shown.map((r,i)=>`<div class="rc-av${r.m.id===S.meId?' me':''}" data-uid="${r.m.id}" style="bottom:${i*STEP}px;z-index:${10+i}">${avatarTiny(r.m)}</div>`).join('')}
+    </div>`;}).join('');
+  const ticks=[0,5,10].map(d=>`<span class="rc-tick" style="left:${d/G*FIN}%">${d}</span>`).join('');
+  const myN=(rows.find(r=>r.m.id===S.meId)||{}).n;
+  return `<div class="card rc-card">
+    <div class="rc-field" style="height:${H+8}px">${piles}</div>
+    <div class="rc-track"><i style="width:${FIN}%"></i><div class="rc-flag" style="left:${FIN}%">🏁<b>${G}일</b></div>${ticks}</div>
+    <div class="rc-foot"><span>${myN!=null?`나 <b>${myN}일</b>${myN>G?` · 완주! 🎉 보너스 +${myN-G}일`:myN===G?' · 완주! 🎉':` · 깃발까지 ${G-myN}일`}`:''}</span>
+      <button class="rc-toggle" id="mqsTog">${_mqsOpen?'목록 접기':'목록 보기'}</button></div>
   </div>`;
 }
 /* ---------- 💳 회비 ----------
