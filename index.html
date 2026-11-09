@@ -3813,7 +3813,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+homeAlbumHTML()+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+readsHTML+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+homeAlbumHTML()+voteCardHTML()+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
