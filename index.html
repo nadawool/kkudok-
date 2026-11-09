@@ -3914,7 +3914,7 @@ function monthStatusHTML(members){
   const sub=ym<MQ_START?`${+MQ_START.slice(5)}월부터 월 ${MONTH_GOAL}일 필수`:`완주 ${doneN}명 · 남은 ${left}일`;
   return `<div class="home-sec">
     <div class="hs-head"><b>${mon}월 출석 현황</b><span class="hs-count">${sub}</span></div>
-    ${raceLineHTML(rows)}
+    ${raceTrackHTML(rows)}
     <div class="card mqs-list" id="mqsList" style="padding:6px 14px;${_mqsOpen?'':'display:none'}">${rows.map(({m,n})=>`<div class="mqs-row ${n>=MONTH_GOAL?'done':''}">
       <div class="mqs-nm">${escT(m.name)}</div>
       <div class="mqs-bar"><i style="width:${Math.round(Math.min(1,n/MONTH_GOAL)*100)}%"></i></div>
