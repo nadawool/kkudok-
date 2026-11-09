@@ -1067,6 +1067,13 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .hb-prog .pc{color:var(--soft);font-weight:700;margin-left:3px}
 .hb-bar{height:6px;background:#F0EADF;border-radius:30px;overflow:hidden}
 .hb-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--honey),#F7B36A);border-radius:30px}
+.fd-reads{margin-bottom:12px}.fd-reads .hs-head{margin-bottom:6px}
+.fd-reads .hb-row{gap:8px}
+.fd-reads .hb-card{flex:0 0 92px;padding:7px;border-radius:14px}
+.fd-reads .hb-cover{margin-bottom:6px}
+.fd-reads .hb-who{margin-bottom:3px;gap:4px}.fd-reads .hb-who .hb-av{width:16px;height:16px}.fd-reads .hb-who span{font-size:10.5px}
+.fd-reads .hb-title{font-size:11.5px;height:29px}
+.fd-reads .hb-prog{display:none}.fd-reads .hb-bar{height:4px;margin-top:5px}
 /* 랭킹 (연속 독서 / 완독) */
 .rk-row{display:flex;align-items:center;gap:10px;padding:8px 2px}
 .rk-rank{width:20px;flex:none;text-align:center;font-size:14px;font-weight:900;color:var(--soft)}
@@ -2688,6 +2695,25 @@ function openNomForm(ym,id){   // 운영진 전용: 후보 등록/수정
   };
 }
 
+/* 📚 지금 멤버들이 읽는 책 — 피드 탭 맨 위 (출첵으로 진도를 찍은 책만 · 최근 출첵 순) */
+let _feedReads=[];
+function feedReadsHTML(){
+  const reads=[];
+  activeMembers().forEach(m=>(m.books||[]).filter(b=>isReading(b)&&b.lastTs).forEach(b=>reads.push({m,b})));
+  reads.sort((x,y)=>(y.b.lastTs||0)-(x.b.lastTs||0));
+  _feedReads=reads;
+  if(!reads.length)return '';
+  return `<div class="home-sec fd-reads">
+    <div class="hs-head"><b>지금 멤버들이 읽는 책</b><span class="hs-all" id="hbAll">전체보기 ${chevR()}</span></div>
+    <div class="hb-row" id="hbRow">${reads.map(homeBookCard).join('')}</div></div>`;
+}
+function bindFeedReads(){
+  $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(_feedReads));
+  $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
+    const m=S.members[c.dataset.uid];if(!m)return;
+    const b=m.books.find(x=>x.id===c.dataset.bid);if(b)openBookView({m,b});});
+}
+
 function renderFeed(){
   if(albumMode){refreshHeader();renderAlbum();return;}
   ensureAllPostsFor(renderFeed);
@@ -2703,6 +2729,7 @@ function renderFeed(){
     <b>✍️ 내 글 모아보기</b>
     <button id="fdMineExit">전체 피드 ${chevR()}</button>
   </div>`:''}
+  ${feedMineOnly||feedSavedOnly?'':feedReadsHTML()}
   <div class="fd-compose">
     <div class="fd-av">${avatarBust(meM)}</div>
     <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
@@ -2724,6 +2751,7 @@ function renderFeed(){
   </div>
   <div id="fdList">${feedListHTML(list)}</div>`;
   bindFeed();
+  bindFeedReads();
   // 백업해둔 댓글 입력값·커서·포커스 복원
   if(_keep){
     const inp=$('#fdList .fd-cinp[data-id="'+_keep.id+'"]');
@@ -3813,7 +3841,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+readsHTML+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+homeAlbumHTML()+voteCardHTML()+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+homeAlbumHTML()+voteCardHTML()+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
