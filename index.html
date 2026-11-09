@@ -927,6 +927,68 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .att-time{font-size:10px;color:var(--soft);font-weight:700;margin-top:2px;white-space:nowrap}
 .att-min{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:900;padding:2px 7px;border-radius:10px;background:#E2F0E8;color:#5FA17E;white-space:nowrap;line-height:1.3}
 .att-min.live{background:var(--honey-s,#FCEBD8);color:var(--honey-d,#E07B2C)}
+/* 📖 미니 독서방 — 디스코드 음성방에 있는 멤버만 책상에 앉아 읽는 모습 (아무도 없으면 카드 숨김) */
+.mroom{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);
+  background:#F8F0E3}
+.mroom.mr-in{animation:mrIn .45s ease-out}
+@keyframes mrIn{from{opacity:0;max-height:0;transform:translateY(-6px)}to{opacity:1;max-height:420px;transform:none}}
+.mr-deco{position:absolute;inset:0;pointer-events:none}
+.mr-win{position:absolute;left:14px;top:14px;width:46px;height:34px;border:3px solid #CDB38F;border-radius:5px;background:#D6EAF3}
+.mr-win:before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#CDB38F}
+.mr-shelf{position:absolute;right:14px;top:22px;width:62px;height:4px;border-radius:2px;background:#CDB38F}
+.mr-shelf i{position:absolute;bottom:4px;width:7px;border-radius:1px}
+.mr-pages{position:relative;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.mr-pages::-webkit-scrollbar{display:none}
+.mr-page{flex:none;width:100%;scroll-snap-align:start;background:linear-gradient(transparent 0 134px,#E9D6B9 134px 172px,transparent 172px 280px,#E9D6B9 280px);display:grid;grid-template-columns:repeat(4,minmax(0,80px));justify-content:center;column-gap:4px;padding:26px 6px 4px}
+.mr-multi .mr-page{padding-bottom:14px}
+.mr-dots{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:5px}
+.mr-dots i{width:5px;height:5px;border-radius:50%;background:#CDB38F}
+.mr-shot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#fff;background:var(--ink);border:0;border-radius:20px;padding:6px 11px;cursor:pointer;font-family:inherit}
+.mr-shot small{font-weight:700;opacity:.7;font-size:11px}
+.mr-shot.off{background:#EFE9DF;color:var(--soft);cursor:default}
+.mr-flash{position:absolute;inset:0;background:#fff;z-index:5;pointer-events:none;animation:mrFlash .6s ease-out forwards}
+@keyframes mrFlash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+/* 📸 독서방 앨범 (피드 탭) */
+.alb-entry{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:11px 12px 11px 14px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer}
+.alb-entry b{font-size:13.5px;flex:1}.alb-entry span{font-size:12px;font-weight:800;color:var(--honey-d)}
+.alb-entry svg{width:16px;height:16px;color:var(--soft)}
+.alb-top{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 12px}
+.alb-top b{font-size:16px}
+.alb-top button{border:0;background:#F4EFE6;color:var(--ink);font-weight:800;font-size:12px;border-radius:20px;padding:7px 12px;font-family:inherit;cursor:pointer}
+.alb-mh{display:flex;justify-content:space-between;align-items:center;margin:6px 4px 10px}
+.alb-mh b{font-size:15px}.alb-mh span{font-size:12px;color:var(--soft);font-weight:700}
+.alb-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:14px}
+.alb-col{display:flex;flex-direction:column;gap:12px}
+.pol{background:#fff;border-radius:6px;padding:7px 7px 9px;box-shadow:0 4px 14px rgba(60,45,30,.13);cursor:pointer}
+.alb-col .pol:nth-child(odd){transform:rotate(-1.1deg)}.alb-col .pol:nth-child(even){transform:rotate(.9deg)}
+.pol-ph{position:relative;width:100%;overflow:hidden;border-radius:2px;aspect-ratio:352/324}
+.pol.wide .pol-ph{aspect-ratio:352/178}
+.pol-sc{position:absolute;left:0;top:0;width:352px;transform-origin:0 0}
+.pol-sc .mroom{border-radius:0;border:0;box-shadow:none}
+.pol-sc .mr-ch{animation:none}
+.pol-cap{padding:7px 2px 0;line-height:1.35}
+.pol-cap b{display:block;font-size:12.5px}.pol-cap span{font-size:11px;color:var(--soft);font-weight:700}
+.pv-btns{display:flex;gap:8px;margin-top:12px}
+.pv-btns button{flex:1;border:0;border-radius:12px;padding:12px 0;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+.pv-save{background:#F4EFE6;color:var(--ink)}.pv-del{background:#E5574B;color:#fff}
+.alb-more{display:block;width:100%;border:0;background:#F4EFE6;border-radius:14px;padding:11px 0;font-weight:800;font-size:12.5px;color:var(--soft);font-family:inherit;margin-bottom:14px}
+.mr-seat{position:relative;width:100%;height:146px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mr-ch{position:absolute;left:50%;margin-left:-39px;top:5px;width:78px;height:111px;animation:mrBob 3.2s ease-in-out infinite}
+.mr-ch .avstack img{object-position:center bottom}
+@keyframes mrBob{0%,100%{transform:translateY(0)}50%{transform:translateY(1.5px)}}
+.mr-book{position:absolute;left:50%;top:81px;width:46px;margin-left:-23px;height:19px}
+.mr-book .pg{transform-box:fill-box;transform-origin:left center;animation:mrPg 7s ease-in-out infinite}
+@keyframes mrPg{0%,86%,100%{transform:scaleX(1)}93%{transform:scaleX(-1)}}
+.mr-desk{position:absolute;left:3px;right:3px;top:96px;height:29px;border-radius:5px 5px 3px 3px;background:#C08F5E;border:1.5px solid #6B4A2B;overflow:hidden}
+.mr-desk:before{content:'';position:absolute;left:0;right:0;top:0;height:7px;background:#D7AC7B;border-bottom:1.5px solid #6B4A2B}
+.mr-desk:after{content:'';position:absolute;left:50%;top:15px;width:12px;height:3px;margin-left:-6px;border-radius:2px;background:#6B4A2B;opacity:.55}
+.mr-min{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:2;font-size:10.5px;font-weight:900;white-space:nowrap;
+  padding:2px 7px;border-radius:10px;background:#fff;color:var(--honey-d,#E07B2C);border:1px solid #EAD8BF}
+.mr-nm{position:absolute;left:0;right:0;top:129px;text-align:center;font-size:11.5px;font-weight:800;color:#6B5A42;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr-seat.empty{cursor:default}
+.mr-seat.empty .mr-nm{color:#B4A285;font-weight:700}
+.mr-chair{position:absolute;left:50%;top:76px;width:34px;height:22px;margin-left:-17px;border-radius:8px 8px 3px 3px;background:#DCC7A6;border:1.5px solid #A98A63}
 .att-read{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:900;color:var(--honey-d,#E07B2C);
   background:var(--honey-s,#FCEBD8);padding:2px 8px;border-radius:20px;line-height:1;white-space:nowrap}
 /* 📖 실시간 독서중: 숨쉬는 링 — 주황 링 + 바깥으로 은은하게 번졌다 줄어드는 빛 (디스코드 말하는 중 표시 느낌 · 회전 없음) */
@@ -2624,6 +2686,7 @@ function openNomForm(ym,id){   // 운영진 전용: 후보 등록/수정
 }
 
 function renderFeed(){
+  if(albumMode){refreshHeader();renderAlbum();return;}
   ensureAllPostsFor(renderFeed);
   // 쓰던 댓글(인라인 입력창) 백업 → 리렌더로 입력창이 날아가도 복원
   const _ae=document.activeElement; let _keep=null;
@@ -2637,6 +2700,7 @@ function renderFeed(){
     <b>✍️ 내 글 모아보기</b>
     <button id="fdMineExit">전체 피드 ${chevR()}</button>
   </div>`:''}
+  ${feedMineOnly||feedSavedOnly?'':`<div class="alb-entry" id="albOpen"><b>📸 독서방 앨범</b>${(S.photosToday||[]).filter(p=>p.date===todayISO()).length?`<span>오늘 ${(S.photosToday||[]).filter(p=>p.date===todayISO()).length}장</span>`:''}${chevR()}</div>`}
   <div class="fd-compose">
     <div class="fd-av">${avatarBust(meM)}</div>
     <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
@@ -2760,6 +2824,7 @@ function bindFeed(){
   $('#fdPlus')&&($('#fdPlus').onclick=openComposeChooser);
   $('#fdCompose')&&($('#fdCompose').onclick=openComposeChooser);
   $('#fdMineExit')&&($('#fdMineExit').onclick=()=>{feedMineOnly=false;renderFeed();});
+  $('#albOpen')&&($('#albOpen').onclick=()=>{albumMode=true;_alb=null;_albLimit=ALB_PAGE;renderFeed();$('.scroll')&&($('.scroll').scrollTop=0);});
   $('#fdBm')&&($('#fdBm').onclick=()=>{feedSavedOnly=!feedSavedOnly;feedMineOnly=false;renderFeed();});
   $('#s-feed').querySelectorAll('[data-sort]').forEach(c=>c.onclick=()=>{feedSort=c.dataset.sort;feedSavedOnly=false;feedMineOnly=false;renderFeed();});
   const L=$('#fdList');
@@ -3024,6 +3089,7 @@ function renderTabs(){
 function go(t){
   if(t==='dress'&&!isMe()){toast('내 캐릭터만 꾸밀 수 있어요');return;}
   if(tab==='dress'&&t!=='dress'&&dressDirty()){askDressLeave(t);return;}   // 저장 안 한 꾸미기 확인
+  albumMode=false;   // 탭을 누르면 앨범 화면은 닫고 피드로
   tab=t;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('#s-'+t).classList.add('on');renderTabs();
   ({home:renderHome,checkin:renderCheckin,feed:renderFeed,shelf:renderShelf,club:renderClub,stats:renderStats,dress:renderDress}[t])();
@@ -3442,7 +3508,7 @@ function readBadge(m){var ms=readSinceMs(m);
 function tickReadings(){ // 전체 리렌더 없이 '분째' 숫자만 갱신
   document.querySelectorAll('.att-read[data-since]').forEach(function(el){
     el.textContent=readLabel(+el.getAttribute('data-since')||0);});
-  document.querySelectorAll('.att-min[data-live]').forEach(function(el){
+  document.querySelectorAll('.att-min[data-live],.mr-min[data-live]').forEach(function(el){
     el.textContent='📖 '+liveMin(+el.getAttribute('data-base')||0,+el.getAttribute('data-live')||0)+'분';});}
 /* ===== 오늘 접속 시각 · 오늘 읽은 분 (모두에게 공개 · 누적 시간은 본인만) =====
    봇이 participants/{uid} 에 todayDate('YYYY-MM-DD') · todayFirstAt(첫 접속, epoch ms 또는 'HH:MM') · todayMin(오늘 끝난 세션 분 합) 을 적어줌 */
@@ -3463,6 +3529,155 @@ function attTodayHTML(m,curYm){ // 이름 아래: 접속 시각 + 오늘 분 (�
   const since=m.discordReading?readSinceMs(m):0;
   return `${tr.first?`<div class="att-time">${tr.first} 접속</div>`:''}
     <div class="att-min ${m.discordReading?'live':''}" ${m.discordReading?`data-live="${since}" data-base="${tr.min}"`:''}>${m.discordReading?'📖 '+liveMin(tr.min,since):tr.min}분</div>`;
+}
+
+/* ===== 📖 미니 독서방 — discordReading 켜진 멤버만 책상에 앉힘 (이미 받아온 participants 데이터만 씀 → 추가 읽기 0) ===== */
+const MR_BOOK=`<svg class="mr-book" viewBox="0 0 46 19" aria-hidden="true">
+  <path d="M5 4 L22 1.5 L22 15 L5 17Z" fill="#fff" stroke="#3A2E2A" stroke-width="1.3" stroke-linejoin="round"/>
+  <path d="M41 4 L24 1.5 L24 15 L41 17Z" fill="#fff" stroke="#3A2E2A" stroke-width="1.3" stroke-linejoin="round"/>
+  <rect x="22" y="1.5" width="2" height="13.5" fill="#E07B2C"/>
+  <path class="pg" d="M24 2.5 L38 5 L38 14.6 L24 13.6Z" fill="#FBF5EA"/>
+  <ellipse cx="4" cy="12" rx="4" ry="3.6" fill="#FDE8D0" stroke="#3A2E2A" stroke-width="1.3"/>
+  <ellipse cx="42" cy="12" rx="4" ry="3.6" fill="#FDE8D0" stroke="#3A2E2A" stroke-width="1.3"/></svg>`;
+let _mrShown=false;
+/* 장면 그리기 — list: [{m:멤버(또는 사진 속 모습), min, since}] · o.live=말풍선 실시간 · 8자리씩 페이지(옆으로 넘김) · 4명 이하=1줄 */
+function mrSceneHTML(list,o){
+  o=o||{};
+  const pages=[];for(let i=0;i<list.length;i+=8)pages.push(list.slice(i,i+8));
+  const seat=(x,i)=>{const bub=o.live?`<div class="mr-min" data-live="${x.since||0}" data-base="${x.base||0}">📖 ${liveMin(x.base||0,x.since||0)}분</div>`:'';
+    return `<div class="mr-seat" data-uid="${escT(x.m.id||'')}">${bub}
+      <div class="mr-ch" style="animation-delay:-${(i*0.8).toFixed(1)}s">${avatarStack(x.m,'')}</div>
+      ${MR_BOOK.replace('class="pg"',`class="pg" style="animation-delay:-${(i*2.3).toFixed(1)}s"`)}
+      <div class="mr-desk"></div><div class="mr-nm">${escT(x.m.name||'')}</div></div>`;};
+  const empty=`<div class="mr-seat empty"><div class="mr-chair"></div><div class="mr-desk"></div><div class="mr-nm">빈 자리</div></div>`;
+  const pg=pages.map((p,pi)=>{const cap=(pages.length>1||p.length>4)?8:4;
+    return `<div class="mr-page">${p.map((x,i)=>seat(x,pi*8+i)).join('')}${empty.repeat(Math.max(0,cap-p.length))}</div>`;}).join('');
+  return `<div class="mroom${o.cls||''}${pages.length>1?' mr-multi':''}"${o.id?` id="${o.id}"`:''}>
+      <div class="mr-deco"><div class="mr-win"></div>
+        <div class="mr-shelf"><i style="left:4px;height:12px;background:#D98C7A"></i><i style="left:12px;height:15px;background:#8FB59A"></i><i style="left:20px;height:11px;background:#E8C26A"></i><i style="left:28px;height:14px;background:#7E9CC8"></i></div></div>
+      <div class="mr-pages">${pg}</div>${pages.length>1?`<div class="mr-dots">${pages.map(()=>'<i></i>').join('')}</div>`:''}
+    </div>`;
+}
+/* 📸 사진: 방 전체 기준 오전(12시 전) 2장 · 오후 2장 — 문서 id = 날짜_am1 처럼 자리 번호라 동시에 눌러도 2장 넘게 안 생김 */
+const PHOTO_PER_HALF=2;
+function photoHalf(t){return new Date(t||Date.now()).getHours()<12?'am':'pm';}
+function photosLeft(){const d=todayISO(),h=photoHalf();
+  return PHOTO_PER_HALF-(S.photosToday||[]).filter(p=>p.date===d&&p.half===h).length;}
+function photoCol(){return window._fb?window._fb.db.collection('rooms').doc(window._fb.roomId).collection('photos'):null;}
+function miniRoomHTML(members){
+  const rd=members.filter(m=>m.discordReading).sort((a,b)=>(readSinceMs(a)||9e15)-(readSinceMs(b)||9e15));
+  if(!rd.length){_mrShown=false;return '';}
+  const anim=_mrShown?'':' mr-in'; _mrShown=true;
+  const list=rd.map(m=>{const tr=todayRead(m);return {m,base:tr?tr.min:0,since:readSinceMs(m)};});
+  const mine=!!(me()&&me().discordReading), left=photosLeft(), hl=photoHalf()==='am'?'오전':'오후';
+  const btn=!mine?`<span class="hs-count">디스코드 ${rd.length}명</span>`
+    :left>0?`<button class="mr-shot" id="mrShot">📸 사진 찍기 <small>${hl} ${left}/${PHOTO_PER_HALF}</small></button>`
+    :`<span class="mr-shot off">${hl} 사진 다 찍었어요</span>`;
+  return `<div class="home-sec">
+    <div class="hs-head"><b>📖 지금 같이 읽는 중</b>${btn}</div>
+    ${mrSceneHTML(list,{live:true,cls:anim,id:'mRoom'})}</div>`;
+}
+let _shooting=false;
+async function takeRoomPhoto(){
+  if(_shooting)return;
+  const col=photoCol(), my=me();
+  if(!col||!my||!my.discordReading){toast('디스코드 독서방에 있을 때만 찍을 수 있어요');return;}
+  const date=todayISO(), half=photoHalf(), used=new Set((S.photosToday||[]).filter(p=>p.date===date&&p.half===half).map(p=>p.id));
+  const slot=[1,2].find(n=>!used.has(`${date}_${half}${n}`));
+  if(!slot){toast(`${half==='am'?'오전':'오후'} 사진은 다 찍었어요`);return;}
+  const rd=activeMembers().filter(m=>m.discordReading).sort((a,b)=>(readSinceMs(a)||9e15)-(readSinceMs(b)||9e15));
+  const seats=rd.map(m=>{const tr=todayRead(m), l=(m.id===S.meId&&DRESS_BASE)?DRESS_BASE:lookOf(m);
+    return {id:m.id,name:m.name||'',gender:m.gender||'',char:m.char||'',items:l.items,min:liveMin(tr?tr.min:0,readSinceMs(m))};});
+  const id=`${date}_${half}${slot}`, ref=col.doc(id), data={date,half,at:Date.now(),by:S.meId,seats};
+  _shooting=true;
+  const room=$('#mRoom'); if(room){const f=document.createElement('div');f.className='mr-flash';room.appendChild(f);setTimeout(()=>f.remove(),700);}
+  try{
+    await window._fb.db.runTransaction(async t=>{const d=await t.get(ref);if(d.exists)throw new Error('taken');t.set(ref,data);});
+    toast('📸 앨범에 저장했어요');
+  }catch(e){toast(String(e&&e.message)==='taken'?'방금 다른 멤버가 찍었어요 · 다시 눌러보세요':'사진을 저장하지 못했어요');console.warn('photo',e);}
+  _shooting=false;
+}
+function bindMiniRoom(){
+  $('#mrShot')&&($('#mrShot').onclick=e=>{e.stopPropagation();takeRoomPhoto();});
+}
+/* ===== 📸 독서방 앨범 (피드 탭 위 '독서방 앨범' 칸 → 앨범 화면) =====
+   열 때 최근 ALB_PAGE장만 한 번 읽음 + 오늘 사진은 실시간(S.photosToday) */
+const ALB_PAGE=30;
+let albumMode=false, _alb=null, _albLimit=ALB_PAGE, _albBusy=false;
+async function loadAlbum(){
+  const col=photoCol(); if(!col||_albBusy)return; _albBusy=true;
+  try{const qs=await col.orderBy('at','desc').limit(_albLimit).get();
+    _alb={list:qs.docs.map(d=>Object.assign({id:d.id},d.data())),more:qs.size>=_albLimit};}
+  catch(e){console.warn('album',e);_alb={list:[],more:false,err:true};}
+  _albBusy=false; if(albumMode&&S&&tab==='feed')renderFeed();
+}
+function albumList(){const m=new Map();((_alb&&_alb.list)||[]).forEach(p=>m.set(p.id,p));(S.photosToday||[]).forEach(p=>m.set(p.id,p));
+  return [...m.values()].filter(p=>!(_albDel.has(p.id))).sort((a,b)=>(b.at||0)-(a.at||0));}
+const _albDel=new Set();
+const WD=['일','월','화','수','목','금','토'];
+function photoCapHTML(p){const d=new Date(p.at||0), hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return `<div class="pol-cap"><b>${d.getMonth()+1}.${String(d.getDate()).padStart(2,'0')} (${WD[d.getDay()]})</b><span>${p.half==='am'?'오전':'오후'} ${hm} · ${(p.seats||[]).length}명</span></div>`;}
+function photoSceneHTML(p){
+  const list=(p.seats||[]).map(x=>({m:{id:x.id,name:x.name,gender:x.gender,char:x.char,items:JSON.parse(JSON.stringify(x.items||{}))}}));
+  return mrSceneHTML(list,{});}
+function polHTML(p){const wide=(p.seats||[]).length<=4;
+  return `<div class="pol ${wide?'wide':'tall'}" data-pid="${p.id}"><div class="pol-ph"><div class="pol-sc">${photoSceneHTML(p)}</div></div>${photoCapHTML(p)}</div>`;}
+function fitPolScenes(root){(root||document).querySelectorAll('.pol-ph').forEach(ph=>{const sc=ph.querySelector('.pol-sc');if(sc&&ph.clientWidth)sc.style.transform=`scale(${ph.clientWidth/352})`;});}
+function renderAlbum(){
+  if(!_alb)loadAlbum();
+  const ps=albumList(), months=[];
+  ps.forEach(p=>{const d=new Date(p.at||0),k=d.getFullYear()+'-'+d.getMonth();let g=months[months.length-1];
+    if(!g||g.k!==k){g={k,label:(d.getFullYear()!==new Date().getFullYear()?d.getFullYear()+'년 ':'')+(d.getMonth()+1)+'월',ps:[]};months.push(g);}g.ps.push(p);});
+  const left=photosLeft(), hl=photoHalf()==='am'?'오전':'오후';
+  const body=!_alb&&!ps.length?`<div class="card"><div class="home-empty">앨범을 불러오는 중이에요</div></div>`
+    :!ps.length?`<div class="card"><div class="home-empty">아직 사진이 없어요 📸<br>디스코드 독서방에 들어가면 홈에서 단체 사진을 찍을 수 있어요</div></div>`
+    :months.map((g,gi)=>{const cols=[[],[]],hgt=[0,0];
+      g.ps.forEach(p=>{const c=hgt[0]<=hgt[1]?0:1;cols[c].push(p);hgt[c]+=((p.seats||[]).length<=4?0.62:1);});
+      return `<div class="alb-mh"><b>${g.label}</b>${gi===0?`<span>오늘 ${hl} 남은 사진 ${left}/${PHOTO_PER_HALF}</span>`:''}</div>
+        <div class="alb-cols">${cols.map(c=>`<div class="alb-col">${c.map(polHTML).join('')}</div>`).join('')}</div>`;}).join('')
+      +(_alb&&_alb.more?`<button class="alb-more" id="albMore">이전 사진 더 보기</button>`:'');
+  $('#s-feed').innerHTML=`<div class="alb-top"><b>📸 독서방 앨범</b><button id="albBack">피드로 ${chevR().replace('<svg','<svg style="width:12px;height:12px;vertical-align:-1px"')}</button></div>${body}`;
+  $('#albBack').onclick=()=>{albumMode=false;renderFeed();window.scrollTo&&$('.scroll')&&($('.scroll').scrollTop=0);};
+  $('#albMore')&&($('#albMore').onclick=()=>{_albLimit+=ALB_PAGE;loadAlbum();});
+  $('#s-feed').querySelectorAll('.pol[data-pid]').forEach(el=>el.onclick=()=>openPhoto(el.dataset.pid));
+  requestAnimationFrame(()=>fitPolScenes($('#s-feed')));
+}
+function openPhoto(pid){
+  const p=albumList().find(x=>x.id===pid); if(!p)return;
+  $('#sheet').innerHTML=`<div class="pol ${(p.seats||[]).length<=4?'wide':'tall'}" id="pvPol" style="cursor:default"><div class="pol-ph"><div class="pol-sc">${photoSceneHTML(p)}</div></div>${photoCapHTML(p)}</div>
+    <div class="pv-btns"><button class="pv-save" id="pvSave">⬇️ 이미지로 저장</button>${isAdmin()?`<button class="pv-del" id="pvDel">🗑 사진 삭제</button>`:''}</div>`;
+  openOv();
+  requestAnimationFrame(()=>fitPolScenes($('#sheet')));
+  $('#pvSave').onclick=()=>savePhotoImage(p);
+  $('#pvDel')&&($('#pvDel').onclick=async()=>{
+    if(!confirm('이 사진을 삭제할까요?\n(오늘 찍은 사진이면 그 시간대에 다시 찍을 수 있어요)'))return;
+    try{await photoCol().doc(p.id).delete();_albDel.add(p.id);closeOv();toast('사진을 삭제했어요');if(tab==='feed')renderFeed();}
+    catch(e){console.warn(e);toast('삭제하지 못했어요');}
+  });
+}
+function _loadH2C(){return window.html2canvas?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');
+  sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});}
+async function savePhotoImage(p){
+  const btn=$('#pvSave'); if(btn){btn.textContent='만드는 중…';btn.disabled=true;}
+  const box=document.createElement('div');
+  box.style.cssText='position:fixed;left:-9999px;top:0;width:376px;background:#fff';
+  box.innerHTML=`<div class="pol ${(p.seats||[]).length<=4?'wide':'tall'}" style="box-shadow:none;border-radius:0;padding:12px 12px 14px"><div class="pol-ph"><div class="pol-sc">${photoSceneHTML(p)}</div></div>${photoCapHTML(p)}</div>`;
+  document.body.appendChild(box);
+  try{
+    await _loadH2C(); fitPolScenes(box);
+    box.querySelectorAll('svg.mr-book').forEach(sv=>{   // html2canvas가 인라인 SVG를 빼먹음 → 이미지로 바꿔서 그림
+      const c=sv.cloneNode(true);c.removeAttribute('class');c.setAttribute('xmlns','http://www.w3.org/2000/svg');c.setAttribute('width','46');c.setAttribute('height','19');
+      c.querySelectorAll('[style]').forEach(x=>x.removeAttribute('style'));
+      const im=document.createElement('img');im.className='mr-book';im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(c.outerHTML);sv.replaceWith(im);});
+    await Promise.all([...box.querySelectorAll('img')].map(im=>im.complete?0:new Promise(r=>{im.onload=im.onerror=r;})));
+    await new Promise(r=>setTimeout(r,250));
+    const cv=await window.html2canvas(box.firstElementChild,{scale:3,backgroundColor:'#ffffff',useCORS:true});
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    const name=`꾸독_독서방_${p.id}.png`, file=new File([blob],name,{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});}catch(e){}}
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+  }catch(e){console.warn(e);toast('이미지를 만들지 못했어요');}
+  box.remove(); if(btn){btn.textContent='⬇️ 이미지로 저장';btn.disabled=false;}
 }
 
 function renderHome(){
@@ -3573,7 +3788,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=feeHomeHTML()+drawHomeHTML()+attHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=feeHomeHTML()+drawHomeHTML()+miniRoomHTML(members)+attHTML+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -3582,7 +3797,8 @@ function renderHome(){
   });
   $('#rfAll')&&($('#rfAll').onclick=()=>go('feed'));
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
-  $('#s-home').querySelectorAll('.att-m').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
+  $('#s-home').querySelectorAll('.att-m,.mr-seat[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
+  bindMiniRoom();
   bindMeetCard();
   bindVoteCard();
   bindDrawHome();
@@ -6357,7 +6573,14 @@ function subscribeRealtime(){
     rerender();
   }, e=>console.warn('bookNoms snapshot',e));
 
-  _rtUnsub=()=>{u1();u2();u3();u4();u5();u6();};
+  // 📸 오늘 사진만 실시간 (남은 장수 계산용 · 앨범 전체는 열 때 한 번만 읽음)
+  const u7=roomRef.collection('photos').where('date','>=',todayISO()).onSnapshot(qs=>{
+    if(!S)return;
+    S.photosToday=qs.docs.map(d=>Object.assign({id:d.id},d.data()));
+    rerender();
+  }, e=>console.warn('photos snapshot',e));
+
+  _rtUnsub=()=>{u1();u2();u3();u4();u5();u6();u7();};
 }
 
 function boot(){
