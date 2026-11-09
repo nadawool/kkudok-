@@ -971,6 +971,9 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .pv-btns{display:flex;gap:8px;margin-top:12px}
 .pv-btns button{flex:1;border:0;border-radius:12px;padding:12px 0;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
 .pv-save{background:#F4EFE6;color:var(--ink)}.pv-del{background:#E5574B;color:#fff}
+.alb-pager{display:flex;justify-content:center;gap:6px;margin:-2px 0 4px}
+.alb-pg{min-width:30px;height:30px;padding:0 8px;border:0;border-radius:15px;background:#F4EFE6;color:var(--soft);font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
+.alb-pg.on{background:var(--ink);color:#fff}.alb-pg.arr{background:transparent;font-size:16px}
 .alb-more{display:block;width:100%;border:0;background:#F4EFE6;border-radius:14px;padding:11px 0;font-weight:800;font-size:12.5px;color:var(--soft);font-family:inherit;margin-bottom:14px}
 .mr-seat{position:relative;width:100%;height:146px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .mr-ch{position:absolute;left:50%;margin-left:-39px;top:5px;width:78px;height:111px;animation:mrBob 3.2s ease-in-out infinite}
@@ -2700,7 +2703,6 @@ function renderFeed(){
     <b>✍️ 내 글 모아보기</b>
     <button id="fdMineExit">전체 피드 ${chevR()}</button>
   </div>`:''}
-  ${feedMineOnly||feedSavedOnly?'':`<div class="alb-entry" id="albOpen"><b>📸 독서방 앨범</b>${(S.photosToday||[]).filter(p=>p.date===todayISO()).length?`<span>오늘 ${(S.photosToday||[]).filter(p=>p.date===todayISO()).length}장</span>`:''}${chevR()}</div>`}
   <div class="fd-compose">
     <div class="fd-av">${avatarBust(meM)}</div>
     <div class="fd-cinput" id="fdCompose">오늘 읽은 문장을 공유해보세요</div>
@@ -2824,7 +2826,6 @@ function bindFeed(){
   $('#fdPlus')&&($('#fdPlus').onclick=openComposeChooser);
   $('#fdCompose')&&($('#fdCompose').onclick=openComposeChooser);
   $('#fdMineExit')&&($('#fdMineExit').onclick=()=>{feedMineOnly=false;renderFeed();});
-  $('#albOpen')&&($('#albOpen').onclick=()=>{albumMode=true;_alb=null;_albLimit=ALB_PAGE;renderFeed();$('.scroll')&&($('.scroll').scrollTop=0);});
   $('#fdBm')&&($('#fdBm').onclick=()=>{feedSavedOnly=!feedSavedOnly;feedMineOnly=false;renderFeed();});
   $('#s-feed').querySelectorAll('[data-sort]').forEach(c=>c.onclick=()=>{feedSort=c.dataset.sort;feedSavedOnly=false;feedMineOnly=false;renderFeed();});
   const L=$('#fdList');
@@ -3602,14 +3603,14 @@ function bindMiniRoom(){
 }
 /* ===== 📸 독서방 앨범 (피드 탭 위 '독서방 앨범' 칸 → 앨범 화면) =====
    열 때 최근 ALB_PAGE장만 한 번 읽음 + 오늘 사진은 실시간(S.photosToday) */
-const ALB_PAGE=30;
+const ALB_PAGE=12;   // 한 번에 12장(=3쪽)씩 읽음
 let albumMode=false, _alb=null, _albLimit=ALB_PAGE, _albBusy=false;
 async function loadAlbum(){
   const col=photoCol(); if(!col||_albBusy)return; _albBusy=true;
   try{const qs=await col.orderBy('at','desc').limit(_albLimit).get();
     _alb={list:qs.docs.map(d=>Object.assign({id:d.id},d.data())),more:qs.size>=_albLimit};}
   catch(e){console.warn('album',e);_alb={list:[],more:false,err:true};}
-  _albBusy=false; if(albumMode&&S&&tab==='feed')renderFeed();
+  _albBusy=false; if(S&&tab==='home')renderHome(); else if(albumMode&&S&&tab==='feed')renderFeed();
 }
 function albumList(){const m=new Map();((_alb&&_alb.list)||[]).forEach(p=>m.set(p.id,p));(S.photosToday||[]).forEach(p=>m.set(p.id,p));
   return [...m.values()].filter(p=>!(_albDel.has(p.id))).sort((a,b)=>(b.at||0)-(a.at||0));}
@@ -3651,7 +3652,7 @@ function openPhoto(pid){
   $('#pvSave').onclick=()=>savePhotoImage(p);
   $('#pvDel')&&($('#pvDel').onclick=async()=>{
     if(!confirm('이 사진을 삭제할까요?\n(오늘 찍은 사진이면 그 시간대에 다시 찍을 수 있어요)'))return;
-    try{await photoCol().doc(p.id).delete();_albDel.add(p.id);closeOv();toast('사진을 삭제했어요');if(tab==='feed')renderFeed();}
+    try{await photoCol().doc(p.id).delete();_albDel.add(p.id);closeOv();toast('사진을 삭제했어요');if(tab==='home')renderHome();else if(tab==='feed')renderFeed();}
     catch(e){console.warn(e);toast('삭제하지 못했어요');}
   });
 }
@@ -3678,6 +3679,30 @@ async function savePhotoImage(p){
     else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
   }catch(e){console.warn(e);toast('이미지를 만들지 못했어요');}
   box.remove(); if(btn){btn.textContent='⬇️ 이미지로 저장';btn.disabled=false;}
+}
+
+/* 홈 '📸 독서방 앨범' — 4장씩, 아래 숫자로 넘김 · 사진 없으면 섹션 숨김 */
+const ALB_PER=4; let _albPage=0;
+function homeAlbumHTML(){
+  if(!_alb&&!_albBusy)loadAlbum();
+  const ps=albumList(); if(!ps.length)return '';
+  const pages=Math.ceil(ps.length/ALB_PER); if(_albPage>=pages)_albPage=pages-1;
+  const cur=ps.slice(_albPage*ALB_PER,_albPage*ALB_PER+ALB_PER), cols=[[],[]], hgt=[0,0];
+  cur.forEach(p=>{const c=hgt[0]<=hgt[1]?0:1;cols[c].push(p);hgt[c]+=((p.seats||[]).length<=4?0.62:1);});
+  const lo=Math.max(0,Math.min(_albPage-2,pages-5)), hi=Math.min(pages,lo+5), more=!!(_alb&&_alb.more);
+  const nums=[];for(let i=lo;i<hi;i++)nums.push(`<button class="alb-pg${i===_albPage?' on':''}" data-pg="${i}">${i+1}</button>`);
+  const pager=(pages>1||more)?`<div class="alb-pager">${_albPage>0?`<button class="alb-pg arr" data-pg="${_albPage-1}">‹</button>`:''}${nums.join('')}${(_albPage<pages-1||more)?`<button class="alb-pg arr" data-pg="${_albPage+1}">›</button>`:''}</div>`:'';
+  const nToday=(S.photosToday||[]).filter(p=>p.date===todayISO()).length;
+  return `<div class="home-sec" id="hAlb">
+    <div class="hs-head"><b>📸 독서방 앨범</b>${nToday?`<span class="hs-count">오늘 ${nToday}장</span>`:''}</div>
+    <div class="alb-cols">${cols.map(c=>`<div class="alb-col">${c.map(polHTML).join('')}</div>`).join('')}</div>${pager}</div>`;
+}
+function bindHomeAlbum(){
+  const box=$('#hAlb'); if(!box)return;
+  box.querySelectorAll('.pol[data-pid]').forEach(el=>el.onclick=()=>openPhoto(el.dataset.pid));
+  box.querySelectorAll('.alb-pg').forEach(b=>b.onclick=()=>{const n=+b.dataset.pg, total=Math.ceil(albumList().length/ALB_PER);
+    _albPage=n; if(n>=total&&_alb&&_alb.more){_albLimit+=ALB_PAGE;loadAlbum();} else renderHome();});
+  requestAnimationFrame(()=>fitPolScenes(box));
 }
 
 function renderHome(){
@@ -3788,7 +3813,7 @@ function renderHome(){
       : `<div class="card"><div class="home-empty">아직 공유된 문장이 없어요 ✨<br>피드 탭에서 첫 문장을 나눠보세요</div></div>`}
   </div>`;
 
-  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
+  $('#s-home').innerHTML=feeHomeHTML()+miniRoomHTML(members)+attHTML+homeAlbumHTML()+drawHomeHTML()+`<div class="home-sec">${meetCardHTML()}</div>`+voteCardHTML()+readsHTML+monthStatusHTML(members)+streakHTML+doneHTML+allBooksHTML; // (최근 피드 섹션 제거)
 
   $('#hbAll')&&($('#hbAll').onclick=()=>openReadingAll(reads));
   $('#hbRow')&&$('#hbRow').querySelectorAll('.hb-card').forEach(c=>c.onclick=()=>{
@@ -3799,6 +3824,7 @@ function renderHome(){
   $('#rfList')&&$('#rfList').querySelectorAll('.rf-item').forEach(el=>el.onclick=()=>go('feed'));
   $('#s-home').querySelectorAll('.att-m,.mr-seat[data-uid]').forEach(el=>el.onclick=()=>openMemberProfile(el.dataset.uid));
   bindMiniRoom();
+  bindHomeAlbum();
   bindMeetCard();
   bindVoteCard();
   bindDrawHome();
