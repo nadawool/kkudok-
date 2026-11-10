@@ -3615,8 +3615,8 @@ function mrSceneHTML(list,o){
       <div class="mr-pages">${pg}</div>${pages.length>1?`<div class="mr-dots">${pages.map(()=>'<i></i>').join('')}</div>`:''}
     </div>`;
 }
-/* 📸 사진: 방 전체 기준 오전(12시 전) 2장 · 오후 2장 — 문서 id = 날짜_am1 처럼 자리 번호라 동시에 눌러도 2장 넘게 안 생김 */
-const PHOTO_PER_HALF=2;
+/* 📸 사진: 방 전체 기준 오전(12시 전) 3장 · 오후 3장 — 문서 id = 날짜_am1 처럼 자리 번호라 동시에 눌러도 2장 넘게 안 생김 */
+const PHOTO_PER_HALF=3;
 function photoHalf(t){return new Date(t||Date.now()).getHours()<12?'am':'pm';}
 function photosLeft(){const d=todayISO(),h=photoHalf();
   return PHOTO_PER_HALF-(S.photosToday||[]).filter(p=>p.date===d&&p.half===h).length;}
@@ -3640,7 +3640,7 @@ async function takeRoomPhoto(){
   const col=photoCol(), my=me();
   if(!col||!my||!my.discordReading){toast('디스코드 독서방에 있을 때만 찍을 수 있어요');return;}
   const date=todayISO(), half=photoHalf(), used=new Set((S.photosToday||[]).filter(p=>p.date===date&&p.half===half).map(p=>p.id));
-  const slot=[1,2].find(n=>!used.has(`${date}_${half}${n}`));
+  const slot=Array.from({length:PHOTO_PER_HALF},(_,i)=>i+1).find(n=>!used.has(`${date}_${half}${n}`));
   if(!slot){toast(`${half==='am'?'오전':'오후'} 사진은 다 찍었어요`);return;}
   const rd=activeMembers().filter(m=>m.discordReading).sort((a,b)=>(readSinceMs(a)||9e15)-(readSinceMs(b)||9e15));
   const seats=rd.map(m=>{const tr=todayRead(m), l=(m.id===S.meId&&DRESS_BASE)?DRESS_BASE:lookOf(m);
