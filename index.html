@@ -998,6 +998,12 @@ body.dragx,body.dragx *{cursor:grabbing!important}
 .pol-cap b{display:block;font-size:12.5px}.pol-cap span{font-size:11px;color:var(--soft);font-weight:700}
 .pv-btns{display:flex;gap:8px;margin-top:12px}
 .pv-btns button{flex:1;border:0;border-radius:12px;padding:12px 0;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+.pe-lbl{font-size:12.5px;font-weight:800;color:var(--soft);margin:14px 2px 8px}.pe-lbl small{font-weight:700;opacity:.8;margin-left:4px}
+.pe-rooms{display:flex;flex-wrap:wrap;gap:6px}
+.pe-room{border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:7px 12px;font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
+.pe-room.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pe-none{font-size:12px;color:var(--soft)}
+.pe-p.out{opacity:.4}.pe-p.out b{text-decoration:line-through}
 .pv-save{background:#F4EFE6;color:var(--ink)}.pv-del{background:#E5574B;color:#fff}
 .alb-pager{display:flex;justify-content:center;gap:6px;margin:-2px 0 4px}
 .alb-pg{min-width:30px;height:30px;padding:0 8px;border:0;border-radius:15px;background:#F4EFE6;color:var(--soft);font-weight:800;font-size:12.5px;font-family:inherit;cursor:pointer}
@@ -3726,8 +3732,9 @@ function renderAlbum(){
 function openPhoto(pid){
   const p=albumList().find(x=>x.id===pid); if(!p)return;
   $('#sheet').innerHTML=`<div class="pol ${(p.seats||[]).length<=4?'wide':'tall'}" id="pvPol" style="cursor:default"><div class="pol-ph"><div class="pol-sc">${photoSceneHTML(p)}</div></div>${photoCapHTML(p)}</div>
-    <div class="pv-btns"><button class="pv-save" id="pvSave">⬇️ 이미지로 저장</button>${isAdmin()?`<button class="pv-del" id="pvDel">🗑 사진 삭제</button>`:''}</div>`;
+    <div class="pv-btns"><button class="pv-save" id="pvSave">⬇️ 이미지로 저장</button>${isAdmin()?`<button class="pv-save" id="pvEdit">✏️ 편집</button><button class="pv-del" id="pvDel">🗑 삭제</button>`:''}</div>`;
   openOv();
+  $('#pvEdit')&&($('#pvEdit').onclick=()=>editPhoto(p));
   requestAnimationFrame(()=>fitPolScenes($('#sheet')));
   $('#pvSave').onclick=()=>savePhotoImage(p);
   $('#pvDel')&&($('#pvDel').onclick=async()=>{
@@ -3735,6 +3742,36 @@ function openPhoto(pid){
     try{await photoCol().doc(p.id).delete();_albDel.add(p.id);closeOv();toast('사진을 삭제했어요');if(tab==='home')renderHome();else if(tab==='feed')renderFeed();}
     catch(e){console.warn(e);toast('삭제하지 못했어요');}
   });
+}
+
+/* ✏️ 사진 편집 (모임장만) — 사진 속 사람 빼기 · 어느 방 사진인지 지정 */
+function knownRooms(){const m=new Map();
+  albumList().forEach(p=>{if(p.room)m.set(String(p.room),p.roomName||'');});
+  Object.values(S.members||{}).forEach(x=>{if(x.readingRoom)m.set(String(x.readingRoom),x.readingRoomName||'');});
+  return [...m.entries()].map(([key,name])=>({key,name}));}
+function editPhoto(p){
+  const keep=new Set((p.seats||[]).map(x=>x.id)); let room=String(p.room||''), roomName=p.roomName||'';
+  const rooms=knownRooms(); if(room&&!rooms.some(r=>r.key===room))rooms.push({key:room,name:roomName});
+  const draw=()=>{
+    $('#sheet').innerHTML=`<div class="sec-t" style="font-size:15px;color:var(--ink)">✏️ 사진 편집</div>
+      <div class="pe-lbl">어느 방 사진인가요?</div>
+      <div class="pe-rooms">${rooms.length?rooms.map(r=>`<button class="pe-room${r.key===room?' on':''}" data-k="${escT(r.key)}">${escT(r.name||'이름 없는 방')}</button>`).join(''):'<span class="pe-none">아직 알려진 방이 없어요 (봇 업데이트 후 생겨요)</span>'}</div>
+      <div class="pe-lbl">사진에 남길 사람 <small>눌러서 빼기 · 다시 누르면 넣기</small></div>
+      ${(p.seats||[]).map(x=>{const m=S.members[x.id]||x;return `<div class="rb-li pe-p${keep.has(x.id)?'':' out'}" data-id="${x.id}"><div class="rb-mini" style="width:34px;height:34px">${avatarTiny(m)}</div><b>${escT(x.name||'')}</b><span>${keep.has(x.id)?'남김':'뺌'}</span></div>`;}).join('')}
+      <div class="pv-btns"><button class="pv-save" id="peCancel">취소</button><button class="pv-del" id="peSave" style="background:var(--ink)">저장 (${keep.size}명)</button></div>`;
+    $('#sheet').querySelectorAll('.pe-room').forEach(b=>b.onclick=()=>{room=b.dataset.k;roomName=(rooms.find(r=>r.key===room)||{}).name||'';draw();});
+    $('#sheet').querySelectorAll('.pe-p').forEach(r=>r.onclick=()=>{const id=r.dataset.id;keep.has(id)?keep.delete(id):keep.add(id);draw();});
+    $('#peCancel').onclick=()=>openPhoto(p.id);
+    $('#peSave').onclick=async()=>{
+      if(!keep.size){toast('한 명 이상은 남겨주세요');return;}
+      const upd={seats:(p.seats||[]).filter(x=>keep.has(x.id)),room,roomName,theme:roomTheme(roomName)};
+      try{await photoCol().doc(p.id).update(upd);Object.assign(p,upd);
+        if(_alb&&_alb.list){const q=_alb.list.find(x=>x.id===p.id);if(q)Object.assign(q,upd);}
+        toast('사진을 고쳤어요');openPhoto(p.id);if(tab==='home')renderHome();}
+      catch(e){console.warn(e);toast('저장하지 못했어요 · 규칙(사진 편집)을 확인해주세요');}
+    };
+  };
+  draw();
 }
 function _loadH2C(){return window.html2canvas?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');
   sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc);});}
