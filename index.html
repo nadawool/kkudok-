@@ -3637,8 +3637,8 @@ const PHOTO_PER_HALF=3;
 function photoHalf(t){return new Date(t||Date.now()).getHours()<12?'am':'pm';}
 /* 🏠 방 = 디스코드 서버 (봇이 readingRoom=서버ID · readingRoomName=서버이름 을 적어줌) · 봇 업데이트 전 기록은 '' */
 function roomKeyOf(m){return String(m.readingRoom||'');}
-/* 🎨 방 테마: 서버 이름으로 정함 — '모임'이 들어간 서버 = 북카페, 나머지 = 책상(기본) */
-function roomTheme(name){return /모임/.test(String(name||''))?'cafe':'';}
+/* 🎨 방 테마: 서버 이름으로 정함 — '꾸독'이 들어간 서버(🍎 꾸독 독서모임방) = 책상(기본) · 그 밖의 서버 = 북카페 */
+function roomTheme(name){const n=String(name||'');return !n||/꾸독/.test(n)?'':'cafe';}
 function photoRoomKey(p){return String(p.room||'');}
 function photosLeft(rk){const d=todayISO(),h=photoHalf();
   return PHOTO_PER_HALF-(S.photosToday||[]).filter(p=>p.date===d&&p.half===h&&photoRoomKey(p)===String(rk||'')).length;}
