@@ -1019,6 +1019,18 @@ body.dragx,body.dragx *{cursor:grabbing!important}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mr-seat.empty{cursor:default}
 .mr-seat.empty .mr-nm{color:#B4A285;font-weight:700}
+.th-cafe{background:#E9DFCF}
+.th-cafe .mr-page{background:linear-gradient(#E9DFCF 0 122px,#D8C7AE 122px 172px,#E9DFCF 172px 268px,#D8C7AE 268px)}
+.th-cafe .mr-win,.th-cafe .mr-shelf{display:none}
+.th-cafe .mr-desk{background:#5B3B26;border-color:#3A2414;border-radius:3px;left:-2px;right:-2px}
+.th-cafe .mr-desk:before{background:#7A5236;border-bottom-color:#3A2414}
+.th-cafe .mr-desk:after{display:none}
+.th-cafe .mr-chair{background:#7A5236;border-color:#3A2414}
+.th-cafe .mr-nm{color:#5B3B26}
+.cf-awn{position:absolute;left:0;right:0;top:0;height:9px;z-index:3;background:repeating-linear-gradient(90deg,#3E6B57 0 16px,#F4EAD5 16px 32px)}
+.cf-latte{position:absolute;left:50%;margin-left:-26px;top:80px;width:15px;height:16px;z-index:3;background:#F4EAD5;border:1.5px solid #3A2E2A;border-radius:2px 2px 5px 5px}
+.cf-latte:before{content:'';position:absolute;left:1px;right:1px;top:1px;height:4px;background:#C89B6D;border-radius:2px}
+.cf-cake{position:absolute;left:50%;margin-left:10px;top:86px;width:16px;height:10px;z-index:3;border:1.5px solid #3A2E2A;border-radius:3px 3px 1px 1px;background:linear-gradient(#fff 0 35%,#F4B6C2 35% 60%,#F7E1B5 60%)}
 .mr-chair{position:absolute;left:50%;top:76px;width:34px;height:22px;margin-left:-17px;border-radius:8px 8px 3px 3px;background:#DCC7A6;border:1.5px solid #A98A63}
 .att-read{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:900;color:var(--honey-d,#E07B2C);
   background:var(--honey-s,#FCEBD8);padding:2px 8px;border-radius:20px;line-height:1;white-space:nowrap}
@@ -3603,13 +3615,13 @@ function mrSceneHTML(list,o){
   const seat=(x,i)=>{const bub=o.live?`<div class="mr-min" data-live="${x.since||0}" data-base="${x.base||0}">📖 ${liveMin(x.base||0,x.since||0)}분</div>`:'';
     return `<div class="mr-seat" data-uid="${escT(x.m.id||'')}">${bub}
       <div class="mr-ch" style="animation-delay:-${(i*0.8).toFixed(1)}s">${avatarStack(x.m,'')}</div>
-      ${MR_BOOK.replace('class="pg"',`class="pg" style="animation-delay:-${(i*2.3).toFixed(1)}s"`)}
+      ${o.theme==='cafe'?'<div class="cf-latte"></div><div class="cf-cake"></div>':MR_BOOK.replace('class="pg"',`class="pg" style="animation-delay:-${(i*2.3).toFixed(1)}s"`)}
       <div class="mr-desk"></div><div class="mr-nm">${escT(x.m.name||'')}</div></div>`;};
   const empty=`<div class="mr-seat empty"><div class="mr-chair"></div><div class="mr-desk"></div><div class="mr-nm">빈 자리</div></div>`;
   const pg=pages.map((p,pi)=>{const cap=(pages.length>1||p.length>4)?8:4;
     return `<div class="mr-page">${p.map((x,i)=>seat(x,pi*8+i)).join('')}${empty.repeat(Math.max(0,cap-p.length))}</div>`;}).join('');
-  return `<div class="mroom${o.cls||''}${pages.length>1?' mr-multi':''}"${o.id?` id="${o.id}"`:''}>
-      <div class="mr-deco"><div class="mr-win"></div>
+  return `<div class="mroom${o.cls||''}${pages.length>1?' mr-multi':''}${o.theme?' th-'+o.theme:''}"${o.id?` id="${o.id}"`:''}>
+      ${o.theme==='cafe'?'<div class="cf-awn"></div>':''}<div class="mr-deco"><div class="mr-win"></div>
         <div class="mr-shelf"><i style="left:4px;height:12px;background:#D98C7A"></i><i style="left:12px;height:15px;background:#8FB59A"></i><i style="left:20px;height:11px;background:#E8C26A"></i><i style="left:28px;height:14px;background:#7E9CC8"></i></div></div>
       <div class="mr-pages">${pg}</div>${pages.length>1?`<div class="mr-dots">${pages.map(()=>'<i></i>').join('')}</div>`:''}
     </div>`;
@@ -3619,6 +3631,8 @@ const PHOTO_PER_HALF=3;
 function photoHalf(t){return new Date(t||Date.now()).getHours()<12?'am':'pm';}
 /* 🏠 방 = 디스코드 서버 (봇이 readingRoom=서버ID · readingRoomName=서버이름 을 적어줌) · 봇 업데이트 전 기록은 '' */
 function roomKeyOf(m){return String(m.readingRoom||'');}
+/* 🎨 방 테마: 서버 이름으로 정함 — '모임'이 들어간 서버 = 북카페, 나머지 = 책상(기본) */
+function roomTheme(name){return /모임/.test(String(name||''))?'cafe':'';}
 function photoRoomKey(p){return String(p.room||'');}
 function photosLeft(rk){const d=todayISO(),h=photoHalf();
   return PHOTO_PER_HALF-(S.photosToday||[]).filter(p=>p.date===d&&p.half===h&&photoRoomKey(p)===String(rk||'')).length;}
@@ -3640,7 +3654,7 @@ function miniRoomHTML(members){
       :`<span class="mr-shot off">${hl} 사진 다 찍었어요</span>`;
     return `<div class="home-sec">
       <div class="hs-head"><b>📖 ${g.name?escT(g.name):'지금 같이 읽는 중'}</b>${btn}</div>
-      ${mrSceneHTML(list,{live:true,cls:anim}).replace('<div class="mroom',`<div data-room="${escT(g.key)}" class="mroom`)}</div>`;
+      ${mrSceneHTML(list,{live:true,cls:anim,theme:roomTheme(g.name)}).replace('<div class="mroom',`<div data-room="${escT(g.key)}" class="mroom`)}</div>`;
   }).join('');
 }
 let _shooting=false;
@@ -3656,7 +3670,7 @@ async function takeRoomPhoto(rk){
   const rd=activeMembers().filter(m=>m.discordReading&&roomKeyOf(m)===rk).sort((a,b)=>(readSinceMs(a)||9e15)-(readSinceMs(b)||9e15));
   const seats=rd.map(m=>{const tr=todayRead(m), l=(m.id===S.meId&&DRESS_BASE)?DRESS_BASE:lookOf(m);
     return {id:m.id,name:m.name||'',gender:m.gender||'',char:m.char||'',items:l.items,min:liveMin(tr?tr.min:0,readSinceMs(m))};});
-  const id=`${date}_${half}${slot}${sfx}`, ref=col.doc(id), data={date,half,at:Date.now(),by:S.meId,seats,room:rk,roomName:my.readingRoomName||''};
+  const id=`${date}_${half}${slot}${sfx}`, ref=col.doc(id), data={date,half,at:Date.now(),by:S.meId,seats,room:rk,roomName:my.readingRoomName||'',theme:roomTheme(my.readingRoomName)};
   _shooting=true;
   const room=document.querySelector(`.mroom[data-room="${CSS.escape(rk)}"]`); if(room){const f=document.createElement('div');f.className='mr-flash';room.appendChild(f);setTimeout(()=>f.remove(),700);}
   try{
@@ -3687,7 +3701,7 @@ function photoCapHTML(p){const d=new Date(p.at||0), hm=String(d.getHours()).padS
   return `<div class="pol-cap"><b>${d.getMonth()+1}.${String(d.getDate()).padStart(2,'0')} (${WD[d.getDay()]})</b><span>${p.roomName?escT(p.roomName)+' · ':''}${p.half==='am'?'오전':'오후'} ${hm} · ${(p.seats||[]).length}명</span></div>`;}
 function photoSceneHTML(p){
   const list=(p.seats||[]).map(x=>({m:{id:x.id,name:x.name,gender:x.gender,char:x.char,items:JSON.parse(JSON.stringify(x.items||{}))}}));
-  return mrSceneHTML(list,{});}
+  return mrSceneHTML(list,{theme:p.theme||''});}
 function polHTML(p){const wide=(p.seats||[]).length<=4;
   return `<div class="pol ${wide?'wide':'tall'}" data-pid="${p.id}"><div class="pol-ph"><div class="pol-sc">${photoSceneHTML(p)}</div></div>${photoCapHTML(p)}</div>`;}
 function fitPolScenes(root){(root||document).querySelectorAll('.pol-ph').forEach(ph=>{const sc=ph.querySelector('.pol-sc');if(sc&&ph.clientWidth)sc.style.transform=`scale(${ph.clientWidth/352})`;});}
